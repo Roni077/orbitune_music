@@ -4,7 +4,6 @@ import 'package:orbitune/features/discovery/data/discovery_repository.dart';
 import 'package:orbitune/features/discovery/domain/models/chart_playlist.dart';
 import 'package:orbitune/features/discovery/domain/models/home_section.dart';
 import 'package:orbitune/features/discovery/domain/models/trending_item.dart';
-import 'package:orbitune/features/search/data/jiosaavn_source.dart';
 import 'package:orbitune/features/search/data/youtube_source.dart';
 
 void main() {
@@ -15,7 +14,6 @@ void main() {
 
     setUp(() {
       repository = DiscoveryRepository(
-        jioSaavnSource: JioSaavnSource(),
         youTubeSource: YouTubeSource(),
       );
     });

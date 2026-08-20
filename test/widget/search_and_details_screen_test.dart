@@ -6,14 +6,12 @@ import 'package:hive/hive.dart';
 import 'package:orbitune/core/services/hive_service.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/downloader/data/extractor_service.dart';
-import 'package:orbitune/features/search/data/jiosaavn_source.dart';
 import 'package:orbitune/features/search/data/search_cache_repository.dart';
 import 'package:orbitune/features/search/data/search_repository.dart';
 import 'package:orbitune/features/search/data/youtube_source.dart';
 import 'package:orbitune/features/search/domain/models/album_model.dart';
 import 'package:orbitune/features/search/domain/models/artist_model.dart';
 import 'package:orbitune/features/search/domain/models/playlist_model.dart';
-import 'package:orbitune/features/search/domain/models/search_result.dart';
 import 'package:orbitune/features/search/presentation/screens/album_detail_screen.dart';
 import 'package:orbitune/features/search/presentation/screens/artist_detail_screen.dart';
 import 'package:orbitune/features/search/presentation/screens/search_screen.dart';
@@ -23,43 +21,25 @@ import 'package:orbitune/features/search/presentation/widgets/search_bar_widget.
 import 'package:orbitune/features/search/presentation/widgets/track_tile.dart';
 import '../helpers/mock_audio_platform.dart';
 
-class MockJioSaavnWidgetSource extends JioSaavnSource {
+class MockYouTubeWidgetSource extends YouTubeSource {
   @override
-  Future<SearchResult> searchAll(String query, {int page = 1, int limit = 25}) async {
-    return SearchResult(
-      query: query,
-      songs: [
-        Track(
-          id: 'song_101',
-          title: 'Heeriye',
-          artist: 'Arijit Singh, Jasleen Royal',
-          duration: const Duration(seconds: 195),
-          source: 'jiosaavn',
-        ),
-      ],
-      artists: [
-        ArtistModel(
-          id: 'artist_101',
-          name: 'Arijit Singh',
-          fansCount: 45000000,
-          source: 'jiosaavn',
-        ),
-      ],
-      albums: [
-        AlbumModel(
-          id: 'album_101',
-          title: 'Ultimate Arijit',
-          artist: 'Arijit Singh',
-          releaseYear: '2024',
-          totalTracks: 12,
-          source: 'jiosaavn',
-        ),
-      ],
-    );
+  Future<List<Track>> search(String query, {int limit = 20}) async {
+    return [
+      Track(
+        id: 'song_101',
+        title: 'Heeriye',
+        artist: 'Arijit Singh, Jasleen Royal',
+        duration: const Duration(seconds: 195),
+        source: 'youtube',
+      ),
+    ];
   }
 
   @override
-  Future<ArtistModel?> getArtistDetails(String artistId) async {
+  Future<List<PlaylistModel>> searchPlaylists(String query, {int limit = 10}) async => const [];
+
+  @override
+  Future<ArtistModel?> getArtistDetails(String artistId, {String? artistName}) async {
     return ArtistModel(
       id: artistId,
       name: 'Arijit Singh',
@@ -71,7 +51,7 @@ class MockJioSaavnWidgetSource extends JioSaavnSource {
           title: 'Heeriye',
           artist: 'Arijit Singh',
           duration: const Duration(seconds: 195),
-          source: 'jiosaavn',
+          source: 'youtube',
         ),
       ],
       albums: [
@@ -80,10 +60,10 @@ class MockJioSaavnWidgetSource extends JioSaavnSource {
           title: 'Ultimate Arijit',
           artist: 'Arijit Singh',
           releaseYear: '2024',
-          source: 'jiosaavn',
+          source: 'youtube',
         ),
       ],
-      source: 'jiosaavn',
+      source: 'youtube',
     );
   }
 
@@ -102,20 +82,12 @@ class MockJioSaavnWidgetSource extends JioSaavnSource {
           title: 'Heeriye',
           artist: 'Arijit Singh',
           duration: const Duration(seconds: 195),
-          source: 'jiosaavn',
+          source: 'youtube',
         ),
       ],
-      source: 'jiosaavn',
+      source: 'youtube',
     );
   }
-}
-
-class MockYouTubeWidgetSource extends YouTubeSource {
-  @override
-  Future<List<Track>> search(String query, {int limit = 20}) async => const [];
-
-  @override
-  Future<List<PlaylistModel>> searchPlaylists(String query, {int limit = 10}) async => const [];
 }
 
 class MockExtractorWidgetSource extends ExtractorService {
@@ -137,7 +109,6 @@ void main() {
     await hiveService.init(tempDir.path);
     cacheRepo = SearchCacheRepository(hiveService);
     searchRepo = SearchRepository(
-      jioSaavnSource: MockJioSaavnWidgetSource(),
       youTubeSource: MockYouTubeWidgetSource(),
       extractorService: MockExtractorWidgetSource(),
       cacheRepository: cacheRepo,
@@ -175,7 +146,7 @@ void main() {
     expect(find.byType(SearchBarWidget), findsOneWidget);
     expect(find.byType(FilterSourceBar), findsOneWidget);
     expect(find.text('All Sources'), findsOneWidget);
-    expect(find.text('JioSaavn 320k'), findsOneWidget);
+    expect(find.text('YouTube Music'), findsOneWidget);
 
     // Verify Initial Recent / Trending searches view
     expect(find.byType(RecentSearchesView), findsOneWidget);
@@ -253,7 +224,7 @@ void main() {
       title: 'Chaleya',
       artist: 'Arijit Singh, Shilpa Rao',
       duration: const Duration(seconds: 200),
-      source: 'jiosaavn',
+      source: 'youtube',
     );
 
     await tester.pumpWidget(
@@ -278,7 +249,7 @@ void main() {
     expect(find.text('Chaleya'), findsOneWidget);
     expect(find.text('Arijit Singh, Shilpa Rao'), findsOneWidget);
     expect(find.text('03:20'), findsOneWidget);
-    expect(find.text('320 KBPS'), findsOneWidget);
+    expect(find.text('YT MUSIC'), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
 
     await tester.tap(find.text('Chaleya'));

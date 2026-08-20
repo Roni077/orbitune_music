@@ -26,7 +26,7 @@ import 'package:orbitune/features/visualizer/presentation/providers/visualizer_p
 import 'package:orbitune/features/visualizer/presentation/widgets/bar_visualizer.dart';
 import 'package:orbitune/features/visualizer/presentation/widgets/circular_visualizer.dart';
 import 'package:orbitune/features/visualizer/presentation/widgets/wave_visualizer.dart';
-import 'package:palette_generator/palette_generator.dart';
+import 'package:palette_generator_plus/palette_generator_plus.dart';
 
 /// Available center view modes in FullPlayerScreen
 enum _PlayerCenterView {

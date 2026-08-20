@@ -9,7 +9,6 @@ import 'package:orbitune/core/widgets/empty_state_view.dart';
 import 'package:orbitune/core/widgets/image_shimmer.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/player_provider.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/queue_provider.dart';
-import 'package:orbitune/features/library/domain/models/history_item.dart';
 import 'package:orbitune/features/library/presentation/providers/history_provider.dart';
 
 /// Screen displaying user's listening history chronologically

@@ -5,6 +5,7 @@ import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart'
 import 'package:orbitune/features/audio_player/domain/models/playback_mode.dart';
 import 'package:orbitune/features/audio_player/domain/models/playback_state.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
+import 'package:orbitune/features/audio_player/presentation/providers/queue_provider.dart';
 import 'package:orbitune/features/library/presentation/providers/favorites_provider.dart';
 
 /// Provider for current playback repeat & shuffle mode
@@ -88,19 +89,10 @@ class PlayerNotifier extends StateNotifier<PlayerStateSnapshot> {
     Duration? initialPosition,
   }) async {
     if (tracks.isEmpty) return;
-    final safeIndex = initialIndex.clamp(0, tracks.length - 1);
-    state = state.copyWith(
-      status: PlaybackStatus.loading,
-      currentTrack: tracks[safeIndex],
-      position: initialPosition ?? Duration.zero,
-      errorMessage: null,
-    );
     try {
-      await _repository.playPlaylist(
+      await _ref.read(queueProvider.notifier).playPlaylist(
         tracks,
         initialIndex: initialIndex,
-        quality: quality,
-        initialPosition: initialPosition,
       );
     } catch (e) {
       state = state.copyWith(
@@ -154,14 +146,32 @@ class PlayerNotifier extends StateNotifier<PlayerStateSnapshot> {
     await _repository.seekBackward(offset: offset);
   }
 
-  /// Skips to the next track
+  /// Skips to the next track in queue or fallback service
   Future<void> next() async {
+    try {
+      final queueNotifier = _ref.read(queueProvider.notifier);
+      if (queueNotifier.state.hasNext || queueNotifier.state.isAutoplayEnabled) {
+        await queueNotifier.next();
+        return;
+      }
+    } catch (_) {}
     await _repository.next();
   }
 
-  /// Skips to previous track
+  /// Skips to previous track in queue or seeks to start
   Future<void> previous() async {
-    await _repository.previous();
+    if (state.position.inSeconds > 3) {
+      await seek(Duration.zero);
+      return;
+    }
+    try {
+      final queueNotifier = _ref.read(queueProvider.notifier);
+      if (queueNotifier.state.hasPrevious) {
+        await queueNotifier.previous();
+        return;
+      }
+    } catch (_) {}
+    await seek(Duration.zero);
   }
 
   /// Sets audio playback volume (0.0 to 1.0)

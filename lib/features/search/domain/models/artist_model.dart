@@ -30,7 +30,7 @@ class ArtistModel {
     this.albums = const [],
     this.singles = const [],
     this.genres = const [],
-    this.source = 'jiosaavn',
+    this.source = 'youtube',
     this.isFollowed = false,
   });
 
@@ -111,7 +111,7 @@ class ArtistModel {
       genres: map['genres'] != null
           ? List<String>.from(map['genres'] as List)
           : const [],
-      source: map['source']?.toString() ?? 'jiosaavn',
+      source: map['source']?.toString() ?? 'youtube',
       isFollowed: map['isFollowed'] == true,
     );
   }

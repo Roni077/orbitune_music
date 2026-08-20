@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'package:extractor/extractor.dart';
 import 'package:flutter/foundation.dart';
 import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 
-/// Service wrapper around the `extractor` (yt-dlp / YouTubeDLFlutter) media engine
+/// Service wrapper around the official `extractor` (^1.0.0 / YoutubeDLFlutter) media engine
 class ExtractorService {
   static final ExtractorService _instance = ExtractorService._internal();
   static ExtractorService get instance => _instance;
@@ -12,21 +13,38 @@ class ExtractorService {
   ExtractorService._internal();
 
   bool _isInitialized = false;
+  bool _initFailed = false;
 
-  /// Initializes the underlying extractor engine
-  Future<bool> initialize({bool enableFFmpeg = true}) async {
+  /// Whether the native extractor engine is available on this device
+  bool get isAvailable => _isInitialized && !_initFailed;
+
+  /// Reactive download event streams provided by extractor
+  Stream<DownloadProgress> get onProgress => YoutubeDLFlutter.instance.onProgress;
+  Stream<DownloadState> get onStateChanged => YoutubeDLFlutter.instance.onStateChanged;
+  Stream<DownloadError> get onError => YoutubeDLFlutter.instance.onError;
+  Stream<LogMessage> get onLog => YoutubeDLFlutter.instance.onLog;
+
+  /// Initializes the underlying extractor engine.
+  /// Returns false permanently if the native engine cannot initialize on this device.
+  Future<bool> initialize({bool enableFFmpeg = true, bool enableAria2c = false}) async {
     if (_isInitialized) return true;
+    if (_initFailed) return false;
 
     try {
       final result = await YoutubeDLFlutter.instance.initialize(
         enableFFmpeg: enableFFmpeg,
-        enableAria2c: false,
+        enableAria2c: enableAria2c,
       );
       _isInitialized = result.success;
+      if (!_isInitialized) {
+        _initFailed = true;
+        debugPrint('[ExtractorService] Native engine init returned success=false. Disabling on this device.');
+      }
       return _isInitialized;
     } catch (e) {
       debugPrint('[ExtractorService] Initialization failed/unsupported: $e');
       _isInitialized = false;
+      _initFailed = true;
       return false;
     }
   }
@@ -68,8 +86,11 @@ class ExtractorService {
   /// Extracts comprehensive metadata and streaming audio URL from any supported media link
   Future<Track?> extractTrackInfo(String url, {AudioQuality quality = AudioQuality.high320k}) async {
     if (!isSupportedMediaUrl(url)) return null;
+    if (_initFailed) return null;
 
     try {
+      final initialized = await initialize();
+      if (!initialized) return null;
       final videoInfo = await YoutubeDLFlutter.instance.getVideoInfo(url);
       return _convertVideoInfoToTrack(videoInfo, url, quality);
     } catch (e) {
@@ -78,47 +99,63 @@ class ExtractorService {
     }
   }
 
-  /// Extracts direct audio stream URL with the highest possible bitrate
+  /// Extracts direct audio stream URL with the highest possible bitrate using FormatHelper
   Future<String?> getBestAudioStreamUrl(String url) async {
+    if (_initFailed) return null;
     try {
+      final initialized = await initialize();
+      if (!initialized) return null;
       final videoInfo = await YoutubeDLFlutter.instance.getVideoInfo(url);
       final formats = videoInfo.formats;
       if (formats == null || formats.isEmpty) {
         return videoInfo.url;
       }
 
-      // Filter for audio streams
-      final audioFormats = formats.where((f) {
-        final acodec = f?.acodec?.toLowerCase() ?? '';
-        final vcodec = f?.vcodec?.toLowerCase() ?? '';
-        return acodec.isNotEmpty && acodec != 'none' && (vcodec.isEmpty || vcodec == 'none');
-      }).toList();
-
-      if (audioFormats.isNotEmpty) {
-        // Sort descending by total bitrate (tbr) or filesize
-        audioFormats.sort((a, b) {
-          final tbrA = a?.tbr ?? 0.0;
-          final tbrB = b?.tbr ?? 0.0;
-          return tbrB.compareTo(tbrA);
-        });
-        return audioFormats.first?.url ?? videoInfo.url;
+      // 1. Use FormatHelper to find the best audio format
+      final bestAudio = FormatHelper.getBestAudio(formats);
+      if (bestAudio?.url != null && bestAudio!.url!.isNotEmpty) {
+        return bestAudio.url;
       }
 
-      // Fallback: any format with audio
-      final anyAudio = formats.where((f) {
-        final acodec = f?.acodec?.toLowerCase() ?? '';
-        return acodec.isNotEmpty && acodec != 'none';
-      }).toList();
-
-      if (anyAudio.isNotEmpty) {
-        anyAudio.sort((a, b) => (b?.tbr ?? 0.0).compareTo(a?.tbr ?? 0.0));
-        return anyAudio.first?.url ?? videoInfo.url;
+      // 2. Fallback to audio-only formats
+      final audioFormats = FormatHelper.getAudioFormats(formats);
+      if (audioFormats.isNotEmpty) {
+        return audioFormats.first.url ?? videoInfo.url;
       }
 
       return videoInfo.url;
     } catch (e) {
       debugPrint('[ExtractorService] getBestAudioStreamUrl error: $e');
       return null;
+    }
+  }
+
+  /// Downloads media directly via Extractor / yt-dlp native pipeline
+  Future<DownloadResult> downloadMedia({
+    required String url,
+    required String outputPath,
+    DownloadTemplate template = DownloadTemplate.audioOnly,
+    Map<String, String>? customOptions,
+  }) async {
+    await initialize();
+    final request = DownloadTemplates.fromTemplate(
+      url: url,
+      outputPath: outputPath,
+      template: template,
+    );
+    if (customOptions != null) {
+      request.customOptions = customOptions;
+    }
+    return await YoutubeDLFlutter.instance.download(request);
+  }
+
+  /// Cancels an active download process by ID
+  Future<bool> cancelDownload(String processId) async {
+    try {
+      return await YoutubeDLFlutter.instance.cancelDownload(processId);
+    } catch (e) {
+      debugPrint('[ExtractorService] cancelDownload error: $e');
+      return false;
     }
   }
 
@@ -134,12 +171,10 @@ class ExtractorService {
 
     final formats = info.formats;
     if (formats != null && formats.isNotEmpty) {
-      // Find highest bitrate audio format
-      final audioFormats = formats.where((f) => (f?.acodec ?? 'none') != 'none').toList();
-      if (audioFormats.isNotEmpty) {
-        audioFormats.sort((a, b) => (b?.tbr ?? 0.0).compareTo(a?.tbr ?? 0.0));
-        directStreamUrl = audioFormats.first?.url;
-        final tbr = audioFormats.first?.tbr?.toInt();
+      final bestAudio = FormatHelper.getBestAudio(formats);
+      if (bestAudio != null) {
+        directStreamUrl = bestAudio.url;
+        final tbr = bestAudio.tbr?.toInt();
         if (tbr != null && tbr > 0) {
           bitrate = tbr;
         }

@@ -13,16 +13,20 @@ import 'package:orbitune/features/search/domain/models/playlist_model.dart';
 import 'package:orbitune/features/search/presentation/widgets/track_tile.dart';
 import 'package:share_plus/share_plus.dart';
 
-/// Provider for loading online playlist details
-final onlinePlaylistProvider = FutureProvider.family<PlaylistModel?, (String, String)>(
+/// Provider for loading online playlist details with title search fallback
+final onlinePlaylistProvider = FutureProvider.family<PlaylistModel?, (String, String, String?)>(
   (ref, args) async {
     final searchRepo = ref.watch(searchRepositoryProvider);
-    final (playlistId, source) = args;
-    return searchRepo.getPlaylistDetails(playlistId, source: source);
+    final (playlistId, source, playlistTitle) = args;
+    return searchRepo.getPlaylistDetails(
+      playlistId,
+      source: source,
+      playlistTitle: playlistTitle,
+    );
   },
 );
 
-/// Detailed view screen for online playlists from JioSaavn & YouTube
+/// Detailed view screen for online playlists
 class PlaylistDetailScreen extends ConsumerWidget {
   final String playlistId;
   final String? playlistTitle;
@@ -32,12 +36,12 @@ class PlaylistDetailScreen extends ConsumerWidget {
     super.key,
     required this.playlistId,
     this.playlistTitle,
-    this.source = 'jiosaavn',
+    this.source = 'youtube',
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playlistAsync = ref.watch(onlinePlaylistProvider((playlistId, source)));
+    final playlistAsync = ref.watch(onlinePlaylistProvider((playlistId, source, playlistTitle)));
 
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
@@ -89,7 +93,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                 padding: const EdgeInsets.only(top: 40.0),
                 child: ErrorView(
                   message: 'Failed to load playlist: $err',
-                  onRetry: () => ref.refresh(onlinePlaylistProvider((playlistId, source))),
+                  onRetry: () => ref.refresh(onlinePlaylistProvider((playlistId, source, playlistTitle))),
                 ),
               ),
             ),

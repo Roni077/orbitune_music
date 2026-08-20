@@ -9,7 +9,6 @@ import 'package:orbitune/features/audio_player/domain/services/audio_player_serv
 import 'package:orbitune/features/audio_player/domain/services/audio_session_service.dart';
 import 'package:orbitune/features/downloader/data/extractor_service.dart';
 import 'package:orbitune/features/library/data/library_repository.dart';
-import 'package:orbitune/features/search/data/jiosaavn_source.dart';
 import 'package:orbitune/features/search/data/search_cache_repository.dart';
 import 'package:orbitune/features/search/data/search_repository.dart';
 import 'package:orbitune/features/search/data/youtube_source.dart';
@@ -39,7 +38,6 @@ void main() {
     settingsRepo = SettingsRepository(hiveService);
     searchCacheRepo = SearchCacheRepository(hiveService);
     searchRepo = SearchRepository(
-      jioSaavnSource: JioSaavnSource(),
       youTubeSource: YouTubeSource(),
       extractorService: ExtractorService.instance,
       cacheRepository: searchCacheRepo,

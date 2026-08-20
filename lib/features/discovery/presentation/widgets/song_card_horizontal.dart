@@ -51,10 +51,11 @@ class SongCardHorizontal extends StatelessWidget {
       onPlayTap: onPlayTap,
       isPlaying: isPlaying,
       isCurrent: isCurrent,
-      width: width,
-      badgeType: track.source == 'jiosaavn'
-          ? AudioBadgeType.highQuality320
-          : (track.source == 'youtube' ? AudioBadgeType.youtube : null),
+      badgeType: track.isOfflineAvailable
+          ? AudioBadgeType.offline
+          : (track.bitrate >= 320
+              ? AudioBadgeType.highQuality320
+              : AudioBadgeType.youtube),
     );
   }
 

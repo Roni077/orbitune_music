@@ -9,7 +9,7 @@ enum AudioBadgeType {
   highQuality320,
   mediumQuality160,
   youtube,
-  jioSaavn,
+  opusHq,
   offline,
 }
 
@@ -27,10 +27,10 @@ class AudioBadge extends StatelessWidget {
   /// Convenience factory creating an AudioBadge tailored to [Track] properties
   factory AudioBadge.fromTrack(dynamic track) {
     if (track == null) {
-      return const AudioBadge(type: AudioBadgeType.highQuality320);
+      return const AudioBadge(type: AudioBadgeType.youtube);
     }
     final source = track.source?.toString().toLowerCase();
-    final bitrate = (track.bitrate as num?)?.toInt() ?? 320;
+    final bitrate = (track.bitrate as num?)?.toInt() ?? 160;
     final isOffline = track.isOfflineAvailable == true;
 
     if (isOffline) {
@@ -42,10 +42,10 @@ class AudioBadge extends StatelessWidget {
     if (bitrate >= 320) {
       return const AudioBadge(type: AudioBadgeType.highQuality320);
     }
-    if (source == 'jiosaavn') {
-      return const AudioBadge(type: AudioBadgeType.jioSaavn);
+    if (bitrate >= 160) {
+      return const AudioBadge(type: AudioBadgeType.opusHq);
     }
-    return const AudioBadge(type: AudioBadgeType.highQuality320);
+    return const AudioBadge(type: AudioBadgeType.youtube);
   }
 
   @override
@@ -70,6 +70,11 @@ class AudioBadge extends StatelessWidget {
         text = AppColors.accentGreen;
         label = '320 KBPS';
         break;
+      case AudioBadgeType.opusHq:
+        bg = const Color(0xFF00E5FF).withValues(alpha: 0.15);
+        text = const Color(0xFF00E5FF);
+        label = 'OPUS HQ';
+        break;
       case AudioBadgeType.mediumQuality160:
         bg = AppColors.accentIndigo.withValues(alpha: 0.2);
         text = AppColors.accentIndigo;
@@ -79,11 +84,6 @@ class AudioBadge extends StatelessWidget {
         bg = const Color(0xFFFF0000).withValues(alpha: 0.15);
         text = const Color(0xFFFF4D4D);
         label = 'YT MUSIC';
-        break;
-      case AudioBadgeType.jioSaavn:
-        bg = const Color(0xFF00B0FF).withValues(alpha: 0.15);
-        text = const Color(0xFF00E5FF);
-        label = 'SAAVN';
         break;
       case AudioBadgeType.offline:
         bg = Colors.white.withValues(alpha: 0.15);

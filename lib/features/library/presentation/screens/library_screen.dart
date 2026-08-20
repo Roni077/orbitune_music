@@ -7,7 +7,6 @@ import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/utils/formatters.dart';
 import 'package:orbitune/core/widgets/expressive_card.dart';
 import 'package:orbitune/core/widgets/image_shimmer.dart';
-import 'package:orbitune/core/widgets/section_header.dart';
 import 'package:orbitune/features/downloader/presentation/providers/download_provider.dart';
 import 'package:orbitune/features/downloader/presentation/screens/downloads_screen.dart';
 import 'package:orbitune/features/library/domain/models/user_playlist.dart';

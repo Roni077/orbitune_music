@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:palette_generator/palette_generator.dart';
+import 'package:palette_generator_plus/palette_generator_plus.dart';
 import '../constants/app_colors.dart';
 
 /// Extracts dominant & vibrant colors from artwork images for dynamic ambient backgrounds

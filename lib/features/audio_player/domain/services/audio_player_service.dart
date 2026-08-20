@@ -38,7 +38,16 @@ class AudioPlayerService {
   PlayerStateSnapshot _snapshot = const PlayerStateSnapshot();
 
   AudioPlayerService({AudioPlayer? player})
-      : _player = player ?? AudioPlayer(),
+      : _player = player ??
+            AudioPlayer(
+              audioLoadConfiguration: const AudioLoadConfiguration(
+                androidLoadControl: AndroidLoadControl(
+                  maxBufferDuration: Duration(seconds: 60),
+                  bufferForPlaybackDuration: Duration(milliseconds: 500),
+                  bufferForPlaybackAfterRebufferDuration: Duration(seconds: 2),
+                ),
+              ),
+            ),
         _ownsPlayer = player == null {
     _initStreams();
   }
@@ -95,22 +104,27 @@ class AudioPlayerService {
     });
 
     _sequenceSub = _player.sequenceStateStream.listen((seqState) {
-      if (seqState != null && seqState.currentSource != null) {
-        final tag = seqState.currentSource?.tag;
-        if (tag is MediaItem) {
-          // If we have track match in playlist
-          final matched = _currentPlaylist.firstWhere(
-            (t) => t.id == tag.id,
-            orElse: () => _currentTrack ?? Track(
-              id: tag.id,
-              title: tag.title,
-              artist: tag.artist ?? 'Unknown Artist',
-              album: tag.album,
-              duration: tag.duration ?? Duration.zero,
-              artworkUrl: tag.artUri?.toString(),
-            ),
-          );
-          _setCurrentTrack(matched);
+      final index = seqState.currentIndex;
+      if (index != null && index >= 0 && index < _currentPlaylist.length) {
+        _setCurrentTrack(_currentPlaylist[index]);
+      } else {
+        final currentSource = seqState.currentSource;
+        if (currentSource != null) {
+          final tag = currentSource.tag;
+          if (tag is MediaItem) {
+            final matched = _currentPlaylist.firstWhere(
+              (t) => t.id == tag.id,
+              orElse: () => _currentTrack ?? Track(
+                id: tag.id,
+                title: tag.title,
+                artist: tag.artist ?? 'Unknown Artist',
+                album: tag.album,
+                duration: tag.duration ?? Duration.zero,
+                artworkUrl: tag.artUri?.toString(),
+              ),
+            );
+            _setCurrentTrack(matched);
+          }
         }
       }
     });

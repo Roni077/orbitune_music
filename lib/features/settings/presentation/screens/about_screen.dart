@@ -94,8 +94,8 @@ class AboutScreen extends StatelessWidget {
                   _buildFeatureBullet(
                     LucideIcons.radio,
                     AppColors.accentCyan,
-                    'Extractor & Multi-Source Audio Engine',
-                    '320kbps JioSaavn DES decryption, YouTube Explode & direct streams.',
+                    'YouTube Explode Audio Engine',
+                    'High-fidelity pure Opus/AAC audio streaming with resilient multi-client rotation.',
                   ),
                   _buildFeatureBullet(
                     LucideIcons.slidersHorizontal,

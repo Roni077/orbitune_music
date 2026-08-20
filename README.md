@@ -17,9 +17,9 @@
 
 ## 📖 Overview
 
-**Orbitune** is a next-generation online music player for Android, iOS, and Desktop built from the ground up with **Flutter**, **Material 3 Expressive UI/UX**, and high-fidelity multi-source audio extraction engines.
+**Orbitune** is a next-generation online music player for Android, iOS, and Desktop built from the ground up with **Flutter**, **Material 3 Expressive UI/UX**, and high-fidelity audio streaming and extraction engines.
 
-Orbitune seamlessly combines streaming sources including **YouTube Music**, direct media streams via **Extractor**, and decrypted high-bitrate **JioSaavn 320kbps** streams with synchronized karaoke lyrics, 10-band DSP equalization, dynamic color theming, and offline playback.
+Orbitune combines pure audio streaming powered by **YouTube Explode** (`youtube_explode_dart`), offline downloads exclusively via the native **Extractor Engine** (`extractor`), synchronized karaoke lyrics from **LRCLIB**, 10-band DSP equalization, dynamic color theming, and offline playback.
 
 ---
 
@@ -32,18 +32,20 @@ Orbitune seamlessly combines streaming sources including **YouTube Music**, dire
 * **Typography**: Elegant typography powered by Google Fonts (`Righteous` for branding and display headers, `Poppins` for metadata and synced lyrics).
 * **100% Emoji-Free Modern Iconography**: Clean, vector stroke iconography powered by Lucide icons.
 
-### 🎧 High-Fidelity Audio & Multi-Source Streaming
-* **Multi-Source Music Engine**:
-  * **Extractor Media Engine (`extractor: ^1.0.0`)**: Stream resolution across web and media platforms.
-  * **YouTube Explode Engine (`youtube_explode_dart: ^2.3.4`)**: Search tracks, albums, playlists, and stream high-bitrate M4A / AAC / Opus audio.
-  * **JioSaavn 320kbps Decryption (`dart_des: ^1.0.2`)**: Real-time DES-ECB cipher decryption (`38346591`) for direct 320kbps and 160kbps MP4/M4A CDN streams with mirror fallback.
+### 🎧 High-Fidelity Audio & Pure Streaming
+* **Pure YouTube Explode Audio Engine (`youtube_explode_dart: ^2.3.4`)**:
+  * Pure audio format extraction (Opus ~160kbps 48kHz, AAC ~128-142kbps).
+  * Multi-client rotation (`ios`, `androidVr`, `safari`, `androidMusic`, `web`) for 403 Forbidden and PoToken restriction bypass.
+  * Configurable streaming qualities with in-memory candidate caching and lookahead prefetching.
+* **Offline Song Downloads via Extractor (`extractor: ^1.0.0`)**:
+  * Native yt-dlp audio extraction and offline downloading with metadata and progress reporting.
 * **Pro Audio Controls (`just_audio` & `audio_session`)**:
   * Gapless playback, crossfade transitions, and variable playback speeds (0.5x to 2.0x).
   * System audio focus handling, smooth ducking during notifications, and graceful pause on headphone disconnect (`BECOMING_NOISY`).
   * Lock screen player, persistent notification tray controls, Android Auto, and Bluetooth AVRCP integration via `just_audio_background`.
 
 ### 🎤 Synchronized Karaoke Lyrics
-* Real-time synchronized LRC lyrics powered by the **LRCLIB API** (`lrclib.net`) and JioSaavn lyrics engines.
+* Real-time synchronized LRC lyrics powered by the **LRCLIB API** (`lrclib.net`).
 * Automatic scrolling with active line spotlight and smooth animations.
 * **Tap-to-Seek**: Jump directly to any moment in the song by tapping the corresponding lyric line.
 * Plain lyrics fallback and offline lyrics caching in Hive.
@@ -117,9 +119,8 @@ orbitune/
 | **Audio Playback** | [`just_audio`](https://pub.dev/packages/just_audio) | `^0.9.41` | Gapless playback, speed modulation & buffering |
 | **Background Media** | [`just_audio_background`](https://pub.dev/packages/just_audio_background) | `^0.0.1-beta.17` | Lock screen player & notification tray integration |
 | **Audio Session** | [`audio_session`](https://pub.dev/packages/audio_session) | `^0.1.21` | Focus handling, ducking & noisy headset pause |
-| **Media Extraction** | [`extractor`](https://pub.dev/packages/extractor) | `^1.0.0` | Direct media and social stream extraction |
-| **YouTube Source** | [`youtube_explode_dart`](https://pub.dev/packages/youtube_explode_dart) | `^2.3.4` | YouTube Music search & audio stream extractor |
-| **Cipher Decryption** | [`dart_des`](https://pub.dev/packages/dart_des) | `^1.0.2` | JioSaavn DES-ECB 320kbps URL decryption |
+| **Media Downloader** | [`extractor`](https://pub.dev/packages/extractor) | `^1.0.0` | Native yt-dlp audio extraction & offline downloads |
+| **YouTube Source** | [`youtube_explode_dart`](https://pub.dev/packages/youtube_explode_dart) | `^2.3.4` | Pure Opus/AAC audio streaming & discovery feeds |
 | **Local Database** | [`hive_flutter`](https://pub.dev/packages/hive_flutter) | `^1.1.0` | Fast NoSQL key-value persistence |
 | **Networking & HTTP** | [`dio`](https://pub.dev/packages/dio) / [`http`](https://pub.dev/packages/http) | `^5.7.0` | REST clients, interceptors & chunked downloads |
 | **Color Extraction** | [`palette_generator`](https://pub.dev/packages/palette_generator) | `^0.3.3` | Dynamic color extraction from album artwork |

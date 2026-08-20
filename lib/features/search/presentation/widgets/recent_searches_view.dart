@@ -145,7 +145,7 @@ class RecentSearchesView extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Type song names, artists, or paste YouTube/Spotify/JioSaavn links directly into the search bar for instant extraction & high-fidelity playback.',
+                'Type song names, artists, or paste YouTube and online media links directly into the search bar for instant extraction & high-fidelity streaming.',
                 style: AppTypography.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                   height: 1.4,

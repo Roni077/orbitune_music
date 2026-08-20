@@ -1,50 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orbitune/core/utils/audio_decryptor.dart';
-import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
 
 void main() {
-  group('AudioDecryptor Tests', () {
-    const testPlainUrl = 'https://aac.saavncdn.com/123/sample_song_96.mp4';
-
-    test('Encrypts and decrypts JioSaavn media URL with DES key', () {
-      final encrypted = AudioDecryptor.encryptMediaUrl(testPlainUrl);
-      expect(encrypted, isNotNull);
-      expect(encrypted, isNotEmpty);
-
-      // Decrypt to 320kbps
-      final decrypted320 = AudioDecryptor.decryptMediaUrl(encrypted, quality: AudioQuality.high320k);
-      expect(decrypted320, isNotNull);
-      expect(decrypted320, contains('_320.mp4'));
-
-      // Decrypt to 160kbps
-      final decrypted160 = AudioDecryptor.decryptMediaUrl(encrypted, quality: AudioQuality.medium160k);
-      expect(decrypted160, isNotNull);
-      expect(decrypted160, contains('_160.mp4'));
-
-      // Decrypt to 96kbps
-      final decrypted96 = AudioDecryptor.decryptMediaUrl(encrypted, quality: AudioQuality.low96k);
-      expect(decrypted96, isNotNull);
-      expect(decrypted96, contains('_96.mp4'));
-    });
-
-    test('Formats bitrate correctly on raw URLs', () {
-      const url96 = 'http://aac.saavncdn.com/test_96.mp4';
-      final formatted320 = AudioDecryptor.formatQualityUrl(url96, AudioQuality.high320k);
-      expect(formatted320, equals('https://aac.saavncdn.com/test_320.mp4'));
-
-      const url160 = 'https://aac.saavncdn.com/test_160.mp4';
-      final formatted96 = AudioDecryptor.formatQualityUrl(url160, AudioQuality.low96k);
-      expect(formatted96, equals('https://aac.saavncdn.com/test_96.mp4'));
-    });
-
-    test('Upscales artwork URLs to 500x500 high resolution', () {
-      const thumb50 = 'http://c.saavncdn.com/123/art-50x50.jpg';
+  group('AudioDecryptor / Text & Media Sanitizer Tests', () {
+    test('Upscales artwork URLs to high resolution', () {
+      const thumb50 = 'http://example.com/123/art-50x50.jpg';
       final hiRes50 = AudioDecryptor.formatHighResArtwork(thumb50);
-      expect(hiRes50, equals('https://c.saavncdn.com/123/art-500x500.jpg'));
+      expect(hiRes50, equals('https://example.com/123/art-500x500.jpg'));
 
-      const thumb150 = 'https://c.saavncdn.com/123/art-150x150.jpg';
+      const thumb150 = 'https://example.com/123/art-150x150.jpg';
       final hiRes150 = AudioDecryptor.formatHighResArtwork(thumb150);
-      expect(hiRes150, equals('https://c.saavncdn.com/123/art-500x500.jpg'));
+      expect(hiRes150, equals('https://example.com/123/art-500x500.jpg'));
 
       expect(AudioDecryptor.formatHighResArtwork(null), isNull);
     });
@@ -65,10 +31,23 @@ void main() {
       expect(cleaned2, equals('Kesariya'));
     });
 
+    test('Cleans artist biographies with tags, escape characters, and entities', () {
+      const rawBio = r'Arijit Singh is an Indian singer.<br>He was born in Jiaganj &amp; is known for \"Tum Hi Ho\".<p>Bio &copy; 2026</p>\n\n&#039;Legend&#039;';
+      final cleaned = AudioDecryptor.cleanBioText(rawBio);
+      expect(cleaned, contains('Arijit Singh is an Indian singer.'));
+      expect(cleaned, contains('Jiaganj & is known for "Tum Hi Ho".'));
+      expect(cleaned, contains("Bio © 2026"));
+      expect(cleaned, contains("'Legend'"));
+      expect(cleaned, isNot(contains('<br>')));
+      expect(cleaned, isNot(contains(r'\"')));
+      expect(cleaned, isNot(contains(r'\n')));
+    });
+
     test('Gracefully handles invalid or corrupted inputs', () {
-      expect(AudioDecryptor.decryptMediaUrl(null), isNull);
-      expect(AudioDecryptor.decryptMediaUrl(''), isNull);
-      expect(AudioDecryptor.decryptMediaUrl('invalid-base64-payload!'), isNull);
+      expect(AudioDecryptor.cleanBioText(null), equals(''));
+      expect(AudioDecryptor.cleanBioText(''), equals(''));
+      expect(AudioDecryptor.cleanTrackTitle(''), equals(''));
+      expect(AudioDecryptor.cleanHtmlEntities(''), equals(''));
     });
   });
 }

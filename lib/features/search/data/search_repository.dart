@@ -1,10 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:orbitune/core/utils/audio_decryptor.dart';
 import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/downloader/data/extractor_service.dart';
-import 'package:orbitune/features/search/data/jiosaavn_source.dart';
 import 'package:orbitune/features/search/data/search_cache_repository.dart';
 import 'package:orbitune/features/search/data/youtube_source.dart';
 import 'package:orbitune/features/search/domain/models/album_model.dart';
@@ -16,29 +14,26 @@ import 'package:orbitune/features/search/domain/models/search_result.dart';
 final searchRepositoryProvider = Provider<SearchRepository>((ref) {
   final cacheRepo = ref.watch(searchCacheRepositoryProvider);
   return SearchRepository(
-    jioSaavnSource: JioSaavnSource(),
     youTubeSource: YouTubeSource(),
     extractorService: ExtractorService.instance,
     cacheRepository: cacheRepo,
   );
 });
 
-/// Central multi-source search aggregator, deduplicator, and stream resolver
+/// Central YouTube and Extractor search aggregator and stream resolver
 class SearchRepository {
-  final JioSaavnSource jioSaavnSource;
   final YouTubeSource youTubeSource;
   final ExtractorService extractorService;
   final SearchCacheRepository cacheRepository;
 
   SearchRepository({
-    required this.jioSaavnSource,
     required this.youTubeSource,
     required this.extractorService,
     required this.cacheRepository,
   });
 
   /// Universal multi-source search
-  /// [source] can be: 'all', 'jiosaavn', 'youtube', 'extractor'
+  /// [source] can be: 'all', 'youtube', 'extractor'
   Future<SearchResult> search(
     String query, {
     String source = 'all',
@@ -66,19 +61,6 @@ class SearchRepository {
     }
 
     switch (source.toLowerCase()) {
-      case 'jiosaavn':
-        return jioSaavnSource.searchAll(trimmed, page: page, limit: limit);
-
-      case 'youtube':
-        final ytSongs = await youTubeSource.search(trimmed, limit: limit);
-        final ytPlaylists = await youTubeSource.searchPlaylists(trimmed, limit: 5);
-        return SearchResult(
-          query: trimmed,
-          source: 'youtube',
-          songs: ytSongs,
-          playlists: ytPlaylists,
-        );
-
       case 'extractor':
         final track = await extractorService.extractTrackInfo(trimmed);
         return SearchResult(
@@ -87,50 +69,48 @@ class SearchRepository {
           songs: track != null ? [track] : const [],
         );
 
+      case 'youtube':
       case 'all':
       default:
-        return _searchAggregated(trimmed, page: page, limit: limit);
+        return _searchYouTube(trimmed, limit: limit);
     }
   }
 
-  /// Aggregates search results from JioSaavn and YouTube concurrently, deduplicates, and ranks
-  Future<SearchResult> _searchAggregated(String query, {int page = 1, int limit = 25}) async {
+  /// Searches YouTube Music for songs, artists, albums, and playlists
+  Future<SearchResult> _searchYouTube(String query, {int limit = 25}) async {
     try {
       final futures = await Future.wait([
-        jioSaavnSource.searchAll(query, page: page, limit: limit),
         youTubeSource.search(query, limit: limit),
         youTubeSource.searchPlaylists(query, limit: 5),
+        youTubeSource.searchArtists(query, limit: 4),
+        youTubeSource.searchAlbums(query, limit: 4),
       ]);
 
-      final saavnResult = futures[0] as SearchResult;
-      final ytSongs = futures[1] as List<Track>;
-      final ytPlaylists = futures[2] as List<PlaylistModel>;
-
-      // Deduplicate songs (favor 320kbps JioSaavn versions, append unique YouTube tracks)
-      final mergedSongs = _deduplicateSongs(saavnResult.songs, ytSongs);
-
-      // Merge playlists
-      final mergedPlaylists = <PlaylistModel>[
-        ...saavnResult.playlists,
-        ...ytPlaylists,
-      ];
+      final songs = futures[0] as List<Track>;
+      final playlists = futures[1] as List<PlaylistModel>;
+      final artists = futures[2] as List<ArtistModel>;
+      final albums = futures[3] as List<AlbumModel>;
 
       return SearchResult(
         query: query,
-        source: 'all',
-        songs: mergedSongs,
-        albums: saavnResult.albums,
-        artists: saavnResult.artists,
-        playlists: mergedPlaylists,
+        source: 'youtube',
+        songs: songs,
+        albums: albums,
+        artists: artists,
+        playlists: playlists,
       );
     } catch (e) {
-      debugPrint('[SearchRepository] _searchAggregated error: $e');
-      // Fallback to JioSaavn if YouTube fails
-      return jioSaavnSource.searchAll(query, page: page, limit: limit);
+      debugPrint('[SearchRepository] _searchYouTube error: $e');
+      final songs = await youTubeSource.search(query, limit: limit);
+      return SearchResult(
+        query: query,
+        source: 'youtube',
+        songs: songs,
+      );
     }
   }
 
-  /// Resolves direct, playable audio stream URL for any [Track] based on its origin source
+  /// Resolves direct, playable audio stream URL for any [Track] in pure audio formats
   Future<String?> resolveStreamUrl(
     Track track, {
     AudioQuality quality = AudioQuality.high320k,
@@ -140,126 +120,115 @@ class SearchRepository {
       return track.localFilePath;
     }
 
-    // 2. JioSaavn source: Decrypt DES-ECB or format bitrate
-    if (track.source == 'jiosaavn') {
-      if (track.streamUrl != null && track.streamUrl!.isNotEmpty) {
-        return AudioDecryptor.formatQualityUrl(track.streamUrl!, quality);
-      }
-      final encryptedUrl = track.extra['encrypted_media_url']?.toString();
-      if (encryptedUrl != null && encryptedUrl.isNotEmpty) {
-        final decrypted = AudioDecryptor.decryptMediaUrl(encryptedUrl, quality: quality);
-        if (decrypted != null) return decrypted;
-      }
-      // Re-fetch song details if URL is missing
-      final fresh = await jioSaavnSource.getSongDetails(track.id);
-      if (fresh?.streamUrl != null) {
-        return AudioDecryptor.formatQualityUrl(fresh!.streamUrl!, quality);
-      }
-    }
-
-    // 3. YouTube source: Fetch stream manifest & extract high bitrate audio stream
-    if (track.source == 'youtube') {
-      return youTubeSource.getAudioStreamUrl(track.id, quality: quality);
-    }
-
-    // 4. Extractor source: Extract direct audio stream
+    // 2. Extractor source: Extract direct audio stream
     if (track.source == 'extractor') {
       final originalUrl = track.extra['originalUrl']?.toString() ?? track.streamUrl;
-      if (originalUrl != null) {
-        return extractorService.getBestAudioStreamUrl(originalUrl);
+      if (originalUrl != null && (originalUrl.startsWith('http://') || originalUrl.startsWith('https://'))) {
+        final stream = await extractorService.getBestAudioStreamUrl(originalUrl);
+        if (stream != null) return stream;
       }
+
+      // Fallback: Search YouTube
+      try {
+        final ytResults = await youTubeSource.search('${track.title} ${track.artist}', limit: 1);
+        if (ytResults.isNotEmpty) {
+          final stream = await youTubeSource.getAudioStreamUrl(ytResults.first.id, quality: quality);
+          if (stream != null) return stream;
+        }
+      } catch (_) {}
     }
 
-    return track.streamUrl;
+    // 3. YouTube source: Fetch audio-only stream via YouTube Explode
+    final ytStream = await youTubeSource.getAudioStreamUrl(track.id, quality: quality);
+    if (ytStream != null && ytStream.isNotEmpty) return ytStream;
+
+    // Fallback: Search YouTube by Title + Artist (alternate video match)
+    try {
+      final ytResults = await youTubeSource.search('${track.title} ${track.artist}', limit: 2);
+      for (final candidate in ytResults) {
+        if (candidate.id != track.id) {
+          final stream = await youTubeSource.getAudioStreamUrl(candidate.id, quality: quality);
+          if (stream != null && stream.isNotEmpty) return stream;
+        }
+      }
+    } catch (_) {}
+
+    if (track.streamUrl != null && (track.streamUrl!.startsWith('http://') || track.streamUrl!.startsWith('https://'))) {
+      return track.streamUrl;
+    }
+
+    return null;
   }
 
   /// Fetches details of a specific album
-  Future<AlbumModel?> getAlbumDetails(String albumId, {String source = 'jiosaavn'}) async {
-    if (source == 'jiosaavn') {
-      return jioSaavnSource.getAlbumDetails(albumId);
-    }
-    return null;
+  Future<AlbumModel?> getAlbumDetails(String albumId, {String source = 'youtube'}) async {
+    return youTubeSource.getAlbumDetails(albumId);
   }
 
   /// Fetches details of a specific artist
-  Future<ArtistModel?> getArtistDetails(String artistId, {String source = 'jiosaavn'}) async {
-    if (source == 'jiosaavn') {
-      return jioSaavnSource.getArtistDetails(artistId);
-    }
-    return null;
+  Future<ArtistModel?> getArtistDetails(String artistId, {String? artistName, String source = 'youtube'}) async {
+    return youTubeSource.getArtistDetails(artistId, artistName: artistName);
   }
 
-  /// Fetches details of a specific playlist
-  Future<PlaylistModel?> getPlaylistDetails(String playlistId, {String source = 'jiosaavn'}) async {
-    if (source == 'youtube') {
-      return youTubeSource.getPlaylistDetails(playlistId);
+  /// Fetches details of a specific playlist with fallback search
+  Future<PlaylistModel?> getPlaylistDetails(
+    String playlistId, {
+    String source = 'youtube',
+    String? playlistTitle,
+  }) async {
+    final playlist = await youTubeSource.getPlaylistDetails(playlistId);
+    if (playlist != null && playlist.songs.isNotEmpty) {
+      return playlist;
     }
-    return jioSaavnSource.getPlaylistDetails(playlistId);
+
+    // Fallback: If direct playlist is not found or empty, search by title
+    final query = playlistTitle ?? playlist?.title ?? playlistId;
+    if (query.isNotEmpty) {
+      try {
+        final searchResult = await search(query, limit: 10);
+        for (final pl in searchResult.playlists) {
+          if (pl.id != playlistId && pl.id.isNotEmpty) {
+            final details = await youTubeSource.getPlaylistDetails(pl.id);
+            if (details != null && details.songs.isNotEmpty) {
+              return details.copyWith(
+                title: playlistTitle ?? details.title,
+              );
+            }
+          }
+        }
+
+        // Secondary fallback: synthesize a playlist from top matching tracks
+        if (searchResult.songs.isNotEmpty) {
+          return PlaylistModel(
+            id: playlistId,
+            title: playlistTitle ?? query,
+            description: playlist?.description ?? 'Curated selection of popular tracks.',
+            artworkUrl: playlist?.artworkUrl ?? searchResult.songs.first.artworkUrl,
+            highResArtworkUrl: playlist?.highResArtworkUrl ?? searchResult.songs.first.highResArtworkUrl,
+            trackCount: searchResult.songs.length,
+            songs: searchResult.songs,
+            source: 'youtube',
+          );
+        }
+      } catch (e) {
+        debugPrint('[SearchRepository] getPlaylistDetails fallback search error: $e');
+      }
+    }
+
+    return playlist;
   }
 
   /// Fetches song recommendations / Radio for [track]
   Future<List<Track>> getRecommendations(Track track) async {
-    if (track.source == 'youtube') {
-      return youTubeSource.getRelatedSongs(track.id);
-    }
-    final recos = await jioSaavnSource.getSongRecommendations(track.id);
+    final recos = await youTubeSource.getRelatedSongs(track.id);
     if (recos.isNotEmpty) return recos;
 
     // Fallback: search by artist
-    return jioSaavnSource.searchSongs(track.artist, limit: 10);
-  }
-
-  /// Fetches trending charts & discovery sections
-  Future<Map<String, dynamic>> getTrending({String language = 'hindi,english'}) async {
-    return jioSaavnSource.getTrendingModules(language: language);
-  }
-
-  /// Smart song deduplication algorithm
-  List<Track> _deduplicateSongs(List<Track> primaryTracks, List<Track> secondaryTracks) {
-    final Set<String> seenSignatures = {};
-    final List<Track> result = [];
-
-    // Add primary tracks (JioSaavn 320kbps) first
-    for (final track in primaryTracks) {
-      final sig = _generateSongSignature(track.title, track.artist);
-      if (!seenSignatures.contains(sig)) {
-        seenSignatures.add(sig);
-        result.add(track);
-      }
-    }
-
-    // Add secondary tracks (YouTube) if not duplicate
-    for (final track in secondaryTracks) {
-      final sig = _generateSongSignature(track.title, track.artist);
-      if (!seenSignatures.contains(sig)) {
-        seenSignatures.add(sig);
-        result.add(track);
-      }
-    }
-
-    return result;
-  }
-
-  String _generateSongSignature(String title, String artist) {
-    final cleanT = _simplifyString(AudioDecryptor.cleanTrackTitle(title));
-    final cleanA = _simplifyString(artist);
-    // Take first 2 words of title and first word of artist for robust fuzzy matching
-    final tParts = cleanT.split(' ').take(3).join('');
-    final aParts = cleanA.split(' ').take(1).join('');
-    return '$tParts|$aParts';
-  }
-
-  String _simplifyString(String input) {
-    return input
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^\w\s]'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
+    return youTubeSource.search(track.artist, limit: 10);
   }
 
   /// Closes all underlying source clients
   void close() {
-    jioSaavnSource.close();
     youTubeSource.close();
   }
 }

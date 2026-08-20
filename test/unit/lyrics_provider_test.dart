@@ -8,7 +8,6 @@ import 'package:orbitune/features/lyrics/data/lyrics_cache_repository.dart';
 import 'package:orbitune/features/lyrics/data/lyrics_repository.dart';
 import 'package:orbitune/features/lyrics/domain/models/lyric_line.dart';
 import 'package:orbitune/features/lyrics/presentation/providers/lyrics_provider.dart';
-import 'package:orbitune/features/search/data/jiosaavn_source.dart';
 import '../helpers/mock_audio_platform.dart';
 
 class MockLyricsRepository extends LyricsRepository {
@@ -17,7 +16,6 @@ class MockLyricsRepository extends LyricsRepository {
 
   MockLyricsRepository({
     required super.cacheRepository,
-    required super.jioSaavnSource,
     required this.sampleSyncedLines,
     this.samplePlainLyrics,
   });
@@ -83,7 +81,6 @@ void main() {
     test('LyricsNotifier loads synced lyrics and initializes state', () async {
       final mockRepo = MockLyricsRepository(
         cacheRepository: cacheRepo,
-        jioSaavnSource: JioSaavnSource(),
         sampleSyncedLines: sampleLyrics,
       );
 
@@ -107,7 +104,6 @@ void main() {
     test('LyricsNotifier updates font size and auto scroll controls', () {
       final mockRepo = MockLyricsRepository(
         cacheRepository: cacheRepo,
-        jioSaavnSource: JioSaavnSource(),
         sampleSyncedLines: sampleLyrics,
       );
 

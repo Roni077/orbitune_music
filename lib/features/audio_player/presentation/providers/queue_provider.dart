@@ -7,6 +7,7 @@ import 'package:orbitune/core/services/hive_service.dart';
 import 'package:orbitune/features/audio_player/domain/models/playback_mode.dart';
 import 'package:orbitune/features/audio_player/domain/models/playback_state.dart';
 import 'package:orbitune/features/audio_player/domain/models/queue_item.dart';
+import 'package:orbitune/features/audio_player/data/player_repository.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/player_provider.dart';
 import 'package:orbitune/features/library/data/library_repository.dart';
@@ -254,6 +255,12 @@ class QueueNotifier extends StateNotifier<QueueState> {
 
     final activeTrack = queueItems[safeInitialIndex].track;
     await _ref.read(playerProvider.notifier).playTrack(activeTrack);
+
+    // Predictive preloading for upcoming tracks (Lookahead = 3)
+    _ref.read(playerRepositoryProvider).preloadUpcomingTracks(
+      queueItems.map((i) => i.track).toList(),
+      safeInitialIndex,
+    );
 
     // Pre-fetch autoplay if near queue end
     if (state.upcomingItems.length <= 1 && state.isAutoplayEnabled) {
@@ -561,6 +568,12 @@ class QueueNotifier extends StateNotifier<QueueState> {
 
     final targetTrack = state.items[index].track;
     await _ref.read(playerProvider.notifier).playTrack(targetTrack);
+
+    // Predictive preloading for upcoming tracks (Lookahead = 3)
+    _ref.read(playerRepositoryProvider).preloadUpcomingTracks(
+      state.items.map((i) => i.track).toList(),
+      index,
+    );
 
     // Pre-fetch autoplay if near queue end
     if (state.upcomingItems.length <= 1 && state.isAutoplayEnabled) {

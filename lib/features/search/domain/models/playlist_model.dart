@@ -26,7 +26,7 @@ class PlaylistModel {
     this.trackCount = 0,
     this.author,
     this.songs = const [],
-    this.source = 'jiosaavn',
+    this.source = 'youtube',
     this.isFeatured = false,
     this.language,
   });
@@ -95,7 +95,7 @@ class PlaylistModel {
               .map((item) => Track.fromMap(item as Map<dynamic, dynamic>))
               .toList()
           : const [],
-      source: map['source']?.toString() ?? 'jiosaavn',
+      source: map['source']?.toString() ?? 'youtube',
       isFeatured: map['isFeatured'] == true,
       language: map['language']?.toString(),
     );

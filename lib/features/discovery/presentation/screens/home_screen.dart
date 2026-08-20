@@ -18,6 +18,7 @@ import 'package:orbitune/features/discovery/presentation/widgets/greeting_header
 import 'package:orbitune/features/discovery/presentation/widgets/quick_picks_grid.dart';
 import 'package:orbitune/features/discovery/presentation/widgets/song_card_horizontal.dart';
 import 'package:orbitune/features/discovery/presentation/widgets/trending_chips.dart';
+import 'package:orbitune/features/search/data/search_repository.dart';
 import 'package:orbitune/features/search/domain/models/album_model.dart';
 import 'package:orbitune/features/search/domain/models/playlist_model.dart';
 import 'package:orbitune/features/search/presentation/screens/album_detail_screen.dart';
@@ -374,30 +375,110 @@ class HomeScreen extends ConsumerWidget {
     }
   }
 
-  void _handleChartTap(WidgetRef ref, ChartPlaylist chart) {
+  Future<void> _handleChartTap(WidgetRef ref, ChartPlaylist chart) async {
     if (chart.songs.isNotEmpty) {
-      ref.read(queueProvider.notifier).playPlaylist(
+      await ref.read(queueProvider.notifier).playPlaylist(
             chart.songs,
             queueTitle: chart.title,
           );
+      return;
+    }
+
+    try {
+      final searchRepo = ref.read(searchRepositoryProvider);
+      final details = await searchRepo.getPlaylistDetails(
+        chart.id,
+        source: chart.source,
+        playlistTitle: chart.title,
+      );
+      if (details != null && details.songs.isNotEmpty) {
+        await ref.read(queueProvider.notifier).playPlaylist(
+              details.songs,
+              queueTitle: chart.title,
+            );
+        return;
+      }
+
+      // Fallback: search songs matching the chart title
+      final searchResult = await searchRepo.search(chart.title, limit: 20);
+      if (searchResult.songs.isNotEmpty) {
+        await ref.read(queueProvider.notifier).playPlaylist(
+              searchResult.songs,
+              queueTitle: chart.title,
+            );
+      }
+    } catch (e) {
+      debugPrint('[HomeScreen] _handleChartTap play error: $e');
     }
   }
 
-  void _handlePlaylistTap(WidgetRef ref, PlaylistModel playlist) {
+  Future<void> _handlePlaylistTap(WidgetRef ref, PlaylistModel playlist) async {
     if (playlist.songs.isNotEmpty) {
-      ref.read(queueProvider.notifier).playPlaylist(
+      await ref.read(queueProvider.notifier).playPlaylist(
             playlist.songs,
             queueTitle: playlist.title,
           );
+      return;
+    }
+
+    try {
+      final searchRepo = ref.read(searchRepositoryProvider);
+      final details = await searchRepo.getPlaylistDetails(
+        playlist.id,
+        source: playlist.source,
+        playlistTitle: playlist.title,
+      );
+      if (details != null && details.songs.isNotEmpty) {
+        await ref.read(queueProvider.notifier).playPlaylist(
+              details.songs,
+              queueTitle: playlist.title,
+            );
+        return;
+      }
+
+      // Fallback: search songs matching the playlist title
+      final searchResult = await searchRepo.search(playlist.title, limit: 20);
+      if (searchResult.songs.isNotEmpty) {
+        await ref.read(queueProvider.notifier).playPlaylist(
+              searchResult.songs,
+              queueTitle: playlist.title,
+            );
+      }
+    } catch (e) {
+      debugPrint('[HomeScreen] _handlePlaylistTap play error: $e');
     }
   }
 
-  void _handleAlbumTap(WidgetRef ref, AlbumModel album) {
+  Future<void> _handleAlbumTap(WidgetRef ref, AlbumModel album) async {
     if (album.songs.isNotEmpty) {
-      ref.read(queueProvider.notifier).playPlaylist(
+      await ref.read(queueProvider.notifier).playPlaylist(
             album.songs,
             queueTitle: album.title,
           );
+      return;
+    }
+
+    try {
+      final searchRepo = ref.read(searchRepositoryProvider);
+      final details = await searchRepo.getAlbumDetails(album.id, source: album.source);
+      if (details != null && details.songs.isNotEmpty) {
+        await ref.read(queueProvider.notifier).playPlaylist(
+              details.songs,
+              queueTitle: album.title,
+            );
+        return;
+      }
+
+      // Fallback: search songs matching the album title
+      final searchResult = await searchRepo.search(album.title, limit: 15);
+      if (searchResult.songs.isNotEmpty) {
+        await ref.read(queueProvider.notifier).playPlaylist(
+              searchResult.songs,
+              queueTitle: album.title,
+            );
+      }
+    } catch (e) {
+      debugPrint('[HomeScreen] _handleAlbumTap play error: $e');
     }
   }
 }

@@ -199,13 +199,13 @@ class TrackTile extends ConsumerWidget {
 
   Widget _buildSourceBadge(String source) {
     switch (source.toLowerCase()) {
-      case 'youtube':
-        return const AudioBadge(type: AudioBadgeType.youtube);
       case 'extractor':
         return const AudioBadge(type: AudioBadgeType.hiRes, customLabel: 'EXTRACTOR');
-      case 'jiosaavn':
+      case 'local':
+        return const AudioBadge(type: AudioBadgeType.offline);
+      case 'youtube':
       default:
-        return const AudioBadge(type: AudioBadgeType.highQuality320);
+        return const AudioBadge(type: AudioBadgeType.youtube);
     }
   }
 

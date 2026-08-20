@@ -7,7 +7,7 @@ import 'package:orbitune/core/widgets/expressive_card.dart';
 import 'package:orbitune/features/audio_player/domain/models/playback_mode.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/player_provider.dart';
 
-/// Fullscreen player control bar featuring playback spring buttons, skips, seeks, shuffle and loop modes
+/// Fullscreen player control bar featuring normalized playback buttons, skips, seeks, shuffle and loop modes
 class PlayerControls extends ConsumerWidget {
   final Color? primaryColor;
 
@@ -34,7 +34,7 @@ class PlayerControls extends ConsumerWidget {
         IconButton(
           icon: Icon(
             LucideIcons.shuffle,
-            size: 22,
+            size: 20,
             color: playbackMode.isShuffle
                 ? primary
                 : AppColors.textMuted,
@@ -53,7 +53,7 @@ class PlayerControls extends ConsumerWidget {
         IconButton(
           icon: const Icon(
             LucideIcons.skipBack,
-            size: 28,
+            size: 26,
             color: AppColors.textPrimary,
           ),
           onPressed: () {
@@ -67,7 +67,7 @@ class PlayerControls extends ConsumerWidget {
         IconButton(
           icon: const Icon(
             LucideIcons.rotateCcw,
-            size: 20,
+            size: 19,
             color: AppColors.textSecondary,
           ),
           onPressed: () {
@@ -77,41 +77,41 @@ class PlayerControls extends ConsumerWidget {
           tooltip: 'Rewind 10s',
         ),
 
-        // Expressive Morphing Play / Pause Button
+        // Expressive Morphing Play / Pause Button (Standard 58x58 dimension)
         ExpressiveCard(
           onTap: () {
             HapticFeedback.mediumImpact();
             playerNotifier.togglePlayPause();
           },
-          borderRadius: BorderRadius.circular(36),
+          borderRadius: BorderRadius.circular(29),
           child: Container(
-            width: 72,
-            height: 72,
+            width: 58,
+            height: 58,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: primary,
               boxShadow: [
                 BoxShadow(
-                  color: primary.withValues(alpha: 0.45),
-                  blurRadius: 20,
-                  spreadRadius: 1,
-                  offset: const Offset(0, 4),
+                  color: primary.withValues(alpha: 0.35),
+                  blurRadius: 12,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
             child: Center(
               child: isBuffering
                   ? const SizedBox(
-                      width: 28,
-                      height: 28,
+                      width: 24,
+                      height: 24,
                       child: CircularProgressIndicator(
-                        strokeWidth: 3.0,
+                        strokeWidth: 2.5,
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                       ),
                     )
                   : Icon(
                       isPlaying ? LucideIcons.pause : LucideIcons.play,
-                      size: 32,
+                      size: 28,
                       color: Colors.black,
                     ),
             ),
@@ -122,7 +122,7 @@ class PlayerControls extends ConsumerWidget {
         IconButton(
           icon: const Icon(
             LucideIcons.rotateCw,
-            size: 20,
+            size: 19,
             color: AppColors.textSecondary,
           ),
           onPressed: () {
@@ -136,7 +136,7 @@ class PlayerControls extends ConsumerWidget {
         IconButton(
           icon: const Icon(
             LucideIcons.skipForward,
-            size: 28,
+            size: 26,
             color: AppColors.textPrimary,
           ),
           onPressed: () {
@@ -164,20 +164,20 @@ class PlayerControls extends ConsumerWidget {
       case PlaybackMode.repeatOne:
         return Icon(
           LucideIcons.repeat1,
-          size: 22,
+          size: 20,
           color: activeColor,
         );
       case PlaybackMode.repeatAll:
         return Icon(
           LucideIcons.repeat,
-          size: 22,
+          size: 20,
           color: activeColor,
         );
       case PlaybackMode.off:
       case PlaybackMode.shuffle:
         return const Icon(
           LucideIcons.repeat,
-          size: 22,
+          size: 20,
           color: AppColors.textMuted,
         );
     }

@@ -8,9 +8,8 @@ import 'package:orbitune/features/search/domain/models/search_result.dart';
 /// Available search streaming sources
 enum SearchSourceFilter {
   all('all', 'All Sources'),
-  jioSaavn('jiosaavn', 'JioSaavn 320k'),
   youTube('youtube', 'YouTube Music'),
-  extractor('extractor', 'Extractor Engine');
+  extractor('extractor', 'Media Extractor');
 
   final String key;
   final String label;
@@ -146,7 +145,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
     await _executeSearch(trimmed, state.sourceFilter);
   }
 
-  /// Switches source filter (All / JioSaavn / YouTube / Extractor)
+  /// Switches source filter (All / YouTube Music / Extractor)
   void setSourceFilter(SearchSourceFilter filter) {
     if (state.sourceFilter == filter) return;
 

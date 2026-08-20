@@ -28,7 +28,7 @@ class AlbumModel {
     this.releaseYear,
     this.totalTracks = 0,
     this.songs = const [],
-    this.source = 'jiosaavn',
+    this.source = 'youtube',
     this.description,
     this.language,
     this.isFavorite = false,
@@ -105,7 +105,7 @@ class AlbumModel {
               .map((item) => Track.fromMap(item as Map<dynamic, dynamic>))
               .toList()
           : const [],
-      source: map['source']?.toString() ?? 'jiosaavn',
+      source: map['source']?.toString() ?? 'youtube',
       description: map['description']?.toString(),
       language: map['language']?.toString(),
       isFavorite: map['isFavorite'] == true,

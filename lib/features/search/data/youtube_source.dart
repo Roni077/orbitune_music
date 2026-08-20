@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:orbitune/core/utils/audio_decryptor.dart';
 import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
+import 'package:orbitune/features/search/domain/models/album_model.dart';
+import 'package:orbitune/features/search/domain/models/artist_model.dart';
 import 'package:orbitune/features/search/domain/models/playlist_model.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
@@ -30,6 +32,91 @@ class YouTubeSource {
       return tracks;
     } catch (e) {
       debugPrint('[YouTubeSource] search error: $e');
+      return const [];
+    }
+  }
+
+  /// Searches for artists / channels matching [query]
+  Future<List<ArtistModel>> searchArtists(String query, {int limit = 10}) async {
+    if (query.trim().isEmpty) return const [];
+
+    try {
+      final searchResults = await _client.search.searchContent(
+        query.trim(),
+        filter: TypeFilters.channel,
+      );
+
+      final List<ArtistModel> artists = [];
+
+      for (final item in searchResults) {
+        if (artists.length >= limit) break;
+        if (item is SearchChannel) {
+          artists.add(ArtistModel(
+            id: item.id.value,
+            name: AudioDecryptor.cleanHtmlEntities(item.name),
+            avatarUrl: item.thumbnails.isNotEmpty ? item.thumbnails.last.url.toString() : null,
+            bannerUrl: item.thumbnails.isNotEmpty ? item.thumbnails.last.url.toString() : null,
+            bio: AudioDecryptor.cleanBioText(item.description),
+            fansCount: item.videoCount,
+            source: 'youtube',
+          ));
+        }
+      }
+
+      // Fallback: If channel search returned nothing, synthesize artist from top search result
+      if (artists.isEmpty) {
+        final songs = await search(query, limit: 3);
+        if (songs.isNotEmpty) {
+          final top = songs.first;
+          artists.add(ArtistModel(
+            id: 'yt_artist_${query.toLowerCase().replaceAll(RegExp(r'\s+'), '_')}',
+            name: top.artist.isNotEmpty ? top.artist : query,
+            avatarUrl: top.artworkUrl,
+            bannerUrl: top.highResArtworkUrl,
+            bio: 'Popular music artist on YouTube Music.',
+            topTracks: songs,
+            source: 'youtube',
+          ));
+        }
+      }
+
+      return artists;
+    } catch (e) {
+      debugPrint('[YouTubeSource] searchArtists error: $e');
+      return const [];
+    }
+  }
+
+  /// Searches for albums matching [query]
+  Future<List<AlbumModel>> searchAlbums(String query, {int limit = 10}) async {
+    if (query.trim().isEmpty) return const [];
+
+    try {
+      final searchResults = await _client.search.searchContent(
+        '$query album',
+        filter: TypeFilters.playlist,
+      );
+
+      final List<AlbumModel> albums = [];
+
+      for (final item in searchResults) {
+        if (albums.length >= limit) break;
+        if (item is SearchPlaylist) {
+          albums.add(AlbumModel(
+            id: item.id.value,
+            title: AudioDecryptor.cleanHtmlEntities(item.title),
+            artist: 'YouTube Music',
+            artworkUrl: item.thumbnails.isNotEmpty ? item.thumbnails.first.url.toString() : null,
+            highResArtworkUrl: item.thumbnails.isNotEmpty ? item.thumbnails.last.url.toString() : null,
+            totalTracks: item.videoCount,
+            source: 'youtube',
+          ));
+        }
+      }
+
+      return albums;
+    } catch (e) {
+      debugPrint('[YouTubeSource] searchAlbums error: $e');
       return const [];
     }
   }
@@ -68,6 +155,37 @@ class YouTubeSource {
     }
   }
 
+  /// Fetches StreamManifest using non-restricted clients (Android VR, iOS, Android Music)
+  /// as primary strategy to avoid YouTube's Android PoToken enforcement and ensure fast extraction.
+  /// Uses a 12-second timeout to accommodate real-world mobile network latency and mid-range devices.
+  Future<StreamManifest> _getResilientManifest(String videoId) async {
+    try {
+      return await _client.videos.streamsClient.getManifest(
+        VideoId(videoId),
+        ytClients: [
+          YoutubeApiClient.androidVr,
+          YoutubeApiClient.ios,
+          YoutubeApiClient.androidMusic,
+        ],
+      ).timeout(const Duration(seconds: 12));
+    } catch (e) {
+      debugPrint('[YouTubeSource] Multi-client getManifest failed for $videoId: $e. Retrying with default client...');
+      return await _client.videos.streamsClient
+          .getManifest(VideoId(videoId))
+          .timeout(const Duration(seconds: 12));
+    }
+  }
+
+  /// Filters out broken/unplayable OTF streams (e.g. itags 599 & 600)
+  List<AudioStreamInfo> _filterStableAudioStreams(Iterable<AudioStreamInfo> streams) {
+    return streams.where((s) {
+      final itag = s.tag;
+      // Exclude itag 599 (32k AAC live/OTF) and 600 (32k WebM live/OTF) which return 403 on ExoPlayer
+      if (itag == 599 || itag == 600) return false;
+      return true;
+    }).toList();
+  }
+
   /// Fetches the direct high-bitrate audio stream URL for a given YouTube [videoId]
   Future<String?> getAudioStreamUrl(
     String videoId, {
@@ -80,36 +198,87 @@ class YouTubeSource {
     }
 
     try {
-      final manifest = await _client.videos.streamsClient.getManifest(VideoId(videoId));
-      final audioStreams = manifest.audioOnly;
+      final manifest = await _getResilientManifest(videoId);
 
-      if (audioStreams.isEmpty) {
-        // Fallback to muxed streams if audio-only is unavailable
-        final muxed = manifest.muxed.withHighestBitrate();
-        return muxed.url.toString();
-      }
+      // 1. Prioritize pure Audio-only streams (Opus/AAC - pure audio decoder, no video decoder allocation)
+      final stableAudio = _filterStableAudioStreams(manifest.audioOnly);
+      if (stableAudio.isNotEmpty) {
+        // manifest.audioOnly.sortByBitrate() returns descending order (highest first)
+        final sorted = stableAudio.sortByBitrate().toList();
+        final AudioStreamInfo selectedAudio;
 
-      AudioStreamInfo bestAudio;
-      if (quality == AudioQuality.low96k) {
-        bestAudio = audioStreams.reduce(
-          (a, b) => a.bitrate.bitsPerSecond < b.bitrate.bitsPerSecond ? a : b,
+        if (quality == AudioQuality.low96k) {
+          // Select standard low-data stable stream (e.g. 48-64k AAC/Opus) without using broken 32k OTF streams
+          selectedAudio = sorted.last;
+        } else {
+          // Default: highest bitrate stable audio stream (itag 251 Opus ~160k or itag 140 AAC ~128k)
+          selectedAudio = sorted.first;
+        }
+
+        final streamUrl = selectedAudio.url.toString();
+        _streamUrlCache[videoId] = (
+          url: streamUrl,
+          expiresAt: DateTime.now().add(const Duration(hours: 4)),
         );
-      } else {
-        bestAudio = audioStreams.withHighestBitrate();
+        return streamUrl;
       }
 
-      final streamUrl = bestAudio.url.toString();
+      // 2. Fallback to unthrottled Muxed MP4 if audioOnly is empty
+      if (manifest.muxed.isNotEmpty) {
+        final muxed = manifest.muxed.sortByBitrate().toList();
+        final streamUrl = muxed.first.url.toString();
+        _streamUrlCache[videoId] = (
+          url: streamUrl,
+          expiresAt: DateTime.now().add(const Duration(hours: 4)),
+        );
+        return streamUrl;
+      }
 
-      // Cache for 4 hours
-      _streamUrlCache[videoId] = (
-        url: streamUrl,
-        expiresAt: DateTime.now().add(const Duration(hours: 4)),
-      );
-
-      return streamUrl;
+      return null;
     } catch (e) {
       debugPrint('[YouTubeSource] getAudioStreamUrl error for $videoId: $e');
       return null;
+    }
+  }
+
+  /// Fetches candidate audio stream URLs (pure audio first from highest to lowest, then muxed)
+  Future<List<String>> getAudioStreamCandidates(
+    String videoId, {
+    AudioQuality quality = AudioQuality.high320k,
+  }) async {
+    try {
+      final manifest = await _getResilientManifest(videoId);
+      final List<String> candidates = [];
+
+      // 1. Filter out broken OTF streams (599, 600) and sort descending (highest to lowest bitrate)
+      final stableAudio = _filterStableAudioStreams(manifest.audioOnly);
+      final sortedAudio = stableAudio.sortByBitrate().toList();
+
+      if (sortedAudio.isNotEmpty) {
+        // Candidate 0: Highest bitrate audio (e.g. itag 251 Opus ~160k or itag 140 AAC ~128k)
+        candidates.add(sortedAudio.first.url.toString());
+
+        // Candidate 1: Next best audio-only stream (e.g. itag 140 / itag 250 / itag 139)
+        if (sortedAudio.length > 1) {
+          candidates.add(sortedAudio[1].url.toString());
+        }
+
+        // Candidate 2: Additional audio fallback if available
+        if (sortedAudio.length > 2) {
+          candidates.add(sortedAudio[2].url.toString());
+        }
+      }
+
+      // 2. Unthrottled Muxed streams as secondary fallback if pure audio fails
+      final sortedMuxed = manifest.muxed.sortByBitrate().toList();
+      if (sortedMuxed.isNotEmpty) {
+        candidates.add(sortedMuxed.first.url.toString());
+      }
+
+      return candidates;
+    } catch (e) {
+      debugPrint('[YouTubeSource] getAudioStreamCandidates error for $videoId: $e');
+      return const [];
     }
   }
 
@@ -151,6 +320,89 @@ class YouTubeSource {
     }
   }
 
+  /// Fetches artist details, top songs, and albums
+  Future<ArtistModel?> getArtistDetails(String artistId, {String? artistName}) async {
+    final queryName = artistName ?? artistId;
+    try {
+      if (artistId.startsWith('UC') && artistId.length > 20) {
+        final channel = await _client.channels.get(ChannelId(artistId));
+        final List<Track> uploads = [];
+        await for (final video in _client.channels.getUploads(ChannelId(artistId)).take(25)) {
+          uploads.add(_convertVideoToTrack(video));
+        }
+
+        final playlists = await searchPlaylists('$queryName album', limit: 6);
+        final albums = playlists.map((p) => AlbumModel(
+          id: p.id,
+          title: p.title,
+          artist: channel.title,
+          artworkUrl: p.artworkUrl,
+          highResArtworkUrl: p.highResArtworkUrl,
+          totalTracks: p.trackCount,
+          source: 'youtube',
+        )).toList();
+
+        return ArtistModel(
+          id: channel.id.value,
+          name: AudioDecryptor.cleanHtmlEntities(channel.title),
+          avatarUrl: channel.logoUrl,
+          bannerUrl: channel.bannerUrl,
+          bio: 'Verified Artist on YouTube Music',
+          fansCount: uploads.length * 1000,
+          topTracks: uploads,
+          albums: albums,
+          source: 'youtube',
+        );
+      }
+
+      // Search-based resolution for artist by name
+      final topSongs = await search(queryName, limit: 20);
+      final albums = await searchAlbums(queryName, limit: 6);
+
+      if (topSongs.isNotEmpty) {
+        final firstSong = topSongs.first;
+        return ArtistModel(
+          id: artistId,
+          name: queryName,
+          avatarUrl: firstSong.artworkUrl,
+          bannerUrl: firstSong.highResArtworkUrl,
+          bio: 'Top trending tracks and releases on YouTube Music.',
+          fansCount: 1500000,
+          topTracks: topSongs,
+          albums: albums,
+          source: 'youtube',
+        );
+      }
+    } catch (e) {
+      debugPrint('[YouTubeSource] getArtistDetails error: $e');
+    }
+
+    return null;
+  }
+
+  /// Fetches album details along with tracklist
+  Future<AlbumModel?> getAlbumDetails(String albumId) async {
+    try {
+      final playlist = await getPlaylistDetails(albumId);
+      if (playlist != null) {
+        return AlbumModel(
+          id: playlist.id,
+          title: playlist.title,
+          artist: playlist.author ?? 'YouTube Music',
+          artworkUrl: playlist.artworkUrl,
+          highResArtworkUrl: playlist.highResArtworkUrl,
+          totalTracks: playlist.trackCount,
+          songs: playlist.songs,
+          description: playlist.description,
+          source: 'youtube',
+        );
+      }
+    } catch (e) {
+      debugPrint('[YouTubeSource] getAlbumDetails error: $e');
+    }
+    return null;
+  }
+
   /// Fetches recommended / related videos for a given [videoId]
   Future<List<Track>> getRelatedSongs(String videoId, {int limit = 15}) async {
     try {
@@ -177,9 +429,15 @@ class YouTubeSource {
     final artist = AudioDecryptor.cleanHtmlEntities(video.author);
     final duration = video.duration ?? Duration.zero;
 
-    // Highest available thumbnail
-    final artwork = video.thumbnails.highResUrl;
-    final maxRes = video.thumbnails.maxResUrl;
+    // Reliable high-res thumbnails (standard/high res are guaranteed to exist on YouTube CDN)
+    final artwork = video.thumbnails.highResUrl.isNotEmpty
+        ? video.thumbnails.highResUrl
+        : (video.thumbnails.mediumResUrl.isNotEmpty
+            ? video.thumbnails.mediumResUrl
+            : video.thumbnails.standardResUrl);
+    final highResArtwork = video.thumbnails.standardResUrl.isNotEmpty
+        ? video.thumbnails.standardResUrl
+        : artwork;
 
     return Track(
       id: video.id.value,
@@ -188,7 +446,7 @@ class YouTubeSource {
       album: 'YouTube Music',
       duration: duration,
       artworkUrl: artwork,
-      highResArtworkUrl: maxRes.isNotEmpty ? maxRes : artwork,
+      highResArtworkUrl: highResArtwork,
       source: 'youtube',
       bitrate: 160, // Standard Opus/M4A max streaming quality on YouTube
       audioQuality: AudioQuality.medium160k,

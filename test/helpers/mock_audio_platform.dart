@@ -22,6 +22,7 @@ class MockJustAudioPlatform extends JustAudioPlatform {
 
 class MockAudioPlayerPlatform extends AudioPlayerPlatform {
   final _eventController = StreamController<PlaybackEventMessage>.broadcast();
+  int _currentIndex = 0;
 
   MockAudioPlayerPlatform(super.id);
 
@@ -31,7 +32,7 @@ class MockAudioPlayerPlatform extends AudioPlayerPlatform {
 
   @override
   Future<LoadResponse> load(LoadRequest request) async {
-    final idx = request.initialIndex ?? 0;
+    _currentIndex = request.initialIndex ?? 0;
     _eventController.add(PlaybackEventMessage(
       processingState: ProcessingStateMessage.ready,
       updatePosition: request.initialPosition ?? Duration.zero,
@@ -39,7 +40,7 @@ class MockAudioPlayerPlatform extends AudioPlayerPlatform {
       bufferedPosition: const Duration(seconds: 90),
       duration: const Duration(seconds: 180),
       icyMetadata: null,
-      currentIndex: idx,
+      currentIndex: _currentIndex,
       androidAudioSessionId: null,
     ));
     return LoadResponse(duration: const Duration(seconds: 180));
@@ -54,7 +55,7 @@ class MockAudioPlayerPlatform extends AudioPlayerPlatform {
       bufferedPosition: const Duration(seconds: 90),
       duration: const Duration(seconds: 180),
       icyMetadata: null,
-      currentIndex: null,
+      currentIndex: _currentIndex,
       androidAudioSessionId: null,
     ));
     return PlayResponse();

@@ -14,7 +14,7 @@ class Track {
   final String? streamUrl;
   final String? downloadUrl;
   final String? localFilePath;
-  final String source; // 'jiosaavn', 'youtube', 'extractor', 'local'
+  final String source; // 'youtube', 'extractor', 'local'
   final int bitrate; // in kbps (e.g. 320, 160, 96)
   final AudioQuality audioQuality;
   final String? releaseDate;
@@ -39,8 +39,8 @@ class Track {
     this.streamUrl,
     this.downloadUrl,
     this.localFilePath,
-    this.source = 'jiosaavn',
-    this.bitrate = 320,
+    this.source = 'youtube',
+    this.bitrate = 160,
     this.audioQuality = AudioQuality.high320k,
     this.releaseDate,
     this.genre,
@@ -61,6 +61,9 @@ class Track {
   /// Whether this track is downloaded and playable offline
   bool get isOfflineAvailable =>
       localFilePath != null && localFilePath!.trim().isNotEmpty;
+
+  /// Whether this track is a local or downloaded file
+  bool get isLocal => source == 'local' || isOfflineAvailable;
 
   /// Converts track to JustAudioBackground MediaItem for lockscreen/notification controls
   MediaItem toMediaItem() {
@@ -175,8 +178,8 @@ class Track {
       streamUrl: map['streamUrl']?.toString(),
       downloadUrl: map['downloadUrl']?.toString(),
       localFilePath: map['localFilePath']?.toString(),
-      source: map['source']?.toString() ?? 'jiosaavn',
-      bitrate: (map['bitrate'] as num?)?.toInt() ?? 320,
+      source: map['source']?.toString() ?? 'youtube',
+      bitrate: (map['bitrate'] as num?)?.toInt() ?? 160,
       audioQuality: AudioQuality.fromString(map['audioQuality']?.toString()),
       releaseDate: map['releaseDate']?.toString(),
       genre: map['genre']?.toString(),

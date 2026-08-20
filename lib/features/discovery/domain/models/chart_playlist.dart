@@ -27,7 +27,7 @@ class ChartPlaylist {
     this.category = 'Chart',
     this.songs = const [],
     this.colorHex,
-    this.source = 'jiosaavn',
+    this.source = 'youtube',
   });
 
   ChartPlaylist copyWith({
@@ -91,6 +91,6 @@ class ChartPlaylist {
                 .toList()
             : const [],
         colorHex: map['colorHex']?.toString(),
-        source: map['source']?.toString() ?? 'jiosaavn',
+        source: map['source']?.toString() ?? 'youtube',
       );
 }

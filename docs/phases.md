@@ -1,6 +1,6 @@
 # Orbitune - Complete Development Phases & Master Feature Checklist
 
-This document contains the complete execution roadmap and the comprehensive master checklist for **Orbitune — Modern Online Music Player**, built with **Material 3 Expressive UI/UX** (`material_3_expressive: ^1.0.8`), **Extractor Media Engine** (`extractor: ^1.0.0`), **YouTube Explode**, and **JioSaavn 320kbps Decryption**.
+This document contains the complete execution roadmap and the comprehensive master checklist for **Orbitune — Modern Online Music Player**, built with **Material 3 Expressive UI/UX** (`material_3_expressive: ^1.0.8`), **Extractor Media Downloader** (`extractor: ^1.0.0`), **YouTube Explode** (`youtube_explode_dart: ^3.1.0`), and **LRCLIB** synchronized lyrics.
 
 ---
 
@@ -8,7 +8,7 @@ This document contains the complete execution roadmap and the comprehensive mast
 
 ### **Phase 1: Project Setup, Material 3 Expressive System & Design Tokens**
 - [x] **Dependencies & Setup**
-  - [x] Configure `pubspec.yaml` with latest major packages: `material_3_expressive: ^1.0.8`, `extractor: ^1.0.0`, `just_audio: ^0.9.41`, `youtube_explode_dart: ^2.3.4`, `flutter_riverpod: ^2.6.1`, `hive_flutter: ^1.1.0`, `lucide_icons_flutter: ^3.0.0`
+  - [x] Configure `pubspec.yaml` with latest major packages: `material_3_expressive: ^1.0.8`, `extractor: ^1.0.0`, `just_audio: ^0.10.6`, `youtube_explode_dart: ^3.1.0`, `palette_generator_plus: ^1.0.0`, `flutter_riverpod: ^2.6.1`, `hive_flutter: ^1.1.0`, `lucide_icons_flutter: ^3.0.0`
   - [x] Setup Android permissions (`FOREGROUND_SERVICE`, `WAKE_LOCK`, `POST_NOTIFICATIONS`, `READ_MEDIA_AUDIO`)
   - [x] Setup Android `arm64-v8a` ABI filter in `build.gradle.kts`
   - [x] Setup iOS `Info.plist` with `UIBackgroundModes` (`audio`, `fetch`)
@@ -33,16 +33,16 @@ This document contains the complete execution roadmap and the comprehensive mast
   - [x] Implement Riverpod state providers: `favoritesProvider`, `userPlaylistsProvider`, `historyProvider`, `statsProvider`, `settingsProvider`, `downloadListProvider`.
   - [x] Status: ✅ **Phase 2 Complete (flutter analyze 0 issues, 24 unit & widget tests passed)**
 
-### **Phase 3: Music Extraction, Streaming Sources & Decryptors**
-- [x] **Milestone**: Multi-source stream extraction and decryption engine.
+### **Phase 3: Music Extraction, Streaming Sources & Downloader**
+- [x] **Milestone**: Pure audio stream extraction via YouTube Explode and offline song downloads via Extractor.
 - [x] **Key Tasks**:
-  - [x] Implement `extractor_service.dart` using `extractor: ^1.0.0` for direct media stream extraction across social and streaming URLs.
-  - [x] Implement `youtube_source.dart` using `youtube_explode_dart: ^2.3.4` for YouTube & YouTube Music search, playlists, and high-bitrate audio streams.
-  - [x] Implement `jiosaavn_source.dart` and `audio_decryptor.dart` with DES-ECB cipher key `38346591` for 320kbps MP4/M4A streaming + `saavn.dev` API fallback.
-  - [x] Implement `lrc_parser.dart` and `lyrics_repository.dart` with LRCLIB API (`lrclib.net`) and JioSaavn fallback for synchronized karaoke lyrics.
-  - [x] Implement `search_repository.dart` for multi-source search aggregation, duplicate detection, metadata normalization, and seamless stream URL resolution.
-  - [x] Implement `discovery_repository.dart` for discovery feed, charts, hero banners, and new releases.
-  - [x] Status: ✅ **Phase 3 Complete (flutter analyze 0 issues, 39 unit & widget tests passed)**
+  - [x] Completely eliminate `saavn_play` and `dart_des` dependencies.
+  - [x] Implement `extractor_service.dart` using `extractor: ^1.0.0` for audio-only downloading pipeline via native yt-dlp.
+  - [x] Implement `youtube_source.dart` using `youtube_explode_dart: ^2.3.4` for YouTube & YouTube Music search, artists, albums, playlists, and pure audio-only streams (Opus ~160kbps, AAC ~128kbps) with multi-client rotation (`ios`, `androidVr`, `safari`, `androidMusic`, `web`) for 403 bypass.
+  - [x] Implement `lrc_parser.dart` and `lyrics_repository.dart` with LRCLIB API (`lrclib.net`) for synchronized karaoke lyrics.
+  - [x] Implement `search_repository.dart` for YouTube & Extractor search, candidate stream resolution, and in-memory caching.
+  - [x] Implement `discovery_repository.dart` for YouTube discovery feed, charts, hero banners, and new releases.
+  - [x] Status: ✅ **Phase 3 Complete (flutter analyze 0 issues, 151 unit & widget tests passed)**
 
 ### **Phase 4: Core Audio Engine, Background Playback & Hardware Media Session**
 - [x] **Milestone**: Professional gapless audio playback with lock screen and notification controls.

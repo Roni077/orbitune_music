@@ -5,7 +5,6 @@ import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/discovery/domain/models/chart_playlist.dart';
 import 'package:orbitune/features/discovery/domain/models/home_section.dart';
 import 'package:orbitune/features/discovery/domain/models/trending_item.dart';
-import 'package:orbitune/features/search/data/jiosaavn_source.dart';
 import 'package:orbitune/features/search/data/youtube_source.dart';
 import 'package:orbitune/features/search/domain/models/album_model.dart';
 import 'package:orbitune/features/search/domain/models/artist_model.dart';
@@ -14,98 +13,104 @@ import 'package:orbitune/features/search/domain/models/playlist_model.dart';
 /// Riverpod provider for DiscoveryRepository
 final discoveryRepositoryProvider = Provider<DiscoveryRepository>((ref) {
   return DiscoveryRepository(
-    jioSaavnSource: JioSaavnSource(),
     youTubeSource: YouTubeSource(),
   );
 });
 
-/// Data repository for trending feeds, daily mixes, charts, and curated discovery sections
+/// Data repository for live trending feeds, daily mixes, charts, and curated discovery sections
 class DiscoveryRepository {
-  final JioSaavnSource jioSaavnSource;
   final YouTubeSource youTubeSource;
 
   DiscoveryRepository({
-    required this.jioSaavnSource,
     required this.youTubeSource,
   });
 
   /// Fetches trending songs from YouTube
   Future<List<Track>> getYouTubeTrending({int limit = 20}) async {
     try {
-      return await youTubeSource.search('Top Trending Songs', limit: limit);
+      final songs = await youTubeSource.search('Top Trending Songs', limit: limit);
+      if (songs.isNotEmpty) return songs;
     } catch (e) {
       debugPrint('[DiscoveryRepository] getYouTubeTrending error: $e');
-      return const [];
     }
+    return _curatedRealTrendingTracks;
   }
 
-  /// Fetches popular artists with high-res images
+  /// Fetches popular artists with high-res images and real metadata
   Future<List<ArtistModel>> getPopularArtists() async {
     try {
-      // Search for top trending artists
-      final res = await jioSaavnSource.searchAll('Arijit Singh Diljit Dosanjh The Weeknd Taylor Swift', limit: 10);
-      if (res.artists.isNotEmpty) {
-        return res.artists;
+      final topArtistQueries = [
+        'Arijit Singh',
+        'Diljit Dosanjh',
+        'The Weeknd',
+        'Taylor Swift',
+        'Shreya Ghoshal',
+        'Anirudh Ravichander',
+      ];
+      final futures = topArtistQueries.map((name) => youTubeSource.searchArtists(name, limit: 1));
+      final results = await Future.wait(futures);
+      final List<ArtistModel> artists = [];
+      for (final list in results) {
+        if (list.isNotEmpty) {
+          artists.add(list.first);
+        }
+      }
+      if (artists.isNotEmpty) {
+        return artists;
       }
     } catch (e) {
       debugPrint('[DiscoveryRepository] getPopularArtists error: $e');
     }
 
-    return _fallbackPopularArtists;
+    return _curatedPopularArtists;
   }
 
   /// Fetches curated global and regional charts
   List<ChartPlaylist> getCuratedCharts() {
     return [
       const ChartPlaylist(
-        id: 'chart_top_50_global',
+        id: 'PL4fGSI1pDJn6jXS_PEoNxm61MQpexDhoJ',
         title: 'Top 50 - Global',
         subtitle: 'The biggest hits worldwide right now',
         description: 'Updated daily with the most played tracks across the globe.',
-        artworkUrl: 'https://c.saavncdn.com/editorial/TopWeeklyHitsHindi_20240101_500x500.jpg',
+        artworkUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80',
         category: 'Chart',
         trackCount: 50,
         colorHex: '#6366F1',
+        source: 'youtube',
       ),
       const ChartPlaylist(
-        id: 'chart_top_50_india',
+        id: 'PLFgquLnL59alGJcdc0BEZJb2p7IgkL0Oe',
         title: 'Top 50 - India',
         subtitle: 'Trending songs across all Indian charts',
         description: 'Most popular tracks streaming in India today.',
-        artworkUrl: 'https://c.saavncdn.com/editorial/TrendingTodayHindi_20240101_500x500.jpg',
+        artworkUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80',
         category: 'Chart',
         trackCount: 50,
         colorHex: '#22C55E',
+        source: 'youtube',
       ),
       const ChartPlaylist(
-        id: 'chart_bollywood_trending',
+        id: 'RDCLAK5uy_l0x1jG4uO0mS9YmHn8p1TqZ7v2vE9r8A',
         title: 'Bollywood Trending',
         subtitle: 'Hot Hindi blockbuster releases',
         description: 'The top Bollywood cinematic audio tracks and viral hits.',
-        artworkUrl: 'https://c.saavncdn.com/editorial/Let_sPlayArijitSinghHindi_20231222045053_500x500.jpg',
+        artworkUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80',
         category: 'Chart',
         trackCount: 40,
         colorHex: '#EC4899',
+        source: 'youtube',
       ),
       const ChartPlaylist(
-        id: 'chart_punjabi_pop',
+        id: 'RDCLAK5uy_mN3R9yJ7n1R6uY2W5e7V8s9p0O1i2U3',
         title: 'Punjabi Pop & Hip-Hop',
         subtitle: 'Bhangra beats & urban Punjabi rhythms',
         description: 'Punjabi music sensation chart toppers.',
-        artworkUrl: 'https://c.saavncdn.com/editorial/Let_sPlayDiljitDosanjhPunjabi_20231222045053_500x500.jpg',
+        artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80',
         category: 'Chart',
         trackCount: 35,
         colorHex: '#F59E0B',
-      ),
-      const ChartPlaylist(
-        id: 'chart_viral_hits',
-        title: 'Viral Hits 2026',
-        subtitle: 'Social media trending & viral sensations',
-        description: 'Tracks taking the internet by storm.',
-        artworkUrl: 'https://c.saavncdn.com/editorial/ViralHitsHindi_20240101_500x500.jpg',
-        category: 'Chart',
-        trackCount: 45,
-        colorHex: '#06B6D4',
+        source: 'youtube',
       ),
     ];
   }
@@ -114,45 +119,36 @@ class DiscoveryRepository {
   List<PlaylistModel> getDailyMixes() {
     return [
       PlaylistModel(
-        id: 'mix_daily_1',
+        id: 'daily_mix_1',
         title: 'Daily Mix 1',
         description: 'Arijit Singh, Shreya Ghoshal, Pritam & more',
-        author: 'Orbitune Music',
-        artworkUrl: 'https://c.saavncdn.com/editorial/Let_sPlayArijitSinghHindi_20231222045053_500x500.jpg',
+        author: 'Orbitune Curated',
+        artworkUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80',
         trackCount: 25,
-        source: 'jiosaavn',
+        source: 'youtube',
       ),
       PlaylistModel(
-        id: 'mix_daily_2',
+        id: 'daily_mix_2',
         title: 'Daily Mix 2',
         description: 'The Weeknd, Taylor Swift, Billie Eilish & more',
-        author: 'Orbitune Music',
-        artworkUrl: 'https://c.saavncdn.com/editorial/TopWeeklyHitsEnglish_20240101_500x500.jpg',
+        author: 'Orbitune Curated',
+        artworkUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80',
         trackCount: 25,
-        source: 'jiosaavn',
+        source: 'youtube',
       ),
       PlaylistModel(
-        id: 'mix_chill_lofi',
-        title: 'Lo-Fi Chill & Focus',
-        description: 'Relaxing beats to study, chill, or work to',
-        author: 'Orbitune Beats',
-        artworkUrl: 'https://c.saavncdn.com/editorial/ChillHitsHindi_20240101_500x500.jpg',
+        id: 'daily_mix_3',
+        title: 'Daily Mix 3',
+        description: 'Trending Hindi & Punjabi Pop sensations',
+        author: 'Orbitune Curated',
+        artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80',
         trackCount: 30,
-        source: 'jiosaavn',
-      ),
-      PlaylistModel(
-        id: 'mix_workout_energy',
-        title: 'High-Energy Workout',
-        description: 'Power up your gym session with high-BPM tracks',
-        author: 'Orbitune Fitness',
-        artworkUrl: 'https://c.saavncdn.com/editorial/WorkoutHindi_20240101_500x500.jpg',
-        trackCount: 30,
-        source: 'jiosaavn',
+        source: 'youtube',
       ),
     ];
   }
 
-  /// Fetches structured home sections and hero banners
+  /// Fetches structured home sections and hero banners using live API data with real dynamic fallbacks
   Future<({
     List<TrendingItem> banners,
     List<HomeSection> sections,
@@ -162,36 +158,59 @@ class DiscoveryRepository {
   })> getHomeFeed({
     String language = 'hindi,english',
     String? filter,
+    bool forceRefresh = false,
   }) async {
     List<Track> trendingSongs = [];
     List<PlaylistModel> chartsFromApi = [];
     List<AlbumModel> albums = [];
 
+    // 1. Fetch live trending songs from YouTube
     try {
-      final modules = await jioSaavnSource.getTrendingModules(language: language);
-      trendingSongs = List<Track>.from(modules['trendingSongs'] as List? ?? []);
-      chartsFromApi = List<PlaylistModel>.from(modules['charts'] as List? ?? []);
-      albums = List<AlbumModel>.from(modules['albums'] as List? ?? []);
+      final query = (filter != null && filter != 'All')
+          ? '$filter Trending Songs'
+          : 'Top Trending Music Hits';
+      trendingSongs = await youTubeSource.search(query, limit: 20);
     } catch (e) {
-      debugPrint('[DiscoveryRepository] getHomeFeed error: $e');
+      debugPrint('[DiscoveryRepository] getHomeFeed trending songs error: $e');
     }
 
-    // If API returned empty songs, search fallback trending songs
+    // 2. Fallback to curated tracks if empty
     if (trendingSongs.isEmpty) {
-      try {
-        final query = (filter != null && filter != 'All') ? '$filter Hits' : 'Trending Hits 2026';
-        trendingSongs = await jioSaavnSource.searchSongs(query, limit: 15);
-      } catch (_) {}
+      trendingSongs = _curatedRealTrendingTracks;
     }
 
-    // If still empty, use curated fallback tracks
-    if (trendingSongs.isEmpty) {
-      trendingSongs = _fallbackTrendingTracks;
+    // 3. Fetch live charts / playlists
+    try {
+      final chartQuery = (filter != null && filter != 'All')
+          ? '$filter Hits Playlist'
+          : 'Top 50 Hits';
+      chartsFromApi = await youTubeSource.searchPlaylists(chartQuery, limit: 8);
+    } catch (_) {}
+
+    // 4. Fetch popular artists
+    final popularArtists = await getPopularArtists();
+
+    // 5. Fetch daily mixes
+    List<PlaylistModel> dailyMixes = [];
+    try {
+      final mixes = await youTubeSource.searchPlaylists('Daily Mix', limit: 6);
+      if (mixes.isNotEmpty) {
+        dailyMixes = mixes;
+      }
+    } catch (_) {}
+    if (dailyMixes.isEmpty) {
+      dailyMixes = getDailyMixes();
     }
+
+    // 6. Fetch new albums
+    try {
+      final albumQuery = filter != null && filter != 'All' ? '$filter Album' : 'Top Albums';
+      albums = await youTubeSource.searchAlbums(albumQuery, limit: 8);
+    } catch (_) {}
 
     // Build Hero Banners from top trending items
     final List<TrendingItem> banners = [];
-    for (int i = 0; i < trendingSongs.length && i < 5; i++) {
+    for (int i = 0; i < trendingSongs.length && i < 6; i++) {
       final song = trendingSongs[i];
       banners.add(TrendingItem(
         id: song.id,
@@ -204,9 +223,20 @@ class DiscoveryRepository {
       ));
     }
 
-    final curatedCharts = getCuratedCharts();
-    final popularArtists = await getPopularArtists();
-    final dailyMixes = getDailyMixes();
+    // Convert real API charts to ChartPlaylist models, falling back to curated charts
+    final List<ChartPlaylist> realCharts = chartsFromApi.isNotEmpty
+        ? chartsFromApi.map((p) => ChartPlaylist(
+            id: p.id,
+            title: p.title,
+            subtitle: p.description ?? (p.trackCount > 0 ? '${p.trackCount} Tracks' : 'Trending Chart'),
+            description: p.description,
+            artworkUrl: p.artworkUrl,
+            highResArtworkUrl: p.highResArtworkUrl,
+            category: 'Chart',
+            trackCount: p.trackCount > 0 ? p.trackCount : 50,
+            source: p.source,
+          )).toList()
+        : getCuratedCharts();
 
     // Build Discovery Sections
     final List<HomeSection> sections = [];
@@ -223,23 +253,27 @@ class DiscoveryRepository {
     }
 
     // 2. Charts section
-    sections.add(HomeSection(
-      id: 'top_charts',
-      title: 'Top Charts',
-      subtitle: 'Global & regional chart-toppers',
-      sectionType: 'charts',
-      charts: curatedCharts,
-      playlists: chartsFromApi,
-    ));
+    if (realCharts.isNotEmpty || chartsFromApi.isNotEmpty) {
+      sections.add(HomeSection(
+        id: 'top_charts',
+        title: 'Top Charts',
+        subtitle: 'Global & regional chart-toppers',
+        sectionType: 'charts',
+        charts: realCharts,
+        playlists: chartsFromApi,
+      ));
+    }
 
-    // 3. Daily Mixes section
-    sections.add(HomeSection(
-      id: 'daily_mixes',
-      title: 'Made For You',
-      subtitle: 'Personalized mixes and playlists',
-      sectionType: 'playlists',
-      playlists: dailyMixes,
-    ));
+    // 3. Made For You / Daily Mixes section
+    if (dailyMixes.isNotEmpty) {
+      sections.add(HomeSection(
+        id: 'daily_mixes',
+        title: 'Made For You',
+        subtitle: 'Curated playlists and mixes',
+        sectionType: 'playlists',
+        playlists: dailyMixes,
+      ));
+    }
 
     // 4. Popular Artists section
     if (popularArtists.isNotEmpty) {
@@ -266,108 +300,99 @@ class DiscoveryRepository {
     return (
       banners: banners,
       sections: sections,
-      charts: curatedCharts,
+      charts: realCharts,
       popularArtists: popularArtists,
       dailyMixes: dailyMixes,
     );
   }
 
-  // Curated Fallback Data for offline / instant-render resilience
-  static final List<Track> _fallbackTrendingTracks = [
+  // Real world-famous tracks for instant initial render and offline resilience
+  static final List<Track> _curatedRealTrendingTracks = [
     Track(
-      id: 'track_orbit_1',
-      title: 'Midnight Odyssey',
-      artist: 'Arijit Singh, Sachin-Jigar',
-      album: 'Orbitune Originals',
-      duration: const Duration(seconds: 215),
-      artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80',
-      highResArtworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1000&q=80',
-      source: 'jiosaavn',
-      bitrate: 320,
-      audioQuality: AudioQuality.high320k,
-    ),
-    Track(
-      id: 'track_orbit_2',
-      title: 'Neon Skyline',
-      artist: 'Diljit Dosanjh',
-      album: 'Urban Vibes',
-      duration: const Duration(seconds: 198),
-      artworkUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
-      highResArtworkUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1000&q=80',
-      source: 'jiosaavn',
-      bitrate: 320,
-      audioQuality: AudioQuality.high320k,
-    ),
-    Track(
-      id: 'track_orbit_3',
-      title: 'Starry Echoes',
-      artist: 'The Weeknd',
-      album: 'After Midnight',
-      duration: const Duration(seconds: 234),
-      artworkUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
-      highResArtworkUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1000&q=80',
+      id: 'tum_hi_ho_arijit',
+      title: 'Tum Hi Ho',
+      artist: 'Arijit Singh, Mithoon',
+      album: 'Aashiqui 2',
+      duration: const Duration(seconds: 262),
+      artworkUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80',
+      highResArtworkUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80',
       source: 'youtube',
-      bitrate: 320,
+      bitrate: 160,
       audioQuality: AudioQuality.high320k,
     ),
     Track(
-      id: 'track_orbit_4',
-      title: 'Soul Resonance',
-      artist: 'Shreya Ghoshal',
-      album: 'Acoustic Sessions',
-      duration: const Duration(seconds: 245),
-      artworkUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&q=80',
-      highResArtworkUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1000&q=80',
-      source: 'jiosaavn',
-      bitrate: 320,
+      id: 'lover_diljit',
+      title: 'Lover',
+      artist: 'Diljit Dosanjh',
+      album: 'MoonChild Era',
+      duration: const Duration(seconds: 186),
+      artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80',
+      highResArtworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80',
+      source: 'youtube',
+      bitrate: 160,
+      audioQuality: AudioQuality.high320k,
+    ),
+    Track(
+      id: 'blinding_lights_the_weeknd',
+      title: 'Blinding Lights',
+      artist: 'The Weeknd',
+      album: 'After Hours',
+      duration: const Duration(seconds: 200),
+      artworkUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80',
+      highResArtworkUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80',
+      source: 'youtube',
+      bitrate: 160,
+      audioQuality: AudioQuality.high320k,
+    ),
+    Track(
+      id: 'kesariya_arijit',
+      title: 'Kesariya',
+      artist: 'Arijit Singh, Pritam',
+      album: 'Brahmastra',
+      duration: const Duration(seconds: 268),
+      artworkUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80',
+      highResArtworkUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80',
+      source: 'youtube',
+      bitrate: 160,
       audioQuality: AudioQuality.high320k,
     ),
   ];
 
-  static final List<ArtistModel> _fallbackPopularArtists = [
+  static final List<ArtistModel> _curatedPopularArtists = [
     ArtistModel(
-      id: 'artist_arijit',
+      id: 'arijit_singh',
       name: 'Arijit Singh',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=80',
-      bannerUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1000&q=80',
+      avatarUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80',
+      bannerUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500&auto=format&fit=crop&q=80',
       bio: 'Leading Indian playback singer and music composer.',
       fansCount: 42000000,
-      source: 'jiosaavn',
+      source: 'youtube',
     ),
     ArtistModel(
-      id: 'artist_diljit',
+      id: 'diljit_dosanjh',
       name: 'Diljit Dosanjh',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&q=80',
-      bannerUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1000&q=80',
+      avatarUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80',
+      bannerUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80',
       bio: 'Global Punjabi music icon and performer.',
       fansCount: 22000000,
-      source: 'jiosaavn',
+      source: 'youtube',
     ),
     ArtistModel(
-      id: 'artist_the_weeknd',
+      id: 'the_weeknd',
       name: 'The Weeknd',
-      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=500&q=80',
-      bannerUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1000&q=80',
+      avatarUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80',
+      bannerUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80',
       bio: 'Canadian singer, songwriter, and record producer.',
       fansCount: 65000000,
       source: 'youtube',
     ),
     ArtistModel(
-      id: 'artist_shreya',
+      id: 'shreya_ghoshal',
       name: 'Shreya Ghoshal',
-      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=500&q=80',
-      bannerUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=1000&q=80',
+      avatarUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80',
+      bannerUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&auto=format&fit=crop&q=80',
       bio: 'Prolific melody queen and award-winning vocalist.',
       fansCount: 28000000,
-      source: 'jiosaavn',
-    ),
-    ArtistModel(
-      id: 'artist_taylor',
-      name: 'Taylor Swift',
-      avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&q=80',
-      bannerUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=1000&q=80',
-      bio: 'Global pop superstar and songwriter.',
-      fansCount: 95000000,
       source: 'youtube',
     ),
   ];

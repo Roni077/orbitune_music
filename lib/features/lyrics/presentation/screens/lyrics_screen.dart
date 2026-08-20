@@ -13,7 +13,7 @@ import 'package:orbitune/features/audio_player/presentation/providers/player_pro
 import 'package:orbitune/features/lyrics/presentation/providers/lyrics_provider.dart';
 import 'package:orbitune/features/lyrics/presentation/widgets/lrc_view.dart';
 import 'package:orbitune/features/lyrics/presentation/widgets/plain_lyrics_view.dart';
-import 'package:palette_generator/palette_generator.dart';
+import 'package:palette_generator_plus/palette_generator_plus.dart';
 
 /// Fullscreen synchronized karaoke lyrics screen with ambient theming and bottom mini-controls
 class LyricsScreen extends ConsumerStatefulWidget {
@@ -238,7 +238,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'We searched LRCLIB and JioSaavn repositories.',
+              'We searched the LRCLIB synchronized lyrics database.',
               style: AppTypography.bodySmall.copyWith(
                 color: AppColors.textMuted,
               ),

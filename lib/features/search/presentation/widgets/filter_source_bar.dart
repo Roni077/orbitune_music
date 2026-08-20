@@ -29,7 +29,7 @@ class FilterSourceBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 1. Source Filters Row (All / JioSaavn 320k / YouTube / Extractor)
+        // 1. Source Filters Row (All / YouTube Music / Extractor)
         SizedBox(
           height: 38,
           child: ListView(
@@ -40,12 +40,6 @@ class FilterSourceBar extends StatelessWidget {
               _buildSourceChip(
                 filter: SearchSourceFilter.all,
                 icon: LucideIcons.layers,
-              ),
-              const SizedBox(width: 8),
-              _buildSourceChip(
-                filter: SearchSourceFilter.jioSaavn,
-                icon: LucideIcons.radio,
-                accentColor: const Color(0xFF00E5FF),
               ),
               const SizedBox(width: 8),
               _buildSourceChip(

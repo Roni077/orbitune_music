@@ -19,7 +19,7 @@ void main() {
         totalTracks: 2,
         songs: [track1, track2],
         artworkUrl: 'https://example.com/cover.jpg',
-        source: 'jiosaavn',
+        source: 'youtube',
       );
 
       final map = album.toMap();
@@ -50,7 +50,7 @@ void main() {
         topTracks: [track],
         albums: [album],
         genres: ['Bollywood', 'Romantic', 'Pop'],
-        source: 'jiosaavn',
+        source: 'youtube',
       );
 
       final map = artist.toMap();

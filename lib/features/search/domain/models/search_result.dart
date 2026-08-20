@@ -7,7 +7,7 @@ import 'playlist_model.dart';
 /// Aggregated multi-source search response container
 class SearchResult {
   final String query;
-  final String source; // 'all', 'jiosaavn', 'youtube', 'extractor'
+  final String source; // 'all', 'youtube', 'extractor'
   final List<Track> songs;
   final List<AlbumModel> albums;
   final List<ArtistModel> artists;

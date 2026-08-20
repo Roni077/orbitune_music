@@ -8,30 +8,25 @@ import 'package:orbitune/core/utils/lrc_parser.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/lyrics/data/lyrics_cache_repository.dart';
 import 'package:orbitune/features/lyrics/domain/models/lyric_line.dart';
-import 'package:orbitune/features/search/data/jiosaavn_source.dart';
-
 /// Riverpod provider for LyricsRepository
 final lyricsRepositoryProvider = Provider<LyricsRepository>((ref) {
   final cacheRepo = ref.watch(lyricsCacheRepositoryProvider);
   return LyricsRepository(
     cacheRepository: cacheRepo,
-    jioSaavnSource: JioSaavnSource(),
   );
 });
 
-/// Repository for fetching, caching, and parsing synchronized LRC and plain lyrics
+/// Repository for fetching, caching, and parsing synchronized LRC and plain lyrics via LRCLIB
 class LyricsRepository {
   final LyricsCacheRepository cacheRepository;
-  final JioSaavnSource jioSaavnSource;
   final http.Client httpClient;
 
   LyricsRepository({
     required this.cacheRepository,
-    required this.jioSaavnSource,
     http.Client? httpClient,
   }) : httpClient = httpClient ?? http.Client();
 
-  /// Fetches synchronized lyrics for a [track], checking cache first, then LRCLIB, then JioSaavn
+  /// Fetches synchronized lyrics for a [track], checking cache first, then LRCLIB
   Future<List<LyricLine>> getSyncedLyrics(Track track) async {
     // 1. Check local Hive cache
     final cached = cacheRepository.getCachedLyrics(track.id);
@@ -49,23 +44,6 @@ class LyricsRepository {
       }
     } catch (e) {
       debugPrint('[LyricsRepository] LRCLIB fetch failed: $e');
-    }
-
-    // 3. Fallback: JioSaavn Lyrics API
-    if (track.source == 'jiosaavn' || track.hasSyncedLyrics) {
-      try {
-        final saavnLyrics = await jioSaavnSource.getLyrics(track.id);
-        if (saavnLyrics != null && saavnLyrics.isNotEmpty) {
-          await cacheRepository.cacheLyrics(track.id, saavnLyrics);
-          final parsed = LrcParser.parse(saavnLyrics);
-          if (parsed.isNotEmpty) return parsed;
-
-          // If plain lyrics returned without timestamps, create single fallback line or simple timestamps
-          return [LyricLine(timestamp: Duration.zero, text: saavnLyrics)];
-        }
-      } catch (e) {
-        debugPrint('[LyricsRepository] JioSaavn lyrics fallback failed: $e');
-      }
     }
 
     return const [];

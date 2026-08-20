@@ -6,67 +6,73 @@ import 'package:orbitune/core/services/hive_service.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/queue_provider.dart';
 import 'package:orbitune/features/downloader/data/extractor_service.dart';
-import 'package:orbitune/features/search/data/jiosaavn_source.dart';
 import 'package:orbitune/features/search/data/search_cache_repository.dart';
 import 'package:orbitune/features/search/data/search_repository.dart';
 import 'package:orbitune/features/search/data/youtube_source.dart';
 import 'package:orbitune/features/search/domain/models/album_model.dart';
 import 'package:orbitune/features/search/domain/models/artist_model.dart';
 import 'package:orbitune/features/search/domain/models/playlist_model.dart';
-import 'package:orbitune/features/search/domain/models/search_result.dart';
 import 'package:orbitune/features/search/presentation/providers/album_detail_provider.dart';
 import 'package:orbitune/features/search/presentation/providers/artist_detail_provider.dart';
 import 'package:orbitune/features/search/presentation/providers/search_provider.dart';
 import '../helpers/mock_audio_platform.dart';
 
-// Mock JioSaavn Source for unit testing
-class MockJioSaavnSource extends JioSaavnSource {
+// Mock YouTube Source
+class MockYouTubeSource extends YouTubeSource {
   @override
-  Future<SearchResult> searchAll(String query, {int page = 1, int limit = 25}) async {
-    return SearchResult(
-      query: query,
-      source: 'jiosaavn',
-      songs: [
-        Track(
-          id: 'test_song_1',
-          title: 'Kesariya',
-          artist: 'Arijit Singh',
-          duration: const Duration(seconds: 268),
-          streamUrl: 'https://example.com/audio.m4a',
-          source: 'jiosaavn',
-        ),
-      ],
-      albums: [
-        AlbumModel(
-          id: 'test_album_1',
-          title: 'Brahmastra',
-          artist: 'Pritam',
-          releaseYear: '2022',
-          totalTracks: 8,
-          source: 'jiosaavn',
-        ),
-      ],
-      artists: [
-        ArtistModel(
-          id: 'test_artist_1',
-          name: 'Arijit Singh',
-          fansCount: 45000000,
-          source: 'jiosaavn',
-        ),
-      ],
-      playlists: [
-        PlaylistModel(
-          id: 'test_playlist_1',
-          title: 'Best of Arijit Singh',
-          trackCount: 30,
-          source: 'jiosaavn',
-        ),
-      ],
-    );
+  Future<List<Track>> search(String query, {int limit = 20}) async {
+    return [
+      Track(
+        id: 'yt_song_1',
+        title: 'Kesariya',
+        artist: 'Arijit Singh',
+        duration: const Duration(seconds: 268),
+        streamUrl: 'https://example.com/audio.m4a',
+        source: 'youtube',
+      ),
+    ];
   }
 
   @override
-  Future<ArtistModel?> getArtistDetails(String artistId) async {
+  Future<List<PlaylistModel>> searchPlaylists(String query, {int limit = 10}) async {
+    return [
+      PlaylistModel(
+        id: 'yt_pl_1',
+        title: 'Best of Arijit Singh',
+        trackCount: 30,
+        source: 'youtube',
+      ),
+    ];
+  }
+
+  @override
+  Future<List<ArtistModel>> searchArtists(String query, {int limit = 10}) async {
+    return [
+      ArtistModel(
+        id: 'test_artist_1',
+        name: 'Arijit Singh',
+        fansCount: 45000000,
+        source: 'youtube',
+      ),
+    ];
+  }
+
+  @override
+  Future<List<AlbumModel>> searchAlbums(String query, {int limit = 10}) async {
+    return [
+      AlbumModel(
+        id: 'test_album_1',
+        title: 'Brahmastra',
+        artist: 'Pritam',
+        releaseYear: '2022',
+        totalTracks: 8,
+        source: 'youtube',
+      ),
+    ];
+  }
+
+  @override
+  Future<ArtistModel?> getArtistDetails(String artistId, {String? artistName}) async {
     return ArtistModel(
       id: artistId,
       name: 'Arijit Singh',
@@ -79,7 +85,7 @@ class MockJioSaavnSource extends JioSaavnSource {
           artist: 'Arijit Singh',
           duration: const Duration(seconds: 262),
           streamUrl: 'https://example.com/audio.m4a',
-          source: 'jiosaavn',
+          source: 'youtube',
         ),
         Track(
           id: 'song_2',
@@ -87,7 +93,7 @@ class MockJioSaavnSource extends JioSaavnSource {
           artist: 'Arijit Singh',
           duration: const Duration(seconds: 289),
           streamUrl: 'https://example.com/audio.m4a',
-          source: 'jiosaavn',
+          source: 'youtube',
         ),
       ],
       albums: [
@@ -96,7 +102,7 @@ class MockJioSaavnSource extends JioSaavnSource {
           title: 'Aashiqui 2',
           artist: 'Arijit Singh',
           releaseYear: '2013',
-          source: 'jiosaavn',
+          source: 'youtube',
         ),
       ],
       singles: [
@@ -106,10 +112,10 @@ class MockJioSaavnSource extends JioSaavnSource {
           artist: 'Arijit Singh',
           duration: const Duration(seconds: 233),
           streamUrl: 'https://example.com/audio.m4a',
-          source: 'jiosaavn',
+          source: 'youtube',
         ),
       ],
-      source: 'jiosaavn',
+      source: 'youtube',
     );
   }
 
@@ -129,7 +135,7 @@ class MockJioSaavnSource extends JioSaavnSource {
           artist: 'Arijit Singh',
           duration: const Duration(seconds: 262),
           streamUrl: 'https://example.com/audio.m4a',
-          source: 'jiosaavn',
+          source: 'youtube',
         ),
         Track(
           id: 'alb_song_2',
@@ -137,39 +143,11 @@ class MockJioSaavnSource extends JioSaavnSource {
           artist: 'Ankit Tiwari',
           duration: const Duration(seconds: 390),
           streamUrl: 'https://example.com/audio.m4a',
-          source: 'jiosaavn',
+          source: 'youtube',
         ),
       ],
-      source: 'jiosaavn',
+      source: 'youtube',
     );
-  }
-}
-
-// Mock YouTube Source
-class MockYouTubeSource extends YouTubeSource {
-  @override
-  Future<List<Track>> search(String query, {int limit = 20}) async {
-    return [
-      Track(
-        id: 'yt_song_1',
-        title: 'Kesariya Lofi Remix',
-        artist: 'YT Artist',
-        duration: const Duration(seconds: 210),
-        source: 'youtube',
-      ),
-    ];
-  }
-
-  @override
-  Future<List<PlaylistModel>> searchPlaylists(String query, {int limit = 10}) async {
-    return [
-      PlaylistModel(
-        id: 'yt_pl_1',
-        title: 'Kesariya All Versions',
-        trackCount: 10,
-        source: 'youtube',
-      ),
-    ];
   }
 }
 
@@ -193,7 +171,6 @@ void main() {
     await hiveService.init(tempDir.path);
     cacheRepo = SearchCacheRepository(hiveService);
     searchRepo = SearchRepository(
-      jioSaavnSource: MockJioSaavnSource(),
       youTubeSource: MockYouTubeSource(),
       extractorService: MockExtractorSource(),
       cacheRepository: cacheRepo,
@@ -325,7 +302,7 @@ void main() {
       notifier.playAll();
       await Future.delayed(const Duration(milliseconds: 100));
       final queueState = container.read(queueProvider);
-      expect(queueState.items.length, 2);
+      expect(queueState.items.length, 3);
       expect(queueState.currentTrack?.title, 'Tum Hi Ho');
 
       container.dispose();

@@ -26,10 +26,17 @@ class OrbituneAudioHandler {
       _isInitialized = true;
       debugPrint('[OrbituneAudioHandler] JustAudioBackground initialized successfully.');
     } catch (e) {
+      _isInitialized = false;
       debugPrint('[OrbituneAudioHandler] JustAudioBackground init warning (might be test or desktop environment): $e');
-      _isInitialized = true;
     }
   }
+
+  /// Default HTTP streaming headers for audio CDNs (clean, non-hop-by-hop)
+  static const Map<String, String> defaultStreamHeaders = {
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': '*/*',
+  };
 
   /// Converts a [Track] and its stream/file URI into a tagged [AudioSource] with complete [MediaItem]
   static AudioSource createAudioSource(
@@ -37,22 +44,48 @@ class OrbituneAudioHandler {
     String streamOrFilePath, {
     Map<String, String>? headers,
   }) {
-    final uri = Uri.parse(streamOrFilePath);
+    final cleanPath = streamOrFilePath.trim();
+    final uri = Uri.tryParse(cleanPath) ?? Uri.file(cleanPath);
     final mediaItem = track.toMediaItem();
 
-    // If stream is a local file URI (e.g. file:/// or start with /)
-    if (uri.scheme == 'file' || !streamOrFilePath.startsWith('http')) {
+    // If stream is a local file path
+    final isLocal = uri.scheme == 'file' ||
+        !cleanPath.startsWith('http://') && !cleanPath.startsWith('https://');
+
+    if (isLocal) {
+      final filePath = cleanPath.startsWith('file://')
+          ? cleanPath.replaceFirst('file://', '')
+          : cleanPath;
       return AudioSource.file(
-        streamOrFilePath.replaceFirst('file://', ''),
+        filePath,
         tag: mediaItem,
       );
     }
 
-    // Default network audio source with custom headers for JioSaavn / YouTube
+    // For YouTube and googlevideo CDN streams, attach clean standard streaming headers
+    if (cleanPath.contains('googlevideo.com') || cleanPath.contains('youtube.com')) {
+      final Map<String, String> ytHeaders = Map.from(headers ?? {});
+      if (!ytHeaders.containsKey('User-Agent') && !ytHeaders.containsKey('user-agent')) {
+        ytHeaders['User-Agent'] =
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+      }
+      if (!ytHeaders.containsKey('Accept') && !ytHeaders.containsKey('accept')) {
+        ytHeaders['Accept'] = '*/*';
+      }
+      return AudioSource.uri(
+        uri,
+        tag: mediaItem,
+        headers: ytHeaders,
+      );
+    }
+
+    // Network audio source with clean streaming headers
+    final effectiveHeaders = headers ?? defaultStreamHeaders;
+
     return AudioSource.uri(
       uri,
       tag: mediaItem,
-      headers: headers,
+      headers: effectiveHeaders,
     );
   }
 

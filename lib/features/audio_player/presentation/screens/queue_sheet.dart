@@ -733,16 +733,16 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
   }
 
   Widget _buildSourceBadge(Track track) {
-    if (track.source == 'youtube') {
-      return const AudioBadge(type: AudioBadgeType.youtube);
-    }
-    if (track.source == 'jiosaavn') {
-      return const AudioBadge(type: AudioBadgeType.highQuality320);
-    }
     if (track.isOfflineAvailable) {
       return const AudioBadge(type: AudioBadgeType.offline);
     }
-    return const AudioBadge(type: AudioBadgeType.jioSaavn);
+    if (track.source == 'youtube') {
+      return const AudioBadge(type: AudioBadgeType.youtube);
+    }
+    if (track.bitrate >= 320) {
+      return const AudioBadge(type: AudioBadgeType.highQuality320);
+    }
+    return const AudioBadge(type: AudioBadgeType.opusHq);
   }
 
   void _showSavePlaylistDialog(BuildContext context, QueueState queueState) {

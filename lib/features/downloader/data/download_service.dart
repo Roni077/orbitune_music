@@ -53,7 +53,7 @@ class DownloadService {
                 receiveTimeout: const Duration(minutes: 5),
                 headers: {
                   'User-Agent':
-                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 },
               ),
             );
@@ -270,8 +270,9 @@ class DownloadService {
     }
 
     await _repository.removeDownload(trackId);
-    if (_ref != null) {
-      _ref!.read(downloadListProvider.notifier).removeTask(trackId);
+    final ref = _ref;
+    if (ref != null) {
+      ref.read(downloadListProvider.notifier).removeTask(trackId);
     }
   }
 
@@ -285,8 +286,9 @@ class DownloadService {
 
   Future<void> _saveAndNotify(DownloadTask task) async {
     await _repository.saveDownload(task);
-    if (_ref != null) {
-      _ref!.read(downloadListProvider.notifier).addOrUpdateTask(task);
+    final ref = _ref;
+    if (ref != null) {
+      ref.read(downloadListProvider.notifier).addOrUpdateTask(task);
     }
   }
 }

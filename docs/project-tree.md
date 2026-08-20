@@ -155,19 +155,20 @@ orbitune/
 │   │   │           ├── song_card_horizontal.dart # M3E rounded card for playlists & albums
 │   │   │           └── trending_chips.dart       # Genre & language pills (Hindi, English, Punjabi)
 │   │   │
-│   │   ├── search/                     # Universal multi-source search (YouTube + JioSaavn + Extractor)
+│   │   ├── search/                     # YouTube Music & Extractor search & stream resolution
 │   │   │   ├── data/
-│   │   │   │   ├── jiosaavn_source.dart      # JioSaavn songs, albums, artists query client
-│   │   │   │   ├── search_repository.dart    # Multi-source search aggregator & ranker
-│   │   │   │   └── youtube_source.dart       # YouTube Explode songs, videos & playlists client
+│   │   │   │   ├── search_cache_repository.dart# Hive search caching
+│   │   │   │   ├── search_repository.dart    # Search aggregator, channel/artist search & stream resolver
+│   │   │   │   └── youtube_source.dart       # YouTube Explode pure audio streaming, client rotation & discovery
 │   │   │   ├── domain/
 │   │   │   │   └── models/
 │   │   │   │       ├── album_model.dart          # Album details & song list
 │   │   │   │       ├── artist_model.dart         # Artist details, bio & top songs
-│   │   │   │       ├── playlist_model.dart       # Playlist metadata & items
-│   │   │   │       └── search_result.dart        # Unified search result container
+│   │   │   │       └── playlist_model.dart       # Playlist metadata & items
 │   │   │   └── presentation/
 │   │   │       ├── providers/
+│   │   │       │   ├── album_detail_provider.dart# Album discography notifier
+│   │   │       │   ├── artist_detail_provider.dart# Artist profile notifier
 │   │   │       │   └── search_provider.dart      # Search query, filter chips & debounced stream
 │   │   │       ├── screens/
 │   │   │       │   ├── album_detail_screen.dart  # Album page with full tracklist & play all
@@ -175,14 +176,15 @@ orbitune/
 │   │   │       │   ├── playlist_detail_screen.dart # Playlist tracklist with reorder & play
 │   │   │       │   └── search_screen.dart        # Universal search with instant suggestions
 │   │   │       └── widgets/
-│   │   │           ├── filter_source_bar.dart    # All / JioSaavn (320kbps) / YouTube toggle
+│   │   │           ├── filter_source_bar.dart    # All / YouTube Music toggle
 │   │   │           ├── recent_searches_view.dart # Search history chips with clear all
 │   │   │           ├── search_bar_widget.dart    # Glowing search bar with clear button
 │   │   │           └── track_tile.dart           # Song list item with menu, like & play action
 │   │   │
 │   │   ├── lyrics/                     # Synchronized LRC & Plain lyrics viewer
 │   │   │   ├── data/
-│   │   │   │   └── lyrics_repository.dart    # LRCLIB API client & JioSaavn lyrics fallback
+│   │   │   │   ├── lyrics_cache_repository.dart # Hive cached lyrics storage
+│   │   │   │   └── lyrics_repository.dart    # LRCLIB API client (`lrclib.net`)
 │   │   │   ├── domain/
 │   │   │   │   └── models/
 │   │   │   │       └── lyric_line.dart       # Timestamp and lyric line text

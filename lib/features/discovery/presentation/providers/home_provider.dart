@@ -107,13 +107,14 @@ class HomeNotifier extends StateNotifier<HomeState> {
     }
   }
 
-  /// Pull-to-refresh feed
+  /// Pull-to-refresh feed with fresh live queries
   Future<void> refresh() async {
     state = state.copyWith(isRefreshing: true, errorMessage: null);
 
     try {
       final feed = await _repository.getHomeFeed(
         filter: state.selectedFilter,
+        forceRefresh: true,
       );
 
       final quickPicks = _computeQuickPicks(feed.banners);

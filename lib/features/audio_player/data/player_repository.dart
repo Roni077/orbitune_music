@@ -31,7 +31,7 @@ final playerRepositoryProvider = Provider<PlayerRepository>((ref) {
   return repository;
 });
 
-/// High-level repository orchestrating audio playback, stream resolution, audio focus & analytics
+/// High-level repository orchestrating audio playback, multi-tier stream resolution, preloading & analytics
 class PlayerRepository {
   final AudioPlayerService playerService;
   final AudioSessionService sessionService;
@@ -43,6 +43,11 @@ class PlayerRepository {
   Track? _lastTrackLogged;
   Duration _accumulatedPlayDuration = Duration.zero;
   bool _historyRecordedForCurrent = false;
+
+  // Multi-tier In-Memory Stream Cache for instant 0ms track starts
+  final Map<String, ({List<String> candidates, DateTime resolvedAt})> _streamCandidateCache = {};
+  static const Duration _cacheTtl = Duration(hours: 2);
+  static const int _maxCacheEntries = 60;
 
   PlayerRepository({
     required this.playerService,
@@ -110,6 +115,92 @@ class PlayerRepository {
     }
   }
 
+  /// Resolves candidate URLs with in-memory caching for instant 0ms latency
+  Future<List<String>> resolveCandidateUrls(Track track, {AudioQuality? quality}) async {
+    final preferredQuality = quality ?? settingsRepository.getSettings().streamingQuality;
+    final cacheKey = '${track.id}_${preferredQuality.name}';
+
+    // 1. Check in-memory stream cache
+    final cached = _streamCandidateCache[cacheKey];
+    if (cached != null && DateTime.now().difference(cached.resolvedAt) < _cacheTtl) {
+      return cached.candidates;
+    }
+
+    final candidateUrls = <String>[];
+
+    if (track.isLocal && track.localFilePath != null) {
+      candidateUrls.add(track.localFilePath!);
+    } else if (track.source == 'extractor') {
+      final originalUrl = track.extra['originalUrl']?.toString() ?? track.streamUrl;
+      if (originalUrl != null && (originalUrl.startsWith('http://') || originalUrl.startsWith('https://'))) {
+        try {
+          final extStream = await searchRepository.extractorService.getBestAudioStreamUrl(originalUrl);
+          if (extStream != null && extStream.isNotEmpty) {
+            candidateUrls.add(extStream);
+          }
+        } catch (_) {}
+      }
+    }
+
+    // Pure audio format candidates from YouTube Explode (Opus ~160k itag 251, AAC ~128-142k itag 140)
+    if (candidateUrls.isEmpty) {
+      try {
+        final ytCandidates = await searchRepository.youTubeSource
+            .getAudioStreamCandidates(track.id, quality: preferredQuality);
+        candidateUrls.addAll(ytCandidates);
+      } catch (e) {
+        debugPrint('[PlayerRepository] getAudioStreamCandidates error: $e');
+      }
+    }
+
+    // Secondary fallback: general stream resolution
+    if (candidateUrls.isEmpty) {
+      final resolved = await searchRepository.resolveStreamUrl(track, quality: preferredQuality);
+      if (resolved != null && resolved.isNotEmpty) {
+        candidateUrls.add(resolved);
+      }
+    }
+
+    // Cache candidates in memory
+    if (candidateUrls.isNotEmpty) {
+      if (_streamCandidateCache.length >= _maxCacheEntries) {
+        _streamCandidateCache.remove(_streamCandidateCache.keys.first);
+      }
+      _streamCandidateCache[cacheKey] = (
+        candidates: List.unmodifiable(candidateUrls),
+        resolvedAt: DateTime.now(),
+      );
+    }
+
+    return candidateUrls;
+  }
+
+  /// Silently preloads and caches stream URLs for upcoming queue tracks (Lookahead = 3)
+  void preloadUpcomingTracks(List<Track> queue, int currentIndex, {int lookahead = 3}) {
+    if (queue.isEmpty || currentIndex < 0) return;
+
+    Future.microtask(() async {
+      final preferredQuality = settingsRepository.getSettings().streamingQuality;
+      for (var i = 1; i <= lookahead; i++) {
+        final nextIndex = currentIndex + i;
+        if (nextIndex < queue.length) {
+          final nextTrack = queue[nextIndex];
+          if (nextTrack.isLocal) continue;
+
+          final cacheKey = '${nextTrack.id}_${preferredQuality.name}';
+          final cached = _streamCandidateCache[cacheKey];
+          if (cached != null && DateTime.now().difference(cached.resolvedAt) < _cacheTtl) {
+            continue;
+          }
+
+          try {
+            await resolveCandidateUrls(nextTrack, quality: preferredQuality);
+          } catch (_) {}
+        }
+      }
+    });
+  }
+
   /// Resolves the audio stream and starts playback for [track]
   Future<void> playTrack(
     Track track, {
@@ -120,25 +211,36 @@ class PlayerRepository {
     await sessionService.setActive(true);
 
     final preferredQuality = quality ?? settingsRepository.getSettings().streamingQuality;
-    final resolvedUrl = await searchRepository.resolveStreamUrl(track, quality: preferredQuality);
+    final isFav = libraryRepository.isFavorite(track.id);
 
-    if (resolvedUrl == null || resolvedUrl.isEmpty) {
+    final candidateUrls = await resolveCandidateUrls(track, quality: preferredQuality);
+
+    if (candidateUrls.isEmpty) {
       throw Exception('Failed to resolve audio stream URL for "${track.title}"');
     }
 
-    // Attach favorite status from library repository
-    final isFav = libraryRepository.isFavorite(track.id);
-    final trackToPlay = track.copyWith(
-      streamUrl: resolvedUrl,
-      audioQuality: preferredQuality,
-      isFavorite: isFav,
-    );
+    Object? lastError;
+    for (final url in candidateUrls) {
+      try {
+        final trackToPlay = track.copyWith(
+          streamUrl: url,
+          audioQuality: preferredQuality,
+          isFavorite: isFav,
+        );
 
-    await playerService.playTrack(
-      trackToPlay,
-      resolvedUrl,
-      initialPosition: initialPosition,
-    );
+        await playerService.playTrack(
+          trackToPlay,
+          url,
+          initialPosition: initialPosition,
+        );
+        return; // Successfully started playback
+      } catch (e) {
+        debugPrint('[PlayerRepository] Stream candidate ($url) failed: $e. Trying next candidate...');
+        lastError = e;
+      }
+    }
+
+    throw lastError ?? Exception('All stream candidates failed for "${track.title}"');
   }
 
   /// Resolves streams for a playlist sequence and starts gapless playback from [initialIndex]
@@ -158,7 +260,8 @@ class PlayerRepository {
 
     for (final track in tracks) {
       final isFav = libraryRepository.isFavorite(track.id);
-      final url = await searchRepository.resolveStreamUrl(track, quality: preferredQuality);
+      final candidateUrls = await resolveCandidateUrls(track, quality: preferredQuality);
+      final url = candidateUrls.isNotEmpty ? candidateUrls.first : null;
       if (url != null && url.isNotEmpty) {
         resolvedUrls.add(url);
         preparedTracks.add(track.copyWith(
@@ -173,12 +276,16 @@ class PlayerRepository {
       throw Exception('Failed to resolve any stream URLs for playlist');
     }
 
+    final safeIndex = initialIndex.clamp(0, preparedTracks.length - 1);
     await playerService.playPlaylist(
       preparedTracks,
       resolvedUrls,
-      initialIndex: initialIndex.clamp(0, preparedTracks.length - 1),
+      initialIndex: safeIndex,
       initialPosition: initialPosition,
     );
+
+    // Silently preload upcoming tracks from the playlist
+    preloadUpcomingTracks(preparedTracks, safeIndex);
   }
 
   /// Toggles favorite status for the given track or current track
@@ -206,5 +313,6 @@ class PlayerRepository {
   void dispose() {
     _flushHistoryIfNeeded();
     _snapshotSub?.cancel();
+    _streamCandidateCache.clear();
   }
 }

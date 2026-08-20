@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_constants.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
+import 'package:orbitune/core/utils/audio_decryptor.dart';
 import 'package:orbitune/core/utils/formatters.dart';
 import 'package:orbitune/core/widgets/error_view.dart';
 import 'package:orbitune/core/widgets/image_shimmer.dart';
@@ -393,7 +394,7 @@ class ArtistDetailScreen extends ConsumerWidget {
                     border: Border.all(color: AppColors.glassBorder),
                   ),
                   child: Text(
-                    artist.bio!,
+                    AudioDecryptor.cleanBioText(artist.bio!),
                     style: AppTypography.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                       height: 1.5,
