@@ -7,12 +7,6 @@ on:
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
-    inputs:
-      build_desktop_web:
-        description: 'Build Desktop (Windows, Linux) and Web platforms as well?'
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -51,25 +45,15 @@ jobs:
         run: flutter analyze
 
   # =========================================================================
-  # Android: Split Architecture APK Builds (ARM Only: arm64-v8a & armeabi-v7a)
+  # Android: Split Architecture APK Builds (ARM Only)
   # =========================================================================
   build_android:
-    name: 📱 Build Android (arm64-v8a & armeabi-v7a)
+    name: 📱 Build Android (arm64 & armv7)
     needs: [quality_check]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
-      # Free up 25+ GB of runner disk space
-      - name: Free Runner Disk Space
-        run: |
-          echo "Freeing disk space..."
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/share/boost
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          df -h
 
       - name: Setup Java 17
         uses: actions/setup-java@v5
@@ -86,23 +70,21 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # Step 3: Debug Split ABI Build (ARM Only)
+      # Step 3: Debug Split ABI Build
       - name: Step 3 - Build Debug Split APKs (ARM Only)
         run: flutter build apk --debug --split-per-abi --target-platform android-arm,android-arm64
 
-      # Format Debug APKs: app+<arch>+debug.apk
-      - name: Format & Organize Debug APKs
+      # Format Debug APKs: orbitune+<arch>+debug.apk
+      - name: Format Debug APKs
         run: |
-          mkdir -p dist/android/debug
-          for file in build/app/outputs/flutter-apk/app-*-debug.apk; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              arch=$(echo "$filename" | sed -e 's/^app-//' -e 's/-debug\.apk$//')
-              cp "$file" "dist/android/debug/app+${arch}+debug.apk"
-              echo "Formatted: $filename -> dist/android/debug/app+${arch}+debug.apk"
-            fi
-          done
-          ls -la dist/android/debug/
+          mkdir -p dist/android
+          if [ -f "build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk" ]; then
+            cp "build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk" "dist/android/orbitune+arm64+debug.apk"
+          fi
+          if [ -f "build/app/outputs/flutter-apk/app-armeabi-v7a-debug.apk" ]; then
+            cp "build/app/outputs/flutter-apk/app-armeabi-v7a-debug.apk" "dist/android/orbitune+armv7+debug.apk"
+          fi
+          ls -la dist/android/
 
       # Optional Production Release Keystore Setup
       - name: Setup Release Keystore Signing (if secret provided)
@@ -122,48 +104,60 @@ jobs:
           storeFile=upload-keystore.jks
           EOF
 
-      # Step 4: Release Split ABI Build (ARM Only)
+      # Step 4: Release Split ABI Build
       - name: Step 4 - Build Release Split APKs (ARM Only)
         run: flutter build apk --release --split-per-abi --target-platform android-arm,android-arm64
 
-      # Format Release APKs: app+<arch>+release.apk
-      - name: Format & Organize Release APKs
+      # Format Release APKs: orbitune+<arch>+release.apk
+      - name: Format Release APKs
         run: |
-          mkdir -p dist/android/release
-          for file in build/app/outputs/flutter-apk/app-*-release.apk; do
-            if [ -f "$file" ]; then
-              filename=$(basename "$file")
-              arch=$(echo "$filename" | sed -e 's/^app-//' -e 's/-release\.apk$//')
-              cp "$file" "dist/android/release/app+${arch}+release.apk"
-              echo "Formatted: $filename -> dist/android/release/app+${arch}+release.apk"
-            fi
-          done
-          ls -la dist/android/release/
+          if [ -f "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" ]; then
+            cp "build/app/outputs/flutter-apk/app-arm64-v8a-release.apk" "dist/android/orbitune+arm64+release.apk"
+          fi
+          if [ -f "build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" ]; then
+            cp "build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk" "dist/android/orbitune+armv7+release.apk"
+          fi
+          ls -la dist/android/
 
-      # Upload Artifacts
-      - name: Upload Debug Split APKs Artifact
+      # Separate Individual Uploads
+      - name: Upload orbitune+arm64+debug.apk
         uses: actions/upload-artifact@v4
         with:
-          name: android-split-debug-apks
-          path: dist/android/debug/app+*+debug.apk
+          name: orbitune+arm64+debug.apk
+          path: dist/android/orbitune+arm64+debug.apk
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload Release Split APKs Artifact
+      - name: Upload orbitune+armv7+debug.apk
         uses: actions/upload-artifact@v4
         with:
-          name: android-split-release-apks
-          path: dist/android/release/app+*+release.apk
+          name: orbitune+armv7+debug.apk
+          path: dist/android/orbitune+armv7+debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload orbitune+arm64+release.apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbitune+arm64+release.apk
+          path: dist/android/orbitune+arm64+release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload orbitune+armv7+release.apk
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbitune+armv7+release.apk
+          path: dist/android/orbitune+armv7+release.apk
           if-no-files-found: error
           retention-days: 30
 
   # =========================================================================
-  # Windows Desktop Build
+  # Windows Desktop Build (Runs for all workflows)
   # =========================================================================
   build_windows:
     name: 🪟 Build Windows Desktop
     needs: [quality_check]
-    if: github.event.inputs.build_desktop_web == 'true' || startsWith(github.ref, 'refs/tags/v')
     runs-on: windows-latest
     steps:
       - name: Checkout Code
@@ -195,12 +189,11 @@ jobs:
           retention-days: 30
 
   # =========================================================================
-  # Linux Desktop Build
+  # Linux Desktop Build (Runs for all workflows)
   # =========================================================================
   build_linux:
     name: 🐧 Build Linux Desktop
     needs: [quality_check]
-    if: github.event.inputs.build_desktop_web == 'true' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -237,12 +230,11 @@ jobs:
           retention-days: 30
 
   # =========================================================================
-  # Web Build
+  # Web Build (Runs for all workflows)
   # =========================================================================
   build_web:
     name: 🌐 Build Web
     needs: [quality_check]
-    if: github.event.inputs.build_desktop_web == 'true' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
