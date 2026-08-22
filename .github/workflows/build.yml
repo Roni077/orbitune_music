@@ -1,0 +1,264 @@
+name: Build & Test Orbitune
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      build_desktop_web:
+        description: 'Build Desktop (Windows, Linux) and Web platforms as well?'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # =========================================================================
+  # Quality Gate: Test & Static Code Analysis (Fail-Fast)
+  # =========================================================================
+  quality_check:
+    name: 🧪 Quality Check (Test & Analyze)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Step 1 - Run Unit & Widget Tests
+        run: flutter test
+
+      - name: Step 2 - Run Static Analysis & Lint
+        run: flutter analyze
+
+  # =========================================================================
+  # Android: Split Architecture APK Builds (Debug & Release)
+  # =========================================================================
+  build_android:
+    name: 📱 Build Android (Split ABIs)
+    needs: [quality_check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # Step 3: Debug Split ABI Build
+      - name: Step 3 - Build Debug Split APKs
+        run: flutter build apk --debug --split-per-abi
+
+      # Format Debug APKs: app+<arch>+debug.apk
+      - name: Format & Organize Debug APKs
+        run: |
+          mkdir -p dist/android/debug
+          for file in build/app/outputs/flutter-apk/app-*-debug.apk; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              arch=$(echo "$filename" | sed -e 's/^app-//' -e 's/-debug\.apk$//')
+              cp "$file" "dist/android/debug/app+${arch}+debug.apk"
+              echo "Formatted: $filename -> dist/android/debug/app+${arch}+debug.apk"
+            fi
+          done
+          ls -la dist/android/debug/
+
+      # Optional Production Release Keystore Setup
+      - name: Setup Release Keystore Signing (if secret provided)
+        if: env.KEYSTORE_BASE64 != ''
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "Configuring release signing keystore..."
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          cat <<EOF > android/key.properties
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+
+      # Step 4: Release Split ABI Build
+      - name: Step 4 - Build Release Split APKs
+        run: flutter build apk --release --split-per-abi
+
+      # Format Release APKs: app+<arch>+release.apk
+      - name: Format & Organize Release APKs
+        run: |
+          mkdir -p dist/android/release
+          for file in build/app/outputs/flutter-apk/app-*-release.apk; do
+            if [ -f "$file" ]; then
+              filename=$(basename "$file")
+              arch=$(echo "$filename" | sed -e 's/^app-//' -e 's/-release\.apk$//')
+              cp "$file" "dist/android/release/app+${arch}+release.apk"
+              echo "Formatted: $filename -> dist/android/release/app+${arch}+release.apk"
+            fi
+          done
+          ls -la dist/android/release/
+
+      # Upload Artifacts
+      - name: Upload Debug Split APKs Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-split-debug-apks
+          path: dist/android/debug/app+*+debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Release Split APKs Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-split-release-apks
+          path: dist/android/release/app+*+release.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  # =========================================================================
+  # Windows Desktop Build
+  # =========================================================================
+  build_windows:
+    name: 🪟 Build Windows Desktop
+    needs: [quality_check]
+    if: github.event.inputs.build_desktop_web == 'true' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Windows Release
+        run: flutter build windows --release
+
+      - name: Package Windows Release Archive
+        run: |
+          mkdir dist\windows
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath dist\windows\orbitune-windows-x64.zip
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbitune-windows-x64
+          path: dist/windows/orbitune-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  # =========================================================================
+  # Linux Desktop Build
+  # =========================================================================
+  build_linux:
+    name: 🐧 Build Linux Desktop
+    needs: [quality_check]
+    if: github.event.inputs.build_desktop_web == 'true' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Linux Build Prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Linux Release
+        run: flutter build linux --release
+
+      - name: Package Linux Release Archive
+        run: |
+          mkdir -p dist/linux
+          tar -czvf dist/linux/orbitune-linux-x64.tar.gz -C build/linux/x64/release/bundle .
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbitune-linux-x64
+          path: dist/linux/orbitune-linux-x64.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+  # =========================================================================
+  # Web Build
+  # =========================================================================
+  build_web:
+    name: 🌐 Build Web
+    needs: [quality_check]
+    if: github.event.inputs.build_desktop_web == 'true' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Web Release
+        run: flutter build web --release
+
+      - name: Package Web Release Archive
+        run: |
+          mkdir -p dist/web
+          cd build/web && zip -r ../../dist/web/orbitune-web.zip .
+
+      - name: Upload Web Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbitune-web
+          path: dist/web/orbitune-web.zip
+          if-no-files-found: error
+          retention-days: 30

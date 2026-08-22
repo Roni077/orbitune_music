@@ -56,7 +56,18 @@ class DownloadService {
                       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 },
               ),
-            );
+            ) {
+    _extractorService.onProgress.listen((progressEvent) {
+      final trackId = progressEvent.processId;
+      var task = _repository.getDownload(trackId);
+      if (task != null && task.status == DownloadStatus.downloading) {
+        task = task.copyWith(
+          progress: progressEvent.progressFraction,
+        );
+        _saveAndNotify(task);
+      }
+    });
+  }
 
   /// Gets the local downloads directory
   Future<Directory> getDownloadsDirectory() async {
@@ -121,57 +132,65 @@ class DownloadService {
     await _saveAndNotify(task);
 
     try {
-      // 1. Resolve direct download/stream URL
-      String? downloadUrl = track.downloadUrl ?? track.streamUrl;
-      if (downloadUrl == null || downloadUrl.isEmpty) {
-        downloadUrl = await _searchRepository.resolveStreamUrl(track, quality: quality);
-      }
-
-      if (downloadUrl == null || downloadUrl.isEmpty) {
-        if (track.source == 'extractor' || _extractorService.isSupportedMediaUrl(track.id)) {
-          downloadUrl = await _extractorService.getBestAudioStreamUrl(track.id);
-        }
-      }
-
-      if (downloadUrl == null || downloadUrl.isEmpty) {
-        throw Exception('Unable to resolve audio stream URL for download');
-      }
+      // 1. Resolve URL for extraction
+      final sourceUrl = (track.source == 'youtube' || track.source == 'extractor')
+          ? 'https://youtube.com/watch?v=${track.id}'
+          : track.id;
 
       // 2. Prepare file destination
       final downloadsDir = await getDownloadsDirectory();
       final sanitizedTitle = track.title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
       final sanitizedArtist = track.artist.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-      final extension = downloadUrl.contains('.m4a')
-          ? 'm4a'
-          : downloadUrl.contains('.flac')
-              ? 'flac'
-              : downloadUrl.contains('.mp4')
-                  ? 'mp4'
-                  : 'mp3';
+      final extension = 'mp3'; // Native extractor converts to mp3 with tags
 
       final filePath =
           '${downloadsDir.path}/${track.id}_${sanitizedArtist}_$sanitizedTitle.$extension';
       final file = File(filePath);
 
-      // 3. Download with Dio progress callback
-      await _dio.download(
-        downloadUrl,
-        file.path,
-        cancelToken: cancelToken,
-        onReceiveProgress: (received, total) {
-          if (total > 0) {
-            final progress = (received / total).clamp(0.0, 1.0);
-            task = task.copyWith(
-              status: DownloadStatus.downloading,
-              progress: progress,
-              downloadedBytes: received,
-              totalBytes: total,
-              localFilePath: file.path,
-            );
-            _saveAndNotify(task);
-          }
-        },
-      );
+      // 3. Download media
+      if (_extractorService.isAvailable) {
+        final result = await _extractorService.downloadMedia(
+          url: sourceUrl,
+          outputPath: downloadsDir.path,
+          outputTemplate: '${track.id}_${sanitizedArtist}_$sanitizedTitle.%(ext)s',
+          processId: track.id,
+        );
+
+        if (result.status.name != 'success') {
+          throw Exception(result.errorMessage ?? 'Extractor failed to download media');
+        }
+      } else {
+        // Fallback to Dio + SearchRepository stream resolution
+        final streamUrl = await _searchRepository.resolveStreamUrl(track, quality: quality);
+        if (streamUrl == null || streamUrl.isEmpty) {
+          throw Exception('Failed to resolve stream URL for downloading');
+        }
+        
+        int lastUpdate = 0;
+        await _dio.download(
+          streamUrl,
+          file.path,
+          cancelToken: cancelToken,
+          onReceiveProgress: (received, total) {
+            if (total != -1) {
+              final now = DateTime.now().millisecondsSinceEpoch;
+              // Throttle UI and Hive updates to every 500ms
+              if (now - lastUpdate > 500 || received == total) {
+                lastUpdate = now;
+                var progressTask = _repository.getDownload(track.id);
+                if (progressTask != null && progressTask.status == DownloadStatus.downloading) {
+                  progressTask = progressTask.copyWith(
+                    progress: received / total,
+                    downloadedBytes: received,
+                    totalBytes: total,
+                  );
+                  _saveAndNotify(progressTask);
+                }
+              }
+            }
+          },
+        );
+      }
 
       // 4. Mark as completed
       final fileLength = await file.length();
@@ -219,6 +238,9 @@ class DownloadService {
 
   /// Cancels an in-flight download
   Future<void> cancelDownload(String trackId) async {
+    if (_extractorService.isAvailable) {
+      await _extractorService.cancelDownload(trackId);
+    }
     final token = _cancelTokens[trackId];
     if (token != null && !token.isCancelled) {
       token.cancel('User cancelled download');

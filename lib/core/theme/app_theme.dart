@@ -108,4 +108,117 @@ class AppTheme {
       ),
     );
   }
+
+  // Solarized Amber Theme
+  static ThemeData get solarizedTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: AppColorSchemes.solarizedScheme,
+      scaffoldBackgroundColor: const Color(0xFF14120E),
+      fontFamily: AppTypography.titleMedium.fontFamily,
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: AppTypography.headlineMedium.copyWith(color: const Color(0xFFEDE0D4)),
+        iconTheme: const IconThemeData(color: Color(0xFFEDE0D4)),
+      ),
+      cardTheme: const CardThemeData(
+        color: Color(0xFF1E1A16),
+        elevation: 0,
+        shape: ExpressiveShapes.cardShape,
+        margin: EdgeInsets.zero,
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: AppColors.accentAmber,
+        inactiveTrackColor: const Color(0xFF2C251F),
+        thumbColor: AppColors.accentAmber,
+        overlayColor: AppColors.accentAmber.withValues(alpha: 0.2),
+        trackHeight: 4.0,
+      ),
+    );
+  }
+
+  // Cyberpunk Neon Theme
+  static ThemeData get cyberpunkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: AppColorSchemes.cyberpunkScheme,
+      scaffoldBackgroundColor: const Color(0xFF08090E),
+      fontFamily: AppTypography.titleMedium.fontFamily,
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: AppTypography.headlineMedium.copyWith(color: const Color(0xFFE2E8F0)),
+        iconTheme: const IconThemeData(color: Color(0xFFE2E8F0)),
+      ),
+      cardTheme: const CardThemeData(
+        color: Color(0xFF0F111A),
+        elevation: 0,
+        shape: ExpressiveShapes.cardShape,
+        margin: EdgeInsets.zero,
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: AppColors.accentCyan,
+        inactiveTrackColor: const Color(0xFF1B1D2A),
+        thumbColor: AppColors.accentPink,
+        overlayColor: AppColors.accentCyan.withValues(alpha: 0.2),
+        trackHeight: 4.0,
+      ),
+    );
+  }
+
+  // Dynamic Theme Builder based on theme mode string and accent color index
+  static ThemeData buildTheme({
+    String mode = 'dark',
+    int accentIndex = 0,
+    double cornerRadius = 20.0,
+  }) {
+    final accent = (accentIndex >= 0 && accentIndex < AppColors.accentPalette.length)
+        ? AppColors.accentPalette[accentIndex]
+        : AppColors.accentGreen;
+
+    switch (mode) {
+      case 'oled':
+        return oledTheme.copyWith(
+          colorScheme: AppColorSchemes.oledScheme.copyWith(primary: accent),
+          sliderTheme: oledTheme.sliderTheme.copyWith(
+            activeTrackColor: accent,
+            thumbColor: accent,
+          ),
+        );
+      case 'light':
+        return lightTheme.copyWith(
+          colorScheme: AppColorSchemes.lightScheme.copyWith(primary: accent),
+        );
+      case 'solarized':
+        return solarizedTheme.copyWith(
+          colorScheme: AppColorSchemes.solarizedScheme.copyWith(primary: accent),
+          sliderTheme: solarizedTheme.sliderTheme.copyWith(
+            activeTrackColor: accent,
+            thumbColor: accent,
+          ),
+        );
+      case 'cyberpunk':
+        return cyberpunkTheme.copyWith(
+          colorScheme: AppColorSchemes.cyberpunkScheme.copyWith(primary: accent),
+          sliderTheme: cyberpunkTheme.sliderTheme.copyWith(
+            activeTrackColor: accent,
+            thumbColor: accent,
+          ),
+        );
+      case 'dark':
+      default:
+        return darkTheme.copyWith(
+          colorScheme: AppColorSchemes.darkScheme.copyWith(primary: accent),
+          sliderTheme: darkTheme.sliderTheme.copyWith(
+            activeTrackColor: accent,
+            thumbColor: accent,
+          ),
+        );
+    }
+  }
 }

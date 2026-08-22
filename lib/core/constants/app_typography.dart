@@ -28,6 +28,13 @@ class AppTypography {
         color: AppColors.textPrimary,
       );
 
+  static TextStyle get headlineSmall => GoogleFonts.righteous(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.25,
+        color: AppColors.textPrimary,
+      );
+
   // Body & Track Details: Poppins
   static TextStyle get titleLarge => GoogleFonts.poppins(
         fontSize: 18,

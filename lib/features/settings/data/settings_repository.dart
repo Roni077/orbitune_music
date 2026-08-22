@@ -62,6 +62,19 @@ class SettingsRepository {
     await saveSettings(current.copyWith(equalizerEnabled: enabled));
   }
 
+  Future<void> updateOnboardingData({
+    required bool hasCompletedOnboarding,
+    required String username,
+    required String country,
+  }) async {
+    final current = getSettings();
+    await saveSettings(current.copyWith(
+      hasCompletedOnboarding: hasCompletedOnboarding,
+      username: username,
+      country: country,
+    ));
+  }
+
   Stream<AppSettings> watchSettings() {
     return _box.watch(key: _settingsKey).map((_) => getSettings());
   }

@@ -6,6 +6,9 @@ import 'package:hive/hive.dart';
 import 'package:orbitune/app.dart';
 import 'package:orbitune/core/services/hive_service.dart';
 import 'package:orbitune/core/widgets/custom_bottom_nav.dart';
+import 'package:orbitune/features/settings/data/settings_repository.dart';
+import 'package:orbitune/features/settings/domain/models/app_settings.dart';
+import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
 import 'helpers/mock_audio_platform.dart';
 
 void main() {
@@ -29,18 +32,20 @@ void main() {
     } catch (_) {}
   });
 
-  testWidgets('Orbitune app bootstrap smoke test', (WidgetTester tester) async {
+  testWidgets('Orbitune app bootstrap smoke test shows onboarding or main shell', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const ProviderScope(
-        child: OrbituneApp(),
+      ProviderScope(
+        overrides: [
+          settingsProvider.overrideWith((ref) => SettingsNotifier(ref.watch(settingsRepositoryProvider))..state = const AppSettings(hasCompletedOnboarding: true)),
+        ],
+        child: const OrbituneApp(),
       ),
     );
 
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump(const Duration(milliseconds: 300));
 
-    // Verify Orbitune brand title and bottom navigation render
-    expect(find.text('Orbitune'), findsOneWidget);
+    // Verify Main navigation shell and bottom nav render
     expect(find.byType(CustomBottomNav), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());

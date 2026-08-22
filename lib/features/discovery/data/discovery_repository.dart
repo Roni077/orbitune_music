@@ -158,17 +158,20 @@ class DiscoveryRepository {
   })> getHomeFeed({
     String language = 'hindi,english',
     String? filter,
+    String? country,
     bool forceRefresh = false,
   }) async {
     List<Track> trendingSongs = [];
     List<PlaylistModel> chartsFromApi = [];
     List<AlbumModel> albums = [];
+    
+    final countrySuffix = (country != null && country != 'Global') ? ' in $country' : '';
 
     // 1. Fetch live trending songs from YouTube
     try {
       final query = (filter != null && filter != 'All')
-          ? '$filter Trending Songs'
-          : 'Top Trending Music Hits';
+          ? '$filter Trending Songs$countrySuffix'
+          : 'Top Trending Music Hits$countrySuffix';
       trendingSongs = await youTubeSource.search(query, limit: 20);
     } catch (e) {
       debugPrint('[DiscoveryRepository] getHomeFeed trending songs error: $e');
@@ -182,8 +185,8 @@ class DiscoveryRepository {
     // 3. Fetch live charts / playlists
     try {
       final chartQuery = (filter != null && filter != 'All')
-          ? '$filter Hits Playlist'
-          : 'Top 50 Hits';
+          ? '$filter Hits Playlist$countrySuffix'
+          : 'Top 50 Hits$countrySuffix';
       chartsFromApi = await youTubeSource.searchPlaylists(chartQuery, limit: 8);
     } catch (_) {}
 
@@ -193,7 +196,7 @@ class DiscoveryRepository {
     // 5. Fetch daily mixes
     List<PlaylistModel> dailyMixes = [];
     try {
-      final mixes = await youTubeSource.searchPlaylists('Daily Mix', limit: 6);
+      final mixes = await youTubeSource.searchPlaylists('Daily Mix$countrySuffix', limit: 6);
       if (mixes.isNotEmpty) {
         dailyMixes = mixes;
       }
@@ -204,7 +207,7 @@ class DiscoveryRepository {
 
     // 6. Fetch new albums
     try {
-      final albumQuery = filter != null && filter != 'All' ? '$filter Album' : 'Top Albums';
+      final albumQuery = filter != null && filter != 'All' ? '$filter Album$countrySuffix' : 'Top Albums$countrySuffix';
       albums = await youTubeSource.searchAlbums(albumQuery, limit: 8);
     } catch (_) {}
 

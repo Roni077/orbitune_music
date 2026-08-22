@@ -78,8 +78,6 @@ class Track {
         'source': source,
         'bitrate': bitrate,
         'audioQuality': audioQuality.name,
-        'streamUrl': streamUrl,
-        'localFilePath': localFilePath,
         'isExplicit': isExplicit,
         'hasSyncedLyrics': hasSyncedLyrics,
       },

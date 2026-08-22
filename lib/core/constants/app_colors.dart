@@ -25,6 +25,32 @@ class AppColors {
   static const Color accentYellow = Color(0xFFEAB308); // Electric Yellow
   static const Color accentOrange = Color(0xFFF97316); // Vibrant Orange
   static const Color accentPurple = Color(0xFF8B5CF6); // Neon Purple
+  static const Color accentEmerald = Color(0xFF10B981); // Emerald Forest
+  static const Color accentCrimson = Color(0xFFEF4444); // Crimson Red
+
+  static const List<Color> accentPalette = [
+    accentGreen,
+    accentCyan,
+    accentIndigo,
+    accentPink,
+    accentOrange,
+    accentYellow,
+    accentPurple,
+    accentEmerald,
+    accentCrimson,
+  ];
+
+  static const List<String> accentColorNames = [
+    'Electric Green',
+    'Vibrant Cyan',
+    'Neon Indigo',
+    'Electric Pink',
+    'Sunset Orange',
+    'Solar Yellow',
+    'Neon Purple',
+    'Emerald Forest',
+    'Crimson Red',
+  ];
 
   // Text Colors
   static const Color textPrimary = Color(0xFFF8FAFC);

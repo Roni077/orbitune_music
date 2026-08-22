@@ -10,6 +10,7 @@ import 'package:orbitune/core/widgets/audio_badge.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/player_provider.dart';
 import 'package:orbitune/features/audio_player/presentation/screens/sleep_timer_sheet.dart';
+import 'package:orbitune/features/downloader/data/download_service.dart';
 import 'package:orbitune/features/equalizer/presentation/screens/equalizer_screen.dart';
 import 'package:orbitune/features/search/presentation/screens/album_detail_screen.dart';
 import 'package:orbitune/features/search/presentation/screens/artist_detail_screen.dart';
@@ -194,6 +195,22 @@ class PlayerHeader extends ConsumerWidget {
                     );
                   },
                 ),
+
+              // Download Song
+              ListTile(
+                leading: const Icon(LucideIcons.download, color: AppColors.accentNeonBlue),
+                title: const Text('Download Song'),
+                onTap: () {
+                  Navigator.pop(context);
+                  ref.read(downloadServiceProvider).startDownload(currentTrack);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Downloading "${currentTrack.title}"...'),
+                      backgroundColor: AppColors.darkSurfaceVariant,
+                    ),
+                  );
+                },
+              ),
 
               // Sleep Timer
               ListTile(

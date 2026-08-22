@@ -9,6 +9,7 @@ import 'package:orbitune/features/library/presentation/providers/favorites_provi
 import 'package:orbitune/features/library/presentation/providers/history_provider.dart';
 import 'package:orbitune/features/search/domain/models/artist_model.dart';
 import 'package:orbitune/features/search/domain/models/playlist_model.dart';
+import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
 
 /// State representation for Home Discovery dashboard
 class HomeState {
@@ -71,8 +72,9 @@ class HomeState {
 class HomeNotifier extends StateNotifier<HomeState> {
   final Ref _ref;
   final DiscoveryRepository _repository;
+  final String _country;
 
-  HomeNotifier(this._ref, this._repository) : super(const HomeState()) {
+  HomeNotifier(this._ref, this._repository, this._country) : super(const HomeState()) {
     loadHomeFeed();
   }
 
@@ -83,6 +85,7 @@ class HomeNotifier extends StateNotifier<HomeState> {
     try {
       final feed = await _repository.getHomeFeed(
         filter: state.selectedFilter,
+        country: _country,
       );
 
       final quickPicks = _computeQuickPicks(feed.banners);
@@ -114,6 +117,7 @@ class HomeNotifier extends StateNotifier<HomeState> {
     try {
       final feed = await _repository.getHomeFeed(
         filter: state.selectedFilter,
+        country: _country,
         forceRefresh: true,
       );
 
@@ -146,6 +150,7 @@ class HomeNotifier extends StateNotifier<HomeState> {
       final feed = await _repository.getHomeFeed(
         language: filter == 'All' ? 'hindi,english' : filter.toLowerCase(),
         filter: filter,
+        country: _country,
       );
 
       state = state.copyWith(
@@ -193,7 +198,8 @@ class HomeNotifier extends StateNotifier<HomeState> {
 /// Global provider for Home discovery state
 final homeProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
   final repository = ref.watch(discoveryRepositoryProvider);
-  return HomeNotifier(ref, repository);
+  final settings = ref.watch(settingsProvider);
+  return HomeNotifier(ref, repository, settings.country ?? 'Global');
 });
 
 /// Convenience selectors

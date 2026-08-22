@@ -61,7 +61,8 @@ void main() {
     // Tap on Settings tab icon
     await tester.tap(find.descendant(of: bottomNav, matching: find.byIcon(LucideIcons.settings)));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Streaming Quality'), findsOneWidget);
+    expect(find.text('Appearance & UI'), findsOneWidget);
+    expect(find.text('Audio & Playback'), findsOneWidget);
 
     // Tap back to Home tab icon
     await tester.tap(find.descendant(of: bottomNav, matching: find.byIcon(LucideIcons.house)));

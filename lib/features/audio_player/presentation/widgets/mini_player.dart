@@ -30,7 +30,6 @@ class MiniPlayer extends ConsumerWidget {
 
     final isPlaying = playerState.isPlaying;
     final isBuffering = playerState.isBuffering;
-    final isFavorite = track.isFavorite;
 
     final progressRatio = (playerState.duration.inMilliseconds > 0)
         ? (playerState.position.inMilliseconds / playerState.duration.inMilliseconds).clamp(0.0, 1.0)
@@ -129,18 +128,18 @@ class MiniPlayer extends ConsumerWidget {
                         ),
                       ),
 
-                      // Favorite Heart Button
+                      // Previous Track Button
                       IconButton(
-                        icon: Icon(
-                          isFavorite ? LucideIcons.heart : LucideIcons.heart,
+                        icon: const Icon(
+                          LucideIcons.skipBack,
                           size: 20,
-                          color: isFavorite ? AppColors.accentPink : AppColors.textMuted,
+                          color: AppColors.textPrimary,
                         ),
                         onPressed: () {
-                          HapticFeedback.selectionClick();
-                          ref.read(playerProvider.notifier).toggleFavorite();
+                          HapticFeedback.lightImpact();
+                          ref.read(playerProvider.notifier).previous();
                         },
-                        tooltip: 'Favorite',
+                        tooltip: 'Previous',
                       ),
 
                       // Play / Pause Button with Buffering state

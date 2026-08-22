@@ -12,6 +12,7 @@ import 'package:orbitune/core/widgets/image_shimmer.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/player_provider.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/queue_provider.dart';
+import 'package:orbitune/features/downloader/data/download_service.dart';
 import 'package:orbitune/features/library/presentation/providers/favorites_provider.dart';
 import 'package:orbitune/features/search/presentation/screens/album_detail_screen.dart';
 import 'package:orbitune/features/search/presentation/screens/artist_detail_screen.dart';
@@ -332,6 +333,22 @@ class TrackTile extends ConsumerWidget {
                 onTap: () {
                   Navigator.pop(ctx);
                   ref.read(favoritesProvider.notifier).toggleFavorite(track);
+                },
+              ),
+
+              // Action: Download
+              ListTile(
+                leading: const Icon(LucideIcons.download, color: AppColors.accentNeonBlue, size: 20),
+                title: Text('Download', style: AppTypography.bodyMedium),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  ref.read(downloadServiceProvider).startDownload(track);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Downloading "${track.title}"...'),
+                      backgroundColor: AppColors.darkSurfaceVariant,
+                    ),
+                  );
                 },
               ),
 

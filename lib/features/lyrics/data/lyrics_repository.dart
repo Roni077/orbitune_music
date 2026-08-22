@@ -51,10 +51,20 @@ class LyricsRepository {
 
   /// Fetches plain text lyrics
   Future<String?> getPlainLyrics(Track track) async {
-    final synced = await getSyncedLyrics(track);
-    if (synced.isNotEmpty) {
-      return synced.map((l) => l.text).where((t) => t.isNotEmpty).join('\n');
+    // getSyncedLyrics() runs first and caches whatever the API returns (LRC or plain text).
+    // We can just read the cached raw string and extract plain text from it.
+    final cached = cacheRepository.getCachedLyrics(track.id);
+    if (cached != null && cached.isNotEmpty) {
+      return LrcParser.extractPlainLyrics(cached);
     }
+    
+    // Fallback if not cached
+    final lrcLibLyrics = await _fetchFromLrcLib(track);
+    if (lrcLibLyrics != null && lrcLibLyrics.isNotEmpty) {
+      await cacheRepository.cacheLyrics(track.id, lrcLibLyrics);
+      return LrcParser.extractPlainLyrics(lrcLibLyrics);
+    }
+    
     return null;
   }
 

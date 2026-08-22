@@ -34,7 +34,7 @@ class OrbituneAudioHandler {
   /// Default HTTP streaming headers for audio CDNs (clean, non-hop-by-hop)
   static const Map<String, String> defaultStreamHeaders = {
     'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
     'Accept': '*/*',
   };
 
@@ -67,7 +67,7 @@ class OrbituneAudioHandler {
       final Map<String, String> ytHeaders = Map.from(headers ?? {});
       if (!ytHeaders.containsKey('User-Agent') && !ytHeaders.containsKey('user-agent')) {
         ytHeaders['User-Agent'] =
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';
       }
       if (!ytHeaders.containsKey('Accept') && !ytHeaders.containsKey('accept')) {
         ytHeaders['Accept'] = '*/*';

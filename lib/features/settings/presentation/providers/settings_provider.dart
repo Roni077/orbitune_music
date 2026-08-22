@@ -95,6 +95,158 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     await _repository.saveSettings(state);
   }
 
+  Future<void> setOnboardingData({
+    required bool hasCompletedOnboarding,
+    required String username,
+    required String country,
+  }) async {
+    state = state.copyWith(
+      hasCompletedOnboarding: hasCompletedOnboarding,
+      username: username,
+      country: country,
+    );
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setUsername(String username) async {
+    state = state.copyWith(username: username);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setBio(String bio) async {
+    state = state.copyWith(bio: bio);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setAvatarIcon(String icon) async {
+    state = state.copyWith(avatarIcon: icon);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setAvatarColorIndex(int index) async {
+    state = state.copyWith(avatarColorIndex: index);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setProfileBadge(String badge) async {
+    state = state.copyWith(profileBadge: badge);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setFavoriteGenre(String genre) async {
+    state = state.copyWith(favoriteGenre: genre);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> updateProfile({
+    String? username,
+    String? bio,
+    String? avatarIcon,
+    int? avatarColorIndex,
+    String? profileBadge,
+    String? favoriteGenre,
+    String? country,
+  }) async {
+    state = state.copyWith(
+      username: username ?? state.username,
+      bio: bio ?? state.bio,
+      avatarIcon: avatarIcon ?? state.avatarIcon,
+      avatarColorIndex: avatarColorIndex ?? state.avatarColorIndex,
+      profileBadge: profileBadge ?? state.profileBadge,
+      favoriteGenre: favoriteGenre ?? state.favoriteGenre,
+      country: country ?? state.country,
+      contentCountry: country ?? state.contentCountry,
+    );
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setAccentColorIndex(int index) async {
+    state = state.copyWith(accentColorIndex: index);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setFontFamily(String family) async {
+    state = state.copyWith(fontFamily: family);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setCornerRadius(double radius) async {
+    state = state.copyWith(cornerRadius: radius);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setGlassmorphism(bool enabled) async {
+    state = state.copyWith(enableGlassmorphism: enabled);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setVisualizerEnabled(bool enabled) async {
+    state = state.copyWith(enableVisualizer: enabled);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setShowBitrateBadge(bool show) async {
+    state = state.copyWith(showBitrateBadge: show);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setAudioNormalization(bool enabled) async {
+    state = state.copyWith(audioNormalization: enabled);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setPauseOnUnplug(bool enabled) async {
+    state = state.copyWith(pauseOnUnplug: enabled);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setResumeOnBluetooth(bool enabled) async {
+    state = state.copyWith(resumeOnBluetooth: enabled);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setSkipSilence(bool enabled) async {
+    state = state.copyWith(skipSilence: enabled);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setContentCountry(String country) async {
+    state = state.copyWith(contentCountry: country);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setLyricsSource(String source) async {
+    state = state.copyWith(lyricsSource: source);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setExplicitFilter(bool enabled) async {
+    state = state.copyWith(explicitFilter: enabled);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setLanguage(String language) async {
+    state = state.copyWith(language: language);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> setIncognitoMode(bool enabled) async {
+    state = state.copyWith(incognitoMode: enabled);
+    await _repository.saveSettings(state);
+  }
+
+  Future<void> resetAllSettings() async {
+    final prevCompleted = state.hasCompletedOnboarding;
+    final prevUser = state.username;
+    final prevCountry = state.country;
+    state = AppSettings(
+      hasCompletedOnboarding: prevCompleted,
+      username: prevUser,
+      country: prevCountry,
+    );
+    await _repository.saveSettings(state);
+  }
+
   void refresh() {
     _loadSettings();
   }

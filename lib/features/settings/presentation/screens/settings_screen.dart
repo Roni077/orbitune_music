@@ -4,15 +4,19 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/widgets/expressive_card.dart';
-import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
-import 'package:orbitune/features/downloader/presentation/screens/downloads_screen.dart';
-import 'package:orbitune/features/equalizer/presentation/screens/equalizer_screen.dart';
-import 'package:orbitune/features/search/data/search_cache_repository.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
 import 'package:orbitune/features/settings/presentation/screens/about_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/appearance_settings_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/audio_playback_settings_screen.dart';
 import 'package:orbitune/features/settings/presentation/screens/backup_restore_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/content_settings_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/privacy_settings_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/profile_customize_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/storage_settings_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/theme_settings_screen.dart';
+import 'package:orbitune/features/settings/presentation/widgets/settings_tile.dart';
 
-/// Central Settings Screen with Audio Quality, Equalizer, Theming, Cache, and Privacy
+/// Central Settings Hub Dashboard routing to dedicated nested sub-screens
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -25,7 +29,10 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
-    final notifier = ref.read(settingsProvider.notifier);
+    final accent = (settings.accentColorIndex >= 0 &&
+            settings.accentColorIndex < AppColors.accentPalette.length)
+        ? AppColors.accentPalette[settings.accentColorIndex]
+        : AppColors.accentGreen;
 
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
@@ -37,319 +44,139 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
         children: [
-          // 1. AUDIO & PLAYBACK SECTION
-          _buildSectionHeader('Audio & Playback'),
-          _buildSettingCard(
+          // 1. USER PROFILE / HEADER CARD
+          _buildUserProfileCard(context, settings, accent),
+          const SizedBox(height: 24),
+
+          // 2. PERSONALIZATION & STYLING
+          _buildSectionHeader('Personalization & Style'),
+          _buildCard(
             child: Column(
               children: [
-                // Streaming Quality
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(LucideIcons.radio, color: AppColors.accentCyan),
-                  title: Text('Streaming Quality', style: AppTypography.titleSmall),
-                  subtitle: Text(
-                    '${settings.streamingQuality.label} • ${settings.streamingQuality.bitrateKbps}kbps',
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-                  ),
-                  trailing: DropdownButton<AudioQuality>(
-                    value: settings.streamingQuality,
-                    dropdownColor: AppColors.darkSurfaceVariant,
-                    underline: const SizedBox.shrink(),
-                    icon: const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.textSecondary),
-                    items: AudioQuality.values.map((q) {
-                      return DropdownMenuItem(
-                        value: q,
-                        child: Text(
-                          q.label,
-                          style: TextStyle(
-                            color: q == settings.streamingQuality
-                                ? AppColors.accentGreen
-                                : AppColors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) notifier.setStreamingQuality(val);
-                    },
-                  ),
-                ),
-                const Divider(color: AppColors.glassBorder, height: 20),
-
-                // Download Quality
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(LucideIcons.downloadCloud, color: AppColors.accentGreen),
-                  title: Text('Download Quality', style: AppTypography.titleSmall),
-                  subtitle: Text(
-                    '${settings.downloadQuality.label} • ${settings.downloadQuality.bitrateKbps}kbps',
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-                  ),
-                  trailing: DropdownButton<AudioQuality>(
-                    value: settings.downloadQuality,
-                    dropdownColor: AppColors.darkSurfaceVariant,
-                    underline: const SizedBox.shrink(),
-                    icon: const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.textSecondary),
-                    items: AudioQuality.values.map((q) {
-                      return DropdownMenuItem(
-                        value: q,
-                        child: Text(
-                          q.label,
-                          style: TextStyle(
-                            color: q == settings.downloadQuality
-                                ? AppColors.accentGreen
-                                : AppColors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) notifier.setDownloadQuality(val);
-                    },
-                  ),
-                ),
-                const Divider(color: AppColors.glassBorder, height: 20),
-
-                // 10-Band Equalizer shortcut
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(LucideIcons.slidersHorizontal, color: AppColors.accentPink),
-                  title: Text('10-Band DSP Equalizer', style: AppTypography.titleSmall),
-                  subtitle: Text(
-                    settings.equalizerEnabled
-                        ? 'Active Preset: ${settings.equalizerPreset}'
-                        : 'Custom bands, Bass Boost & 3D Virtualizer',
-                    style: AppTypography.bodySmall.copyWith(
-                      color: settings.equalizerEnabled
-                          ? AppColors.accentGreen
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                  trailing: const Icon(Icons.chevron_right, color: AppColors.textTertiary),
-                  onTap: () => EqualizerScreen.open(context),
-                ),
-                const Divider(color: AppColors.glassBorder, height: 20),
-
-                // Crossfade slider
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(LucideIcons.gitFork, color: AppColors.accentOrange, size: 20),
-                            const SizedBox(width: 12),
-                            Text('Crossfade Tracks', style: AppTypography.titleSmall),
-                          ],
-                        ),
-                        Text(
-                          settings.crossfadeDurationSeconds == 0
-                              ? 'Off'
-                              : '${settings.crossfadeDurationSeconds}s',
-                          style: AppTypography.labelMedium.copyWith(
-                            color: settings.crossfadeDurationSeconds > 0
-                                ? AppColors.accentGreen
-                                : AppColors.textSecondary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Slider(
-                      value: settings.crossfadeDurationSeconds.toDouble(),
-                      min: 0,
-                      max: 12,
-                      divisions: 12,
-                      activeColor: AppColors.accentGreen,
-                      inactiveColor: AppColors.white.withOpacity(0.1),
-                      onChanged: (val) => notifier.setCrossfadeDuration(val.toInt()),
-                    ),
-                  ],
+                SettingsTile(
+                  icon: LucideIcons.userCircle2,
+                  iconColor: AppColors.accentCyan,
+                  title: 'Profile & Persona',
+                  subtitle: '${settings.username ?? "Orbitune Listener"} • ${settings.profileBadge}',
+                  badgeText: settings.profileBadge,
+                  badgeColor: AppColors.accentCyan,
+                  showChevron: true,
+                  onTap: () => ProfileCustomizeScreen.open(context),
                 ),
                 const Divider(color: AppColors.glassBorder, height: 16),
-
-                // Gapless Playback Switch
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  secondary: const Icon(LucideIcons.music, color: AppColors.accentPurple),
-                  title: Text('Gapless Playback', style: AppTypography.titleSmall),
-                  subtitle: Text('Seamless transitions between album tracks',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-                  value: settings.gaplessPlayback,
-                  activeTrackColor: AppColors.accentGreen,
-                  onChanged: (val) => notifier.setGaplessPlayback(val),
+                SettingsTile(
+                  icon: LucideIcons.palette,
+                  iconColor: AppColors.accentPink,
+                  title: 'Appearance & UI',
+                  subtitle: 'Shapes, visualizer bars, mesh glow & typography',
+                  badgeText: '${settings.cornerRadius.toInt()}px',
+                  badgeColor: AppColors.accentPink,
+                  showChevron: true,
+                  onTap: () => AppearanceSettingsScreen.open(context),
                 ),
-
-                // AutoPlay Switch
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  secondary: const Icon(LucideIcons.sparkles, color: AppColors.accentYellow),
-                  title: Text('AutoPlay Similar Music', style: AppTypography.titleSmall),
-                  subtitle: Text('Keep the music playing when queue ends',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-                  value: settings.autoPlay,
-                  activeTrackColor: AppColors.accentGreen,
-                  onChanged: (val) => notifier.setAutoPlay(val),
+                const Divider(color: AppColors.glassBorder, height: 16),
+                SettingsTile(
+                  icon: LucideIcons.sparkles,
+                  iconColor: accent,
+                  title: 'Theme & Palette',
+                  subtitle: _getThemeSubtitle(settings.themeMode),
+                  badgeText: _getThemeBadge(settings.themeMode),
+                  badgeColor: accent,
+                  showChevron: true,
+                  onTap: () => ThemeSettingsScreen.open(context),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 20),
 
-          // 2. APPEARANCE & THEME
-          _buildSectionHeader('Appearance & Theming'),
-          _buildSettingCard(
+          // 3. AUDIO & CONTENT ENGINE
+          _buildSectionHeader('Audio Engine & Music'),
+          _buildCard(
             child: Column(
               children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(LucideIcons.palette, color: AppColors.accentPink),
-                  title: Text('Theme Style', style: AppTypography.titleSmall),
-                  subtitle: Text(
-                    _getThemeName(settings.themeMode),
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-                  ),
-                  trailing: DropdownButton<String>(
-                    value: settings.themeMode,
-                    dropdownColor: AppColors.darkSurfaceVariant,
-                    underline: const SizedBox.shrink(),
-                    icon: const Icon(LucideIcons.chevronDown, size: 18, color: AppColors.textSecondary),
-                    items: const [
-                      DropdownMenuItem(value: 'dark', child: Text('Deep Midnight')),
-                      DropdownMenuItem(value: 'oled', child: Text('Pure OLED Black')),
-                      DropdownMenuItem(value: 'dynamic', child: Text('Dynamic Material You')),
-                      DropdownMenuItem(value: 'light', child: Text('Light Mode')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) notifier.setThemeMode(val);
-                    },
-                  ),
+                SettingsTile(
+                  icon: LucideIcons.music,
+                  iconColor: AppColors.accentGreen,
+                  title: 'Audio & Playback',
+                  subtitle: '${settings.streamingQuality.label} • ${settings.crossfadeDurationSeconds}s Crossfade • 10-Band EQ',
+                  badgeText: '${settings.streamingQuality.bitrateKbps}kbps',
+                  badgeColor: AppColors.accentGreen,
+                  showChevron: true,
+                  onTap: () => AudioPlaybackSettingsScreen.open(context),
                 ),
                 const Divider(color: AppColors.glassBorder, height: 16),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  secondary: const Icon(LucideIcons.sparkles, color: AppColors.accentCyan),
-                  title: Text('Dynamic Artwork Colors', style: AppTypography.titleSmall),
-                  subtitle: Text('Adapt player background to album cover',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-                  value: settings.dynamicColorEnabled,
-                  activeTrackColor: AppColors.accentGreen,
-                  onChanged: (val) => notifier.setDynamicColorEnabled(val),
+                SettingsTile(
+                  icon: LucideIcons.globe,
+                  iconColor: AppColors.accentCyan,
+                  title: 'Content & Region',
+                  subtitle: 'Regional charts (${settings.contentCountry}) • LRCLIB Lyrics',
+                  badgeText: settings.contentCountry,
+                  badgeColor: AppColors.accentCyan,
+                  showChevron: true,
+                  onTap: () => ContentSettingsScreen.open(context),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 20),
 
-          // 3. NETWORK & STORAGE
-          _buildSectionHeader('Network & Offline Storage'),
-          _buildSettingCard(
+          // 4. STORAGE, DATA & PRIVACY
+          _buildSectionHeader('Storage & Privacy'),
+          _buildCard(
             child: Column(
               children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  secondary: const Icon(LucideIcons.wifi, color: AppColors.accentCyan),
-                  title: Text('Stream on Wi-Fi Only', style: AppTypography.titleSmall),
-                  subtitle: Text('Prevent streaming audio over mobile data',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-                  value: settings.wifiOnlyStreaming,
-                  activeTrackColor: AppColors.accentGreen,
-                  onChanged: (val) => notifier.setWifiOnlyStreaming(val),
+                SettingsTile(
+                  icon: LucideIcons.hardDrive,
+                  iconColor: AppColors.accentPurple,
+                  title: 'Storage & Cache',
+                  subtitle: 'Storage breakdown, Wi-Fi rules & granular cache clearing',
+                  badgeText: '${settings.cacheSizeLimitMb}MB Limit',
+                  badgeColor: AppColors.accentPurple,
+                  showChevron: true,
+                  onTap: () => StorageSettingsScreen.open(context),
                 ),
                 const Divider(color: AppColors.glassBorder, height: 16),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  secondary: const Icon(LucideIcons.downloadCloud, color: AppColors.accentGreen),
-                  title: Text('Download on Wi-Fi Only', style: AppTypography.titleSmall),
-                  subtitle: Text('Save mobile data during offline downloads',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-                  value: settings.wifiOnlyDownloads,
-                  activeTrackColor: AppColors.accentGreen,
-                  onChanged: (val) => notifier.setWifiOnlyDownloads(val),
-                ),
-                const Divider(color: AppColors.glassBorder, height: 20),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(LucideIcons.folderHeart, color: AppColors.accentPurple),
-                  title: Text('Manage Offline Downloads', style: AppTypography.titleSmall),
-                  subtitle: Text('View downloaded songs and free up device space',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-                  trailing: const Icon(Icons.chevron_right, color: AppColors.textTertiary),
-                  onTap: () => DownloadsScreen.open(context),
+                SettingsTile(
+                  icon: LucideIcons.shieldCheck,
+                  iconColor: AppColors.accentIndigo,
+                  title: 'Data & Privacy',
+                  subtitle: settings.incognitoMode
+                      ? 'Incognito Mode Active • No logs saved'
+                      : 'History tracking, search cache & logs',
+                  badgeText: settings.incognitoMode ? 'INCOGNITO' : null,
+                  badgeColor: AppColors.accentPurple,
+                  showChevron: true,
+                  onTap: () => PrivacySettingsScreen.open(context),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 20),
 
-          // 4. DATA, PRIVACY & BACKUP
-          _buildSectionHeader('Data, History & Backup'),
-          _buildSettingCard(
+          // 5. BACKUP & ABOUT
+          _buildSectionHeader('System & About'),
+          _buildCard(
             child: Column(
               children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  secondary: const Icon(LucideIcons.history, color: AppColors.accentCyan),
-                  title: Text('Keep Listening History', style: AppTypography.titleSmall),
-                  subtitle: Text('Log listened songs for statistics & history tab',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-                  value: settings.listeningHistoryEnabled,
-                  activeTrackColor: AppColors.accentGreen,
-                  onChanged: (val) => notifier.setListeningHistoryEnabled(val),
-                ),
-                const Divider(color: AppColors.glassBorder, height: 20),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(LucideIcons.hardDriveDownload, color: AppColors.accentGreen),
-                  title: Text('Backup & Restore', style: AppTypography.titleSmall),
-                  subtitle: Text('Export and import playlists & favorites as JSON',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-                  trailing: const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+                SettingsTile(
+                  icon: LucideIcons.hardDriveDownload,
+                  iconColor: AppColors.accentEmerald,
+                  title: 'Backup & Restore',
+                  subtitle: 'Export & restore playlists, favorites and settings as JSON',
+                  showChevron: true,
                   onTap: () => BackupRestoreScreen.open(context),
                 ),
-                const Divider(color: AppColors.glassBorder, height: 20),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(LucideIcons.trash2, color: AppColors.accentPink),
-                  title: Text('Clear All Cache', style: AppTypography.titleSmall.copyWith(color: AppColors.accentPink)),
-                  subtitle: Text('Clear search cache, lyrics cache, and temp files',
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-                  onTap: () async {
-                    await ref.read(searchCacheRepositoryProvider).clearCache();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Temporary cache cleared successfully!'),
-                          backgroundColor: AppColors.accentGreen,
-                        ),
-                      );
-                    }
-                  },
+                const Divider(color: AppColors.glassBorder, height: 16),
+                SettingsTile(
+                  icon: LucideIcons.info,
+                  iconColor: AppColors.accentYellow,
+                  title: 'About Orbitune',
+                  subtitle: 'Version 1.0.0 (Build 1) • System diagnostics & licenses',
+                  showChevron: true,
+                  onTap: () => AboutScreen.open(context),
                 ),
               ],
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // 5. ABOUT & VERSION
-          _buildSectionHeader('About'),
-          _buildSettingCard(
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(LucideIcons.info, color: AppColors.accentYellow),
-              title: Text('About Orbitune', style: AppTypography.titleSmall),
-              subtitle: Text('Version 1.0.0 (Build 1) • Open source licenses',
-                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
-              trailing: const Icon(Icons.chevron_right, color: AppColors.textTertiary),
-              onTap: () => AboutScreen.open(context),
             ),
           ),
 
@@ -357,6 +184,146 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildUserProfileCard(
+    BuildContext context,
+    dynamic settings,
+    Color accent,
+  ) {
+    final username = settings.username ?? 'Orbitune Listener';
+    final bio = settings.bio ?? 'Listening on Orbitune';
+    final iconData = _getAvatarIconData(settings.avatarIcon);
+    final avatarAccent = (settings.avatarColorIndex >= 0 &&
+            settings.avatarColorIndex < AppColors.accentPalette.length)
+        ? AppColors.accentPalette[settings.avatarColorIndex]
+        : accent;
+
+    return InkWell(
+      onTap: () => ProfileCustomizeScreen.open(context),
+      borderRadius: BorderRadius.circular(22),
+      child: ExpressiveCard(
+        padding: const EdgeInsets.all(16),
+        borderRadius: BorderRadius.circular(22),
+        color: AppColors.darkSurfaceVariant.withValues(alpha: 0.65),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [avatarAccent, avatarAccent.withValues(alpha: 0.55)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: avatarAccent.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Icon(
+                  iconData,
+                  size: 28,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          username,
+                          style: AppTypography.titleMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(
+                        LucideIcons.pencil,
+                        size: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    bio,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: avatarAccent.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: avatarAccent.withValues(alpha: 0.4),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                settings.profileBadge.toUpperCase(),
+                style: AppTypography.labelSmall.copyWith(
+                  color: avatarAccent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getAvatarIconData(String? iconName) {
+    switch (iconName) {
+      case 'headphones':
+        return LucideIcons.headphones;
+      case 'music':
+        return LucideIcons.music;
+      case 'sparkles':
+        return LucideIcons.sparkles;
+      case 'disc':
+        return LucideIcons.disc;
+      case 'flame':
+        return LucideIcons.flame;
+      case 'heart':
+        return LucideIcons.heart;
+      case 'zap':
+        return LucideIcons.zap;
+      case 'rocket':
+        return LucideIcons.rocket;
+      case 'star':
+        return LucideIcons.star;
+      case 'radio':
+        return LucideIcons.radio;
+      case 'mic':
+        return LucideIcons.mic;
+      case 'user':
+      default:
+        return LucideIcons.user;
+    }
   }
 
   Widget _buildSectionHeader(String title) {
@@ -373,7 +340,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSettingCard({required Widget child}) {
+  Widget _buildCard({required Widget child}) {
     return ExpressiveCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       borderRadius: BorderRadius.circular(20),
@@ -385,17 +352,39 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  String _getThemeName(String mode) {
+  String _getThemeSubtitle(String mode) {
     switch (mode) {
       case 'oled':
-        return 'Pure OLED Black';
-      case 'dynamic':
-        return 'Dynamic Material You';
+        return 'Pure OLED Black (#000000)';
       case 'light':
         return 'Light Mode';
+      case 'dynamic':
+        return 'Material You Dynamic';
+      case 'solarized':
+        return 'Solarized Amber Warm';
+      case 'cyberpunk':
+        return 'Cyberpunk Neon Glow';
       case 'dark':
       default:
-        return 'Deep Midnight';
+        return 'Deep Midnight Navy';
+    }
+  }
+
+  String _getThemeBadge(String mode) {
+    switch (mode) {
+      case 'oled':
+        return 'OLED';
+      case 'light':
+        return 'LIGHT';
+      case 'dynamic':
+        return 'DYNAMIC';
+      case 'solarized':
+        return 'SOLAR';
+      case 'cyberpunk':
+        return 'NEON';
+      case 'dark':
+      default:
+        return 'DARK';
     }
   }
 }

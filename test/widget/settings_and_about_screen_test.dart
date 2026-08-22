@@ -10,8 +10,14 @@ import 'package:orbitune/features/library/presentation/providers/user_playlists_
 import 'package:orbitune/features/settings/domain/models/app_settings.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
 import 'package:orbitune/features/settings/presentation/screens/about_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/appearance_settings_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/audio_playback_settings_screen.dart';
 import 'package:orbitune/features/settings/presentation/screens/backup_restore_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/content_settings_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/privacy_settings_screen.dart';
 import 'package:orbitune/features/settings/presentation/screens/settings_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/storage_settings_screen.dart';
+import 'package:orbitune/features/settings/presentation/screens/theme_settings_screen.dart';
 import '../helpers/mock_audio_platform.dart';
 
 class _MockSettingsNotifier extends StateNotifier<AppSettings>
@@ -99,7 +105,152 @@ class _MockSettingsNotifier extends StateNotifier<AppSettings>
   }
 
   @override
+  Future<void> setAccentColorIndex(int index) async {
+    state = state.copyWith(accentColorIndex: index);
+  }
+
+  @override
+  Future<void> setFontFamily(String family) async {
+    state = state.copyWith(fontFamily: family);
+  }
+
+  @override
+  Future<void> setCornerRadius(double radius) async {
+    state = state.copyWith(cornerRadius: radius);
+  }
+
+  @override
+  Future<void> setGlassmorphism(bool enabled) async {
+    state = state.copyWith(enableGlassmorphism: enabled);
+  }
+
+  @override
+  Future<void> setVisualizerEnabled(bool enabled) async {
+    state = state.copyWith(enableVisualizer: enabled);
+  }
+
+  @override
+  Future<void> setShowBitrateBadge(bool show) async {
+    state = state.copyWith(showBitrateBadge: show);
+  }
+
+  @override
+  Future<void> setAudioNormalization(bool enabled) async {
+    state = state.copyWith(audioNormalization: enabled);
+  }
+
+  @override
+  Future<void> setPauseOnUnplug(bool enabled) async {
+    state = state.copyWith(pauseOnUnplug: enabled);
+  }
+
+  @override
+  Future<void> setResumeOnBluetooth(bool enabled) async {
+    state = state.copyWith(resumeOnBluetooth: enabled);
+  }
+
+  @override
+  Future<void> setSkipSilence(bool enabled) async {
+    state = state.copyWith(skipSilence: enabled);
+  }
+
+  @override
+  Future<void> setContentCountry(String country) async {
+    state = state.copyWith(contentCountry: country);
+  }
+
+  @override
+  Future<void> setLyricsSource(String source) async {
+    state = state.copyWith(lyricsSource: source);
+  }
+
+  @override
+  Future<void> setExplicitFilter(bool enabled) async {
+    state = state.copyWith(explicitFilter: enabled);
+  }
+
+  @override
+  Future<void> setLanguage(String language) async {
+    state = state.copyWith(language: language);
+  }
+
+  @override
+  Future<void> setIncognitoMode(bool enabled) async {
+    state = state.copyWith(incognitoMode: enabled);
+  }
+
+  @override
+  Future<void> resetAllSettings() async {
+    state = const AppSettings();
+  }
+
+  @override
   void refresh() {}
+
+  @override
+  Future<void> setOnboardingData({
+    required bool hasCompletedOnboarding,
+    required String username,
+    required String country,
+  }) async {
+    state = state.copyWith(
+      hasCompletedOnboarding: hasCompletedOnboarding,
+      username: username,
+      country: country,
+    );
+  }
+
+  @override
+  Future<void> setUsername(String username) async {
+    state = state.copyWith(username: username);
+  }
+
+  @override
+  Future<void> setBio(String bio) async {
+    state = state.copyWith(bio: bio);
+  }
+
+  @override
+  Future<void> setAvatarIcon(String icon) async {
+    state = state.copyWith(avatarIcon: icon);
+  }
+
+  @override
+  Future<void> setAvatarColorIndex(int index) async {
+    state = state.copyWith(avatarColorIndex: index);
+  }
+
+  @override
+  Future<void> setProfileBadge(String badge) async {
+    state = state.copyWith(profileBadge: badge);
+  }
+
+  @override
+  Future<void> setFavoriteGenre(String genre) async {
+    state = state.copyWith(favoriteGenre: genre);
+  }
+
+  @override
+  Future<void> updateProfile({
+    String? username,
+    String? bio,
+    String? avatarIcon,
+    int? avatarColorIndex,
+    String? profileBadge,
+    String? favoriteGenre,
+    String? country,
+  }) async {
+    state = state.copyWith(
+      username: username ?? state.username,
+      bio: bio ?? state.bio,
+      avatarIcon: avatarIcon ?? state.avatarIcon,
+      avatarColorIndex: avatarColorIndex ?? state.avatarColorIndex,
+      profileBadge: profileBadge ?? state.profileBadge,
+      favoriteGenre: favoriteGenre ?? state.favoriteGenre,
+      country: country ?? state.country,
+      contentCountry: country ?? state.contentCountry,
+    );
+  }
 }
 
 class _MockFavNotifier extends StateNotifier<List<FavoriteSong>>
@@ -146,8 +297,8 @@ void main() {
     registerMockJustAudioPlatform();
   });
 
-  group('SettingsScreen, AboutScreen & BackupRestoreScreen Widget Tests', () {
-    testWidgets('SettingsScreen renders audio, theme, network, and data sections',
+  group('Settings Hub & Nested Sub-Screens Widget Tests', () {
+    testWidgets('SettingsScreen renders hub sections, profile, and navigation tiles',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1600));
       await tester.pumpWidget(
@@ -165,12 +316,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Settings'), findsOneWidget);
-      expect(find.text('Streaming Quality'), findsOneWidget);
-      expect(find.text('Download Quality'), findsOneWidget);
-      expect(find.text('10-Band DSP Equalizer'), findsOneWidget);
-      expect(find.text('Crossfade Tracks'), findsOneWidget);
-      expect(find.text('Gapless Playback'), findsOneWidget);
-      expect(find.text('Theme Style'), findsOneWidget);
+      expect(find.text('Appearance & UI'), findsOneWidget);
+      expect(find.text('Theme & Palette'), findsOneWidget);
+      expect(find.text('Audio & Playback'), findsOneWidget);
+      expect(find.text('Content & Region'), findsOneWidget);
+      expect(find.text('Storage & Cache'), findsOneWidget);
+      expect(find.text('Data & Privacy'), findsOneWidget);
       expect(find.text('Backup & Restore'), findsOneWidget);
       expect(find.text('About Orbitune'), findsOneWidget);
 
@@ -178,7 +329,172 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('AboutScreen renders brand info, version, and feature list',
+    testWidgets('AppearanceSettingsScreen renders Live Preview and customization options',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            settingsProvider.overrideWith((ref) => _MockSettingsNotifier(const AppSettings())),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const AppearanceSettingsScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Appearance & UI'), findsOneWidget);
+      expect(find.text('LIVE PREVIEW'), findsOneWidget);
+      expect(find.text('Dynamic Artwork Colors'), findsOneWidget);
+      expect(find.text('Animated Visualizer'), findsOneWidget);
+      expect(find.text('Audio Quality Badges'), findsOneWidget);
+      expect(find.text('Card Corner Roundness'), findsOneWidget);
+      expect(find.text('Glassmorphic Blur Container'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('ThemeSettingsScreen renders theme cards and accent color swatches',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            settingsProvider.overrideWith((ref) => _MockSettingsNotifier(const AppSettings())),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const ThemeSettingsScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Theme & Palette'), findsOneWidget);
+      expect(find.text('Deep Midnight'), findsOneWidget);
+      expect(find.text('Pure OLED'), findsOneWidget);
+      expect(find.text('Light Mode'), findsOneWidget);
+      expect(find.text('Solarized Amber'), findsOneWidget);
+      expect(find.text('Cyberpunk Neon'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('AudioPlaybackSettingsScreen renders bitrates, crossfade, and equalizer',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            settingsProvider.overrideWith((ref) => _MockSettingsNotifier(const AppSettings())),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const AudioPlaybackSettingsScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Audio & Playback'), findsOneWidget);
+      expect(find.text('Streaming Quality'), findsOneWidget);
+      expect(find.text('Download Quality'), findsOneWidget);
+      expect(find.text('10-Band DSP Equalizer'), findsOneWidget);
+      expect(find.text('Crossfade Duration'), findsOneWidget);
+      expect(find.text('Gapless Playback'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('StorageSettingsScreen renders storage visualizer and cache actions',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            settingsProvider.overrideWith((ref) => _MockSettingsNotifier(const AppSettings())),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const StorageSettingsScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Storage & Cache'), findsOneWidget);
+      expect(find.text('Orbitune Footprint'), findsOneWidget);
+      expect(find.text('Stream on Wi-Fi Only'), findsOneWidget);
+      expect(find.text('Manage Offline Downloads'), findsOneWidget);
+      expect(find.text('Clear All Application Cache'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('PrivacySettingsScreen renders incognito mode and clear actions',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            settingsProvider.overrideWith((ref) => _MockSettingsNotifier(const AppSettings())),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const PrivacySettingsScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Data & Privacy'), findsOneWidget);
+      expect(find.text('Incognito Private Session'), findsOneWidget);
+      expect(find.text('Keep Listening History'), findsOneWidget);
+      expect(find.text('Clear Listening History'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('ContentSettingsScreen renders regional charts, language and lyrics source',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            settingsProvider.overrideWith((ref) => _MockSettingsNotifier(const AppSettings())),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const ContentSettingsScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.text('Content & Region'), findsOneWidget);
+      expect(find.text('Music Country / Region'), findsOneWidget);
+      expect(find.text('App Interface Language'), findsOneWidget);
+      expect(find.text('Synchronized Lyrics Source'), findsOneWidget);
+      expect(find.text('Explicit Content Filter'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('AboutScreen renders brand info, version, and system diagnostics',
         (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1400));
       await tester.pumpWidget(
@@ -194,15 +510,16 @@ void main() {
       expect(find.text('Orbitune'), findsOneWidget);
       expect(find.text('Version 1.0.0 (Build 1)'), findsOneWidget);
       expect(find.text('Material 3 Expressive UI'), findsOneWidget);
+      expect(find.text('System & Device Diagnostics'), findsOneWidget);
       expect(find.text('Open Source Licenses'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
 
-    testWidgets('BackupRestoreScreen renders Export and Restore sections',
+    testWidgets('BackupRestoreScreen renders Export, Restore, and Reset sections',
         (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 1400));
+      await tester.binding.setSurfaceSize(const Size(800, 1600));
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -224,6 +541,7 @@ void main() {
       expect(find.text('Restore from Backup'), findsOneWidget);
       expect(find.text('Copy JSON'), findsOneWidget);
       expect(find.text('Restore Data'), findsOneWidget);
+      expect(find.text('Factory Reset Settings'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();

@@ -3,35 +3,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
-import 'package:orbitune/core/theme/theme_provider.dart';
+import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
 
 /// Top greeting header with brand title, time-aware greeting, and quick action icons
 class GreetingHeader extends ConsumerWidget {
-  final VoidCallback? onSearchTap;
   final VoidCallback? onSettingsTap;
 
   const GreetingHeader({
     super.key,
-    this.onSearchTap,
     this.onSettingsTap,
   });
 
-  String _getGreeting() {
+  String _getGreeting(String username) {
     final hour = DateTime.now().hour;
+    String greeting;
     if (hour >= 5 && hour < 12) {
-      return 'Good Morning';
+      greeting = 'Good Morning';
     } else if (hour >= 12 && hour < 17) {
-      return 'Good Afternoon';
+      greeting = 'Good Afternoon';
     } else if (hour >= 17 && hour < 22) {
-      return 'Good Evening';
+      greeting = 'Good Evening';
     } else {
-      return 'Late Night Beats';
+      greeting = 'Late Night Beats';
     }
+    
+    if (username.isNotEmpty && username != 'Music Lover') {
+      return '$greeting, $username';
+    }
+    return greeting;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeNotifier = ref.watch(themeProvider.notifier);
+    final settings = ref.watch(settingsProvider);
+    final username = settings.username ?? '';
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -45,7 +50,7 @@ class GreetingHeader extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _getGreeting(),
+                  _getGreeting(username),
                   style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.accentGreen,
                     fontWeight: FontWeight.w600,
@@ -63,43 +68,81 @@ class GreetingHeader extends ConsumerWidget {
               ],
             ),
           ),
-
-          // Action Icons
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Search shortcut
-              IconButton(
-                icon: const Icon(LucideIcons.search, size: 22),
-                color: AppColors.textPrimary,
-                tooltip: 'Search',
-                onPressed: onSearchTap,
-              ),
-
-              // Theme Switcher Button
-              IconButton(
-                icon: Icon(
-                  themeNotifier.isDarkMode ? LucideIcons.sunMedium : LucideIcons.moon,
-                  size: 22,
+          // Actions
+          if (onSettingsTap != null)
+            GestureDetector(
+              onTap: onSettingsTap,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      (settings.avatarColorIndex >= 0 &&
+                              settings.avatarColorIndex < AppColors.accentPalette.length)
+                          ? AppColors.accentPalette[settings.avatarColorIndex]
+                          : AppColors.accentGreen,
+                      ((settings.avatarColorIndex >= 0 &&
+                              settings.avatarColorIndex < AppColors.accentPalette.length)
+                          ? AppColors.accentPalette[settings.avatarColorIndex]
+                          : AppColors.accentGreen).withValues(alpha: 0.6),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: ((settings.avatarColorIndex >= 0 &&
+                              settings.avatarColorIndex < AppColors.accentPalette.length)
+                          ? AppColors.accentPalette[settings.avatarColorIndex]
+                          : AppColors.accentGreen).withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
-                color: AppColors.textPrimary,
-                tooltip: 'Switch Theme',
-                onPressed: () {
-                  ref.read(themeProvider.notifier).toggleTheme();
-                },
+                child: Center(
+                  child: Icon(
+                    _getAvatarIcon(settings.avatarIcon),
+                    size: 20,
+                    color: Colors.black,
+                  ),
+                ),
               ),
-
-              // Settings / Profile avatar
-              IconButton(
-                icon: const Icon(LucideIcons.settings, size: 22),
-                color: AppColors.textPrimary,
-                tooltip: 'Settings',
-                onPressed: onSettingsTap,
-              ),
-            ],
-          ),
+            ),
         ],
       ),
     );
+  }
+
+  IconData _getAvatarIcon(String? iconName) {
+    switch (iconName) {
+      case 'headphones':
+        return LucideIcons.headphones;
+      case 'music':
+        return LucideIcons.music;
+      case 'sparkles':
+        return LucideIcons.sparkles;
+      case 'disc':
+        return LucideIcons.disc;
+      case 'flame':
+        return LucideIcons.flame;
+      case 'heart':
+        return LucideIcons.heart;
+      case 'zap':
+        return LucideIcons.zap;
+      case 'rocket':
+        return LucideIcons.rocket;
+      case 'star':
+        return LucideIcons.star;
+      case 'radio':
+        return LucideIcons.radio;
+      case 'mic':
+        return LucideIcons.mic;
+      case 'user':
+      default:
+        return LucideIcons.user;
+    }
   }
 }

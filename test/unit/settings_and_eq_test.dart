@@ -13,27 +13,54 @@ void main() {
     test('AppSettings serialization and default values', () {
       const settings = AppSettings();
       expect(settings.themeMode, 'dark');
+      expect(settings.accentColorIndex, 0);
+      expect(settings.cornerRadius, 20.0);
+      expect(settings.enableGlassmorphism, true);
+      expect(settings.enableVisualizer, true);
+      expect(settings.showBitrateBadge, true);
       expect(settings.streamingQuality, AudioQuality.high320k);
       expect(settings.gaplessPlayback, true);
+      expect(settings.incognitoMode, false);
       expect(settings.equalizerEnabled, false);
 
       final modified = settings.copyWith(
-        themeMode: 'oled',
+        themeMode: 'cyberpunk',
+        accentColorIndex: 2,
+        cornerRadius: 16.0,
+        enableGlassmorphism: false,
+        enableVisualizer: false,
+        showBitrateBadge: false,
         streamingQuality: AudioQuality.lossless,
         crossfadeDurationSeconds: 4,
+        incognitoMode: true,
+        contentCountry: 'JP',
         equalizerEnabled: true,
       );
 
-      expect(modified.themeMode, 'oled');
+      expect(modified.themeMode, 'cyberpunk');
+      expect(modified.accentColorIndex, 2);
+      expect(modified.cornerRadius, 16.0);
+      expect(modified.enableGlassmorphism, false);
+      expect(modified.enableVisualizer, false);
+      expect(modified.showBitrateBadge, false);
       expect(modified.streamingQuality, AudioQuality.lossless);
       expect(modified.crossfadeDurationSeconds, 4);
+      expect(modified.incognitoMode, true);
+      expect(modified.contentCountry, 'JP');
       expect(modified.equalizerEnabled, true);
 
       final map = modified.toMap();
       final restored = AppSettings.fromMap(map);
-      expect(restored.themeMode, 'oled');
+      expect(restored.themeMode, 'cyberpunk');
+      expect(restored.accentColorIndex, 2);
+      expect(restored.cornerRadius, 16.0);
+      expect(restored.enableGlassmorphism, false);
+      expect(restored.enableVisualizer, false);
+      expect(restored.showBitrateBadge, false);
       expect(restored.streamingQuality, AudioQuality.lossless);
       expect(restored.crossfadeDurationSeconds, 4);
+      expect(restored.incognitoMode, true);
+      expect(restored.contentCountry, 'JP');
       expect(restored.equalizerEnabled, true);
     });
 

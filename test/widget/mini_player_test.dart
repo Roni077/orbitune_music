@@ -84,7 +84,7 @@ void main() {
 
     // Verify icons present
     expect(find.byIcon(LucideIcons.skipForward), findsOneWidget);
-    expect(find.byIcon(LucideIcons.heart), findsOneWidget);
+    expect(find.byIcon(LucideIcons.skipBack), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump();

@@ -337,9 +337,102 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
               ),
             ),
 
+            const SizedBox(height: 24),
+
+            // 3. Reset All Settings
+            ExpressiveCard(
+              padding: const EdgeInsets.all(18),
+              borderRadius: BorderRadius.circular(20),
+              color: AppColors.darkSurfaceVariant.withOpacity(0.55),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentPink.withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          LucideIcons.refreshCw,
+                          size: 18,
+                          color: AppColors.accentPink,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Factory Reset Settings',
+                        style: AppTypography.titleMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.accentPink,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Reset themes, streaming bitrates, audio crossfade, and equalizer settings back to original defaults.',
+                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 14),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.accentPink,
+                      side: const BorderSide(color: AppColors.accentPink),
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: () => _confirmResetSettings(context),
+                    icon: const Icon(LucideIcons.alertTriangle, size: 16),
+                    label: const Text('Reset All Settings'),
+                  ),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 80),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmResetSettings(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.darkSurface,
+        title: Text('Reset All Settings?', style: AppTypography.titleMedium),
+        content: Text(
+          'This will reset your theme, audio bitrates, equalizer presets, and preferences to default. Your playlists and favorites will remain safe.',
+          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentPink),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await ref.read(settingsProvider.notifier).resetAllSettings();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Settings have been reset to factory defaults!'),
+                    backgroundColor: AppColors.accentGreen,
+                  ),
+                );
+              }
+            },
+            child: const Text('Reset', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

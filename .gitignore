@@ -52,3 +52,12 @@ graphify-out/
 # Environment & Secrets
 *.env
 .env*
+
+# Android Keystores & Signing Properties
+*.jks
+*.keystore
+*keystore*.txt
+*base64*.txt
+**/android/key.properties
+**/android/app/upload-keystore.jks
+dist/

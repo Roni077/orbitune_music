@@ -26,12 +26,6 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
     });
   }
 
-  void _navigateToSearch() {
-    setState(() {
-      _currentIndex = 1;
-    });
-  }
-
   void _navigateToSettings() {
     setState(() {
       _currentIndex = 3;
@@ -45,7 +39,6 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
 
     final screens = [
       HomeScreen(
-        onSearchTap: _navigateToSearch,
         onSettingsTap: _navigateToSettings,
       ),
       const SearchScreen(),

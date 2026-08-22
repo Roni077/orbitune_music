@@ -40,27 +40,31 @@ class YouTubeSource {
   Future<List<ArtistModel>> searchArtists(String query, {int limit = 10}) async {
     if (query.trim().isEmpty) return const [];
 
+    final List<ArtistModel> artists = [];
+
     try {
-      final searchResults = await _client.search.searchContent(
-        query.trim(),
-        filter: TypeFilters.channel,
-      );
+      try {
+        final searchResults = await _client.search.searchContent(
+          query.trim(),
+          filter: TypeFilters.channel,
+        );
 
-      final List<ArtistModel> artists = [];
-
-      for (final item in searchResults) {
-        if (artists.length >= limit) break;
-        if (item is SearchChannel) {
-          artists.add(ArtistModel(
-            id: item.id.value,
-            name: AudioDecryptor.cleanHtmlEntities(item.name),
-            avatarUrl: item.thumbnails.isNotEmpty ? item.thumbnails.last.url.toString() : null,
-            bannerUrl: item.thumbnails.isNotEmpty ? item.thumbnails.last.url.toString() : null,
-            bio: AudioDecryptor.cleanBioText(item.description),
-            fansCount: item.videoCount,
-            source: 'youtube',
-          ));
+        for (final item in searchResults) {
+          if (artists.length >= limit) break;
+          if (item is SearchChannel) {
+            artists.add(ArtistModel(
+              id: item.id.value,
+              name: AudioDecryptor.cleanHtmlEntities(item.name),
+              avatarUrl: item.thumbnails.isNotEmpty ? item.thumbnails.last.url.toString() : null,
+              bannerUrl: item.thumbnails.isNotEmpty ? item.thumbnails.last.url.toString() : null,
+              bio: AudioDecryptor.cleanBioText(item.description),
+              fansCount: item.videoCount,
+              source: 'youtube',
+            ));
+          }
         }
+      } catch (innerE) {
+        debugPrint('[YouTubeSource] searchContent for channel failed: $innerE');
       }
 
       // Fallback: If channel search returned nothing, synthesize artist from top search result
@@ -155,24 +159,23 @@ class YouTubeSource {
     }
   }
 
-  /// Fetches StreamManifest using non-restricted clients (Android VR, iOS, Android Music)
-  /// as primary strategy to avoid YouTube's Android PoToken enforcement and ensure fast extraction.
-  /// Uses a 12-second timeout to accommodate real-world mobile network latency and mid-range devices.
+  /// Fetches StreamManifest using resilient non-PoToken restricted clients (Android Sdkless, iOS)
+  /// as primary strategy to ensure fast and reliable extraction across mobile and desktop.
+  /// Uses a 15-second timeout to accommodate real-world network latency.
   Future<StreamManifest> _getResilientManifest(String videoId) async {
     try {
       return await _client.videos.streamsClient.getManifest(
         VideoId(videoId),
         ytClients: [
-          YoutubeApiClient.androidVr,
+          YoutubeApiClient.androidSdkless,
           YoutubeApiClient.ios,
-          YoutubeApiClient.androidMusic,
         ],
-      ).timeout(const Duration(seconds: 12));
+      ).timeout(const Duration(seconds: 15));
     } catch (e) {
       debugPrint('[YouTubeSource] Multi-client getManifest failed for $videoId: $e. Retrying with default client...');
       return await _client.videos.streamsClient
           .getManifest(VideoId(videoId))
-          .timeout(const Duration(seconds: 12));
+          .timeout(const Duration(seconds: 15));
     }
   }
 
@@ -425,8 +428,18 @@ class YouTubeSource {
 
   Track _convertVideoToTrack(Video video) {
     final rawTitle = video.title;
-    final cleanedTitle = AudioDecryptor.cleanTrackTitle(rawTitle);
-    final artist = AudioDecryptor.cleanHtmlEntities(video.author);
+    String cleanedTitle = AudioDecryptor.cleanTrackTitle(rawTitle);
+    String artist = AudioDecryptor.cleanHtmlEntities(video.author);
+    
+    // Heuristic: Split "Artist - Title" formats common on YouTube
+    if (cleanedTitle.contains(' - ')) {
+      final parts = cleanedTitle.split(' - ');
+      if (parts.length >= 2) {
+        artist = parts[0].trim();
+        cleanedTitle = parts.sublist(1).join(' - ').trim();
+      }
+    }
+    
     final duration = video.duration ?? Duration.zero;
 
     // Reliable high-res thumbnails (standard/high res are guaranteed to exist on YouTube CDN)

@@ -58,6 +58,19 @@ class SearchRepository {
           songs: [extractedTrack],
         );
       }
+
+      // Fallback: If native extractor is unavailable, parse direct YouTube link
+      final directYtId = _extractYouTubeVideoId(trimmed);
+      if (directYtId != null) {
+        final directTrack = await youTubeSource.getVideoDetails(directYtId);
+        if (directTrack != null) {
+          return SearchResult(
+            query: trimmed,
+            source: 'youtube',
+            songs: [directTrack],
+          );
+        }
+      }
     }
 
     switch (source.toLowerCase()) {
@@ -225,6 +238,20 @@ class SearchRepository {
 
     // Fallback: search by artist
     return youTubeSource.search(track.artist, limit: 10);
+  }
+
+  /// Helper to extract YouTube video ID from various URL formats
+  String? _extractYouTubeVideoId(String input) {
+    final trimmed = input.trim();
+    if (trimmed.length == 11 && RegExp(r'^[a-zA-Z0-9_-]{11}$').hasMatch(trimmed)) {
+      return trimmed;
+    }
+    final regExp = RegExp(
+      r'(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/))([a-zA-Z0-9_-]{11})',
+      caseSensitive: false,
+    );
+    final match = regExp.firstMatch(trimmed);
+    return match?.group(1);
   }
 
   /// Closes all underlying source clients

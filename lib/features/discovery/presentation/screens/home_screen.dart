@@ -27,12 +27,10 @@ import 'package:orbitune/features/search/presentation/screens/playlist_detail_sc
 
 /// Main Discovery Home Feed Dashboard with M3 Expressive aesthetics
 class HomeScreen extends ConsumerWidget {
-  final VoidCallback? onSearchTap;
   final VoidCallback? onSettingsTap;
 
   const HomeScreen({
     super.key,
-    this.onSearchTap,
     this.onSettingsTap,
   });
 
@@ -58,7 +56,6 @@ class HomeScreen extends ConsumerWidget {
               // 1. Top Greeting Header
               SliverToBoxAdapter(
                 child: GreetingHeader(
-                  onSearchTap: onSearchTap,
                   onSettingsTap: onSettingsTap,
                 ),
               ),

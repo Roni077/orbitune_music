@@ -40,10 +40,11 @@ class AudioDecryptor {
   static String cleanTrackTitle(String title) {
     var cleaned = cleanHtmlEntities(title);
     
-    // Remove brackets with video/audio promotional noise
+    // Remove brackets with video/audio promotional noise and featured artists
     cleaned = cleaned
-        .replaceAll(RegExp(r'\[(Official\s*(Music\s*)?Video|Audio|HD|4K|Lyric\s*Video|Full\s*Song)\]', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\((Official\s*(Music\s*)?Video|Audio|HD|4K|Lyric\s*Video|Full\s*Song)\)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\[(.*?)\]'), '') // Removes anything in []
+        .replaceAll(RegExp(r'\((Official|Audio|HD|4K|Lyric|Video|Visualizer).*?\)', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\((feat\.|ft\.|with).*?\)', caseSensitive: false), '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
 

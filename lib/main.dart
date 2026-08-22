@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,9 +26,14 @@ void main() async {
   // Initialize Background Audio & Media Notification Service
   await OrbituneAudioHandler.initBackgroundService();
 
-  // Pre-initialize Extractor engine (logs availability for diagnostics)
-  final extractorReady = await ExtractorService.instance.initialize().catchError((_) => false);
-  debugPrint('[main] ExtractorService available: $extractorReady');
+  // Asynchronously initialize Extractor engine in background (non-blocking for app launch)
+  unawaited(
+    ExtractorService.instance.initialize().then((ready) {
+      debugPrint('[main] ExtractorService available: $ready');
+    }).catchError((e) {
+      debugPrint('[main] ExtractorService init suppressed warning: $e');
+    }),
+  );
 
   runApp(
     const ProviderScope(
