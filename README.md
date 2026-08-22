@@ -3,13 +3,14 @@
 # 🪐 Orbitune
 ### *Modern Online Music Player with Material 3 Expressive UI & Multi-Source Audio Streaming*
 
+[![Build & Test Orbitune](https://github.com/Roni077/orbitune_music/actions/workflows/build.yml/badge.svg)](https://github.com/Roni077/orbitune_music/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 [![Flutter Version](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart Version](https://img.shields.io/badge/Dart-3.13%2B-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
 [![Material 3 Expressive](https://img.shields.io/badge/UI-Material_3_Expressive-6750A4?style=for-the-badge&logo=materialdesign&logoColor=white)](https://pub.dev/packages/material_3_expressive)
 [![State Management](https://img.shields.io/badge/State-Riverpod_2.6-00D2B8?style=for-the-badge)](https://riverpod.dev)
 [![Audio Engine](https://img.shields.io/badge/Audio-JustAudio_0.9-FF6F00?style=for-the-badge)](https://pub.dev/packages/just_audio)
-[![Test Suite](https://img.shields.io/badge/Tests-152_Passed-success?style=for-the-badge&logo=checkmarx&logoColor=white)](https://github.com)
-[![Architecture](https://img.shields.io/badge/Architecture-ARM64--v8a-blue?style=for-the-badge)](https://developer.android.com/ndk)
+
 
 </div>
 
