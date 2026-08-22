@@ -133,12 +133,6 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
     }
   }
 
-  IconData _getIconData(String id) {
-    return avatarPresets
-        .firstWhere((preset) => preset.id == id, orElse: () => avatarPresets.first)
-        .icon;
-  }
-
   Future<void> _pickImageFromGallery() async {
     try {
       final picker = ImagePicker();
