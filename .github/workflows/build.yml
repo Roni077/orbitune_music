@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -51,18 +51,28 @@ jobs:
         run: flutter analyze
 
   # =========================================================================
-  # Android: Split Architecture APK Builds (Debug & Release)
+  # Android: Split Architecture APK Builds (ARM Only: arm64-v8a & armeabi-v7a)
   # =========================================================================
   build_android:
-    name: 📱 Build Android (Split ABIs)
+    name: 📱 Build Android (arm64-v8a & armeabi-v7a)
     needs: [quality_check]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # Free up 25+ GB of runner disk space
+      - name: Free Runner Disk Space
+        run: |
+          echo "Freeing disk space..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
       - name: Setup Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -76,9 +86,9 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # Step 3: Debug Split ABI Build
-      - name: Step 3 - Build Debug Split APKs
-        run: flutter build apk --debug --split-per-abi
+      # Step 3: Debug Split ABI Build (ARM Only)
+      - name: Step 3 - Build Debug Split APKs (ARM Only)
+        run: flutter build apk --debug --split-per-abi --target-platform android-arm,android-arm64
 
       # Format Debug APKs: app+<arch>+debug.apk
       - name: Format & Organize Debug APKs
@@ -112,9 +122,9 @@ jobs:
           storeFile=upload-keystore.jks
           EOF
 
-      # Step 4: Release Split ABI Build
-      - name: Step 4 - Build Release Split APKs
-        run: flutter build apk --release --split-per-abi
+      # Step 4: Release Split ABI Build (ARM Only)
+      - name: Step 4 - Build Release Split APKs (ARM Only)
+        run: flutter build apk --release --split-per-abi --target-platform android-arm,android-arm64
 
       # Format Release APKs: app+<arch>+release.apk
       - name: Format & Organize Release APKs
