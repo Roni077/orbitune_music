@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
+import 'package:orbitune/core/widgets/user_avatar.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
 
 /// Top greeting header with brand title, time-aware greeting, and quick action icons
@@ -68,81 +68,17 @@ class GreetingHeader extends ConsumerWidget {
               ],
             ),
           ),
-          // Actions
+          // Actions: User Avatar
           if (onSettingsTap != null)
-            GestureDetector(
+            UserAvatar(
+              size: 40,
+              customAvatarPath: settings.customAvatarPath,
+              avatarIcon: settings.avatarIcon,
+              avatarColorIndex: settings.avatarColorIndex,
               onTap: onSettingsTap,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      (settings.avatarColorIndex >= 0 &&
-                              settings.avatarColorIndex < AppColors.accentPalette.length)
-                          ? AppColors.accentPalette[settings.avatarColorIndex]
-                          : AppColors.accentGreen,
-                      ((settings.avatarColorIndex >= 0 &&
-                              settings.avatarColorIndex < AppColors.accentPalette.length)
-                          ? AppColors.accentPalette[settings.avatarColorIndex]
-                          : AppColors.accentGreen).withValues(alpha: 0.6),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: ((settings.avatarColorIndex >= 0 &&
-                              settings.avatarColorIndex < AppColors.accentPalette.length)
-                          ? AppColors.accentPalette[settings.avatarColorIndex]
-                          : AppColors.accentGreen).withValues(alpha: 0.35),
-                      blurRadius: 10,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    _getAvatarIcon(settings.avatarIcon),
-                    size: 20,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
             ),
         ],
       ),
     );
-  }
-
-  IconData _getAvatarIcon(String? iconName) {
-    switch (iconName) {
-      case 'headphones':
-        return LucideIcons.headphones;
-      case 'music':
-        return LucideIcons.music;
-      case 'sparkles':
-        return LucideIcons.sparkles;
-      case 'disc':
-        return LucideIcons.disc;
-      case 'flame':
-        return LucideIcons.flame;
-      case 'heart':
-        return LucideIcons.heart;
-      case 'zap':
-        return LucideIcons.zap;
-      case 'rocket':
-        return LucideIcons.rocket;
-      case 'star':
-        return LucideIcons.star;
-      case 'radio':
-        return LucideIcons.radio;
-      case 'mic':
-        return LucideIcons.mic;
-      case 'user':
-      default:
-        return LucideIcons.user;
-    }
   }
 }

@@ -37,6 +37,10 @@ class AudioPlayerService {
 
   PlayerStateSnapshot _snapshot = const PlayerStateSnapshot();
 
+  /// External control hooks for system media notification & lock screen actions
+  Future<void> Function()? onSkipToNext;
+  Future<void> Function()? onSkipToPrevious;
+
   AudioPlayerService({AudioPlayer? player})
       : _player = player ??
             AudioPlayer(
@@ -318,10 +322,12 @@ class AudioPlayerService {
     await seek(clamped);
   }
 
-  /// Skips to the next track in the playlist sequence
+  /// Skips to the next track in the playlist sequence or invokes external queue handler
   Future<void> next() async {
     if (_player.hasNext) {
       await _player.seekToNext();
+    } else if (onSkipToNext != null) {
+      await onSkipToNext!();
     }
   }
 
@@ -331,6 +337,8 @@ class AudioPlayerService {
       await seek(Duration.zero);
     } else if (_player.hasPrevious) {
       await _player.seekToPrevious();
+    } else if (onSkipToPrevious != null) {
+      await onSkipToPrevious!();
     } else {
       await seek(Duration.zero);
     }

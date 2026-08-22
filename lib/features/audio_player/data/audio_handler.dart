@@ -17,11 +17,14 @@ class OrbituneAudioHandler {
         androidNotificationChannelId: 'com.orbitune.music.channel.audio',
         androidNotificationChannelName: 'Orbitune Music Playback',
         androidNotificationChannelDescription: 'Active background audio stream & media controls',
-        androidNotificationOngoing: true,
+        androidNotificationOngoing: false,
         androidNotificationIcon: 'mipmap/ic_launcher',
         androidShowNotificationBadge: true,
         androidStopForegroundOnPause: false,
         notificationColor: const Color(0xFF14142B),
+        preloadArtwork: true,
+        fastForwardInterval: const Duration(seconds: 10),
+        rewindInterval: const Duration(seconds: 10),
       );
       _isInitialized = true;
       debugPrint('[OrbituneAudioHandler] JustAudioBackground initialized successfully.');

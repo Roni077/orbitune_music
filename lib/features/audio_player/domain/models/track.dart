@@ -67,19 +67,33 @@ class Track {
 
   /// Converts track to JustAudioBackground MediaItem for lockscreen/notification controls
   MediaItem toMediaItem() {
+    Uri? resolvedArtUri;
+    final art = bestArtworkUrl?.trim();
+    if (art != null && art.isNotEmpty) {
+      if (art.startsWith('http://') ||
+          art.startsWith('https://') ||
+          art.startsWith('content://') ||
+          art.startsWith('file://')) {
+        resolvedArtUri = Uri.tryParse(art);
+      } else {
+        resolvedArtUri = Uri.file(art);
+      }
+    }
+
     return MediaItem(
       id: id,
-      title: title,
-      artist: artist,
-      album: album ?? 'Orbitune',
-      duration: duration,
-      artUri: bestArtworkUrl != null ? Uri.tryParse(bestArtworkUrl!) : null,
+      title: title.trim().isNotEmpty ? title.trim() : 'Unknown Track',
+      artist: artist.trim().isNotEmpty ? artist.trim() : 'Unknown Artist',
+      album: (album != null && album!.trim().isNotEmpty) ? album!.trim() : 'Orbitune',
+      duration: duration > Duration.zero ? duration : null,
+      artUri: resolvedArtUri,
       extras: {
         'source': source,
         'bitrate': bitrate,
         'audioQuality': audioQuality.name,
         'isExplicit': isExplicit,
         'hasSyncedLyrics': hasSyncedLyrics,
+        'isFavorite': isFavorite,
       },
     );
   }

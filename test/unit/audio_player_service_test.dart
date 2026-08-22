@@ -129,6 +129,56 @@ void main() {
       expect(playerService.currentPlaylist.length, 2);
       expect(playerService.currentTrack?.id, 'pt2');
     });
+
+    test('next and previous trigger onSkipToNext and onSkipToPrevious callbacks when single track', () async {
+      bool nextCalled = false;
+      bool prevCalled = false;
+
+      playerService.onSkipToNext = () async {
+        nextCalled = true;
+      };
+      playerService.onSkipToPrevious = () async {
+        prevCalled = true;
+      };
+
+      await playerService.next();
+      expect(nextCalled, isTrue);
+
+      await playerService.previous();
+      expect(prevCalled, isTrue);
+    });
+
+    test('Track toMediaItem resolves local file URIs and network URIs with extras', () {
+      final networkTrack = Track(
+        id: 'net_1',
+        title: 'Starboy',
+        artist: 'The Weeknd',
+        album: 'Starboy',
+        duration: const Duration(seconds: 230),
+        artworkUrl: 'https://img.youtube.com/vi/starboy/hqdefault.jpg',
+        isFavorite: true,
+      );
+
+      final netMediaItem = networkTrack.toMediaItem();
+      expect(netMediaItem.id, 'net_1');
+      expect(netMediaItem.title, 'Starboy');
+      expect(netMediaItem.artist, 'The Weeknd');
+      expect(netMediaItem.artUri.toString(), 'https://img.youtube.com/vi/starboy/hqdefault.jpg');
+      expect(netMediaItem.extras?['isFavorite'], isTrue);
+
+      final localTrack = Track(
+        id: 'loc_1',
+        title: 'Local Melody',
+        artist: 'Offline Artist',
+        artworkUrl: '/data/user/0/com.orbitune.music/artwork.jpg',
+        localFilePath: '/storage/emulated/0/Music/song.mp3',
+        source: 'local',
+      );
+
+      final locMediaItem = localTrack.toMediaItem();
+      expect(locMediaItem.id, 'loc_1');
+      expect(locMediaItem.artUri?.scheme, 'file');
+    });
   });
 
   group('PlayerStateSnapshot and PlaybackMode Tests', () {

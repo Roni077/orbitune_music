@@ -125,11 +125,13 @@ class QueueState {
 /// Riverpod provider for QueueNotifier
 final queueProvider =
     StateNotifierProvider<QueueNotifier, QueueState>((ref) {
+  final playerRepo = ref.watch(playerRepositoryProvider);
   final searchRepo = ref.watch(searchRepositoryProvider);
   final libraryRepo = ref.watch(libraryRepositoryProvider);
 
   return QueueNotifier(
     ref,
+    playerRepo,
     searchRepo,
     libraryRepo,
   );
@@ -167,6 +169,7 @@ final queueRemainingDurationProvider = Provider<Duration>((ref) {
 /// StateNotifier managing dynamic audio queue actions, autoplay, reordering, and playlists
 class QueueNotifier extends StateNotifier<QueueState> {
   final Ref _ref;
+  final PlayerRepository _playerRepository;
   final SearchRepository _searchRepository;
   final LibraryRepository _libraryRepository;
 
@@ -176,11 +179,20 @@ class QueueNotifier extends StateNotifier<QueueState> {
 
   QueueNotifier(
     this._ref,
+    this._playerRepository,
     this._searchRepository,
     this._libraryRepository,
   ) : super(const QueueState()) {
     _restoreQueue();
     _listenToPlayback();
+    _bindMediaControlHooks();
+  }
+
+  void _bindMediaControlHooks() {
+    _playerRepository.setControlHooks(
+      onSkipToNext: () => next(),
+      onSkipToPrevious: () => previous(),
+    );
   }
 
   void _listenToPlayback() {
@@ -747,6 +759,10 @@ class QueueNotifier extends StateNotifier<QueueState> {
 
   @override
   void dispose() {
+    _playerRepository.setControlHooks(
+      onSkipToNext: null,
+      onSkipToPrevious: null,
+    );
     _playerStateSub?.cancel();
     super.dispose();
   }

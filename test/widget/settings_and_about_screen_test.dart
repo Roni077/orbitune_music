@@ -221,6 +221,14 @@ class _MockSettingsNotifier extends StateNotifier<AppSettings>
   }
 
   @override
+  Future<void> setCustomAvatarPath(String? path) async {
+    state = state.copyWith(
+      customAvatarPath: path,
+      clearCustomAvatar: path == null,
+    );
+  }
+
+  @override
   Future<void> setProfileBadge(String badge) async {
     state = state.copyWith(profileBadge: badge);
   }
@@ -236,6 +244,8 @@ class _MockSettingsNotifier extends StateNotifier<AppSettings>
     String? bio,
     String? avatarIcon,
     int? avatarColorIndex,
+    String? customAvatarPath,
+    bool clearCustomAvatar = false,
     String? profileBadge,
     String? favoriteGenre,
     String? country,
@@ -245,6 +255,8 @@ class _MockSettingsNotifier extends StateNotifier<AppSettings>
       bio: bio ?? state.bio,
       avatarIcon: avatarIcon ?? state.avatarIcon,
       avatarColorIndex: avatarColorIndex ?? state.avatarColorIndex,
+      customAvatarPath: customAvatarPath,
+      clearCustomAvatar: clearCustomAvatar,
       profileBadge: profileBadge ?? state.profileBadge,
       favoriteGenre: favoriteGenre ?? state.favoriteGenre,
       country: country ?? state.country,

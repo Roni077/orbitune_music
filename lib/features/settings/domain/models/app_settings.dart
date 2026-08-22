@@ -41,6 +41,7 @@ class AppSettings {
   final String? country;
   final String avatarIcon;
   final int avatarColorIndex;
+  final String? customAvatarPath;
   final String? bio;
   final String profileBadge;
   final String? favoriteGenre;
@@ -82,6 +83,7 @@ class AppSettings {
     this.country,
     this.avatarIcon = 'user',
     this.avatarColorIndex = 0,
+    this.customAvatarPath,
     this.bio = 'Listening on Orbitune',
     this.profileBadge = 'Hi-Fi',
     this.favoriteGenre = 'All-Rounder',
@@ -124,6 +126,8 @@ class AppSettings {
     String? country,
     String? avatarIcon,
     int? avatarColorIndex,
+    String? customAvatarPath,
+    bool clearCustomAvatar = false,
     String? bio,
     String? profileBadge,
     String? favoriteGenre,
@@ -168,6 +172,7 @@ class AppSettings {
       country: country ?? this.country,
       avatarIcon: avatarIcon ?? this.avatarIcon,
       avatarColorIndex: avatarColorIndex ?? this.avatarColorIndex,
+      customAvatarPath: clearCustomAvatar ? null : (customAvatarPath ?? this.customAvatarPath),
       bio: bio ?? this.bio,
       profileBadge: profileBadge ?? this.profileBadge,
       favoriteGenre: favoriteGenre ?? this.favoriteGenre,
@@ -212,6 +217,7 @@ class AppSettings {
       'country': country,
       'avatarIcon': avatarIcon,
       'avatarColorIndex': avatarColorIndex,
+      'customAvatarPath': customAvatarPath,
       'bio': bio,
       'profileBadge': profileBadge,
       'favoriteGenre': favoriteGenre,
@@ -260,6 +266,7 @@ class AppSettings {
       country: map['country']?.toString(),
       avatarIcon: map['avatarIcon']?.toString() ?? 'user',
       avatarColorIndex: (map['avatarColorIndex'] as num?)?.toInt() ?? 0,
+      customAvatarPath: map['customAvatarPath']?.toString(),
       bio: map['bio']?.toString() ?? 'Listening on Orbitune',
       profileBadge: map['profileBadge']?.toString() ?? 'Hi-Fi',
       favoriteGenre: map['favoriteGenre']?.toString() ?? 'All-Rounder',

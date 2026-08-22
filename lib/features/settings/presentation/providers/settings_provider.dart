@@ -138,11 +138,21 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     await _repository.saveSettings(state);
   }
 
+  Future<void> setCustomAvatarPath(String? path) async {
+    state = state.copyWith(
+      customAvatarPath: path,
+      clearCustomAvatar: path == null,
+    );
+    await _repository.saveSettings(state);
+  }
+
   Future<void> updateProfile({
     String? username,
     String? bio,
     String? avatarIcon,
     int? avatarColorIndex,
+    String? customAvatarPath,
+    bool clearCustomAvatar = false,
     String? profileBadge,
     String? favoriteGenre,
     String? country,
@@ -152,6 +162,8 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
       bio: bio ?? state.bio,
       avatarIcon: avatarIcon ?? state.avatarIcon,
       avatarColorIndex: avatarColorIndex ?? state.avatarColorIndex,
+      customAvatarPath: customAvatarPath,
+      clearCustomAvatar: clearCustomAvatar,
       profileBadge: profileBadge ?? state.profileBadge,
       favoriteGenre: favoriteGenre ?? state.favoriteGenre,
       country: country ?? state.country,

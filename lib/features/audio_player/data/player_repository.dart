@@ -310,6 +310,15 @@ class PlayerRepository {
   Future<void> setSpeed(double speed) => playerService.setSpeed(speed);
   Future<void> setPlaybackMode(PlaybackMode mode) => playerService.setPlaybackMode(mode);
 
+  /// Sets external media control skip hooks (e.g. from QueueNotifier)
+  void setControlHooks({
+    Future<void> Function()? onSkipToNext,
+    Future<void> Function()? onSkipToPrevious,
+  }) {
+    playerService.onSkipToNext = onSkipToNext;
+    playerService.onSkipToPrevious = onSkipToPrevious;
+  }
+
   void dispose() {
     _flushHistoryIfNeeded();
     _snapshotSub?.cancel();

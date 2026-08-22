@@ -287,6 +287,35 @@ class AudioPlaybackSettingsScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(height: 20),
+
+          // 5. SYSTEM & LOCK SCREEN CONTROLS
+          _buildSectionHeader('System & Lock Screen Controls'),
+          _buildCard(
+            child: Column(
+              children: [
+                SettingsTile(
+                  icon: LucideIcons.bellRing,
+                  iconColor: AppColors.accentCyan,
+                  title: 'Notification & Lock Screen Player',
+                  subtitle:
+                      'Rich mini player with album artwork, seekbar, previous/next and play/pause controls',
+                  badgeText: 'ACTIVE',
+                  badgeColor: AppColors.accentGreen,
+                ),
+                const Divider(color: AppColors.glassBorder, height: 16),
+                SettingsTile(
+                  icon: LucideIcons.smartphone,
+                  iconColor: AppColors.accentPurple,
+                  title: 'Lock Screen Media Session',
+                  subtitle:
+                      'Compact 3-button playback controls and instant resume while device is locked',
+                  badgeText: 'INTEGRATED',
+                  badgeColor: AppColors.accentCyan,
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 40),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/widgets/expressive_card.dart';
+import 'package:orbitune/core/widgets/user_avatar.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
 import 'package:orbitune/features/settings/presentation/screens/about_screen.dart';
 import 'package:orbitune/features/settings/presentation/screens/appearance_settings_screen.dart';
@@ -193,7 +194,6 @@ class SettingsScreen extends ConsumerWidget {
   ) {
     final username = settings.username ?? 'Orbitune Listener';
     final bio = settings.bio ?? 'Listening on Orbitune';
-    final iconData = _getAvatarIconData(settings.avatarIcon);
     final avatarAccent = (settings.avatarColorIndex >= 0 &&
             settings.avatarColorIndex < AppColors.accentPalette.length)
         ? AppColors.accentPalette[settings.avatarColorIndex]
@@ -208,31 +208,12 @@ class SettingsScreen extends ConsumerWidget {
         color: AppColors.darkSurfaceVariant.withValues(alpha: 0.65),
         child: Row(
           children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [avatarAccent, avatarAccent.withValues(alpha: 0.55)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: avatarAccent.withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Icon(
-                  iconData,
-                  size: 28,
-                  color: Colors.black,
-                ),
-              ),
+            UserAvatar(
+              size: 56,
+              customAvatarPath: settings.customAvatarPath,
+              avatarIcon: settings.avatarIcon,
+              avatarColorIndex: settings.avatarColorIndex,
+              accentColor: avatarAccent,
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -294,36 +275,6 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  IconData _getAvatarIconData(String? iconName) {
-    switch (iconName) {
-      case 'headphones':
-        return LucideIcons.headphones;
-      case 'music':
-        return LucideIcons.music;
-      case 'sparkles':
-        return LucideIcons.sparkles;
-      case 'disc':
-        return LucideIcons.disc;
-      case 'flame':
-        return LucideIcons.flame;
-      case 'heart':
-        return LucideIcons.heart;
-      case 'zap':
-        return LucideIcons.zap;
-      case 'rocket':
-        return LucideIcons.rocket;
-      case 'star':
-        return LucideIcons.star;
-      case 'radio':
-        return LucideIcons.radio;
-      case 'mic':
-        return LucideIcons.mic;
-      case 'user':
-      default:
-        return LucideIcons.user;
-    }
   }
 
   Widget _buildSectionHeader(String title) {

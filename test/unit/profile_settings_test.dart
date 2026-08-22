@@ -74,6 +74,7 @@ void main() {
       expect(settings.profileBadge, 'Hi-Fi');
       expect(settings.favoriteGenre, 'All-Rounder');
       expect(settings.username, isNull);
+      expect(settings.customAvatarPath, isNull);
     });
 
     test('copyWith updates profile properties correctly', () {
@@ -83,6 +84,7 @@ void main() {
         bio: 'Audiophile & Coder',
         avatarIcon: 'headphones',
         avatarColorIndex: 3,
+        customAvatarPath: '/data/user/0/com.orbitune.music/avatar.jpg',
         profileBadge: 'Cosmic Voyager',
         favoriteGenre: 'Electronic / EDM',
       );
@@ -91,8 +93,12 @@ void main() {
       expect(updated.bio, 'Audiophile & Coder');
       expect(updated.avatarIcon, 'headphones');
       expect(updated.avatarColorIndex, 3);
+      expect(updated.customAvatarPath, '/data/user/0/com.orbitune.music/avatar.jpg');
       expect(updated.profileBadge, 'Cosmic Voyager');
       expect(updated.favoriteGenre, 'Electronic / EDM');
+
+      final cleared = updated.copyWith(clearCustomAvatar: true);
+      expect(cleared.customAvatarPath, isNull);
     });
 
     test('Serialization toMap and fromMap preserves profile fields', () {
@@ -101,6 +107,7 @@ void main() {
         bio: 'Late night lo-fi explorer',
         avatarIcon: 'sparkles',
         avatarColorIndex: 2,
+        customAvatarPath: '/storage/emulated/0/Pictures/orbitune.png',
         profileBadge: 'Night Owl',
         favoriteGenre: 'Lo-Fi & Chill',
       );
@@ -112,6 +119,7 @@ void main() {
       expect(fromMap.bio, 'Late night lo-fi explorer');
       expect(fromMap.avatarIcon, 'sparkles');
       expect(fromMap.avatarColorIndex, 2);
+      expect(fromMap.customAvatarPath, '/storage/emulated/0/Pictures/orbitune.png');
       expect(fromMap.profileBadge, 'Night Owl');
       expect(fromMap.favoriteGenre, 'Lo-Fi & Chill');
     });
@@ -147,6 +155,14 @@ void main() {
       expect(notifier.state.avatarColorIndex, 4);
     });
 
+    test('setCustomAvatarPath updates state and clears correctly', () async {
+      await notifier.setCustomAvatarPath('/storage/avatar.jpg');
+      expect(notifier.state.customAvatarPath, '/storage/avatar.jpg');
+
+      await notifier.setCustomAvatarPath(null);
+      expect(notifier.state.customAvatarPath, isNull);
+    });
+
     test('setProfileBadge updates state and persists', () async {
       await notifier.setProfileBadge('Vinyl Purist');
       expect(notifier.state.profileBadge, 'Vinyl Purist');
@@ -163,6 +179,7 @@ void main() {
         bio: 'Cosmic ambient dreams',
         avatarIcon: 'rocket',
         avatarColorIndex: 1,
+        customAvatarPath: '/storage/avatar_luna.png',
         profileBadge: 'Cosmic Voyager',
         favoriteGenre: 'Electronic / EDM',
         country: 'JP',
@@ -172,6 +189,7 @@ void main() {
       expect(notifier.state.bio, 'Cosmic ambient dreams');
       expect(notifier.state.avatarIcon, 'rocket');
       expect(notifier.state.avatarColorIndex, 1);
+      expect(notifier.state.customAvatarPath, '/storage/avatar_luna.png');
       expect(notifier.state.profileBadge, 'Cosmic Voyager');
       expect(notifier.state.favoriteGenre, 'Electronic / EDM');
       expect(notifier.state.country, 'JP');

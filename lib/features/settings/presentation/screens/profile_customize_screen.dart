@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_constants.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/widgets/expressive_card.dart';
+import 'package:orbitune/core/widgets/user_avatar.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
 
 /// Available avatar icon presets for profile personalization
@@ -41,6 +45,8 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
 
   late String _selectedAvatarIcon;
   late int _selectedColorIndex;
+  String? _customAvatarPath;
+  bool _customAvatarRemoved = false;
   late String _selectedBadge;
   late String _selectedGenre;
   late String _selectedCountry;
@@ -103,6 +109,7 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
             settings.avatarColorIndex < AppColors.accentPalette.length)
         ? settings.avatarColorIndex
         : 0;
+    _customAvatarPath = settings.customAvatarPath;
     _selectedBadge = settings.profileBadge;
     _selectedGenre = settings.favoriteGenre ?? 'All-Rounder';
     _selectedCountry = settings.contentCountry;
@@ -132,6 +139,164 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
         .icon;
   }
 
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 90,
+      );
+      if (picked != null) {
+        final appDir = await getApplicationDocumentsDirectory();
+        final ext = picked.path.contains('.') ? picked.path.split('.').last : 'jpg';
+        final targetPath = '${appDir.path}/avatar_${DateTime.now().millisecondsSinceEpoch}.$ext';
+        final savedFile = await File(picked.path).copy(targetPath);
+        setState(() {
+          _customAvatarPath = savedFile.path;
+          _customAvatarRemoved = false;
+          _hasUnsavedChanges = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to select image: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _takePhotoWithCamera() async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: ImageSource.camera,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 90,
+      );
+      if (picked != null) {
+        final appDir = await getApplicationDocumentsDirectory();
+        final ext = picked.path.contains('.') ? picked.path.split('.').last : 'jpg';
+        final targetPath = '${appDir.path}/avatar_${DateTime.now().millisecondsSinceEpoch}.$ext';
+        final savedFile = await File(picked.path).copy(targetPath);
+        setState(() {
+          _customAvatarPath = savedFile.path;
+          _customAvatarRemoved = false;
+          _hasUnsavedChanges = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to take photo: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _removeCustomAvatar() {
+    setState(() {
+      _customAvatarPath = null;
+      _customAvatarRemoved = true;
+      _hasUnsavedChanges = true;
+    });
+  }
+
+  void _showImageSourcePicker(Color accent) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.darkSurfaceElevated,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.glassBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Text(
+                'Profile Picture Source',
+                style: AppTypography.titleMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(LucideIcons.image, color: accent, size: 20),
+                ),
+                title: const Text('Choose from Local Storage / Gallery'),
+                subtitle: const Text('Select a photo from device files'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImageFromGallery();
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentCyan.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(LucideIcons.camera, color: AppColors.accentCyan, size: 20),
+                ),
+                title: const Text('Take Photo'),
+                subtitle: const Text('Capture with camera'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _takePhotoWithCamera();
+                },
+              ),
+              if (_customAvatarPath != null && !_customAvatarRemoved)
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.accentPink.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(LucideIcons.trash2, color: AppColors.accentPink, size: 20),
+                  ),
+                  title: const Text('Remove Custom Photo'),
+                  subtitle: const Text('Revert to icon preset'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _removeCustomAvatar();
+                  },
+                ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _saveProfile() async {
     final cleanName = _nameController.text.trim().isEmpty
         ? 'Orbitune Listener'
@@ -145,6 +310,8 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
           bio: cleanBio,
           avatarIcon: _selectedAvatarIcon,
           avatarColorIndex: _selectedColorIndex,
+          customAvatarPath: _customAvatarPath,
+          clearCustomAvatar: _customAvatarRemoved || _customAvatarPath == null,
           profileBadge: _selectedBadge,
           favoriteGenre: _selectedGenre,
           country: _selectedCountry,
@@ -181,6 +348,8 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
       _bioController.text = 'Listening on Orbitune';
       _selectedAvatarIcon = 'user';
       _selectedColorIndex = 0;
+      _customAvatarPath = null;
+      _customAvatarRemoved = true;
       _selectedBadge = 'Hi-Fi';
       _selectedGenre = 'All-Rounder';
       _selectedCountry = 'US';
@@ -310,17 +479,25 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
           _buildLiveProfilePreview(activeAccent),
           const SizedBox(height: 24),
 
-          // 2. AVATAR ICON SELECTOR
-          _buildSectionHeader('Avatar Icon Preset'),
+          // 2. AVATAR & PROFILE PICTURE
+          _buildSectionHeader('Profile Picture & Avatar'),
           _buildCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Choose an icon that defines your musical identity',
-                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-                ),
+                // Local Storage Photo Selector Card
+                _buildCustomPhotoSection(activeAccent),
+                const SizedBox(height: 18),
+                const Divider(color: AppColors.glassBorder, height: 1),
                 const SizedBox(height: 14),
+                Text(
+                  'Or Choose an Icon Preset',
+                  style: AppTypography.labelMedium.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
                 _buildAvatarGrid(activeAccent),
               ],
             ),
@@ -611,7 +788,7 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
     final bio = _bioController.text.trim().isEmpty
         ? 'Listening on Orbitune'
         : _bioController.text.trim();
-    final iconData = _getIconData(_selectedAvatarIcon);
+    final effectiveCustomPath = _customAvatarRemoved ? null : _customAvatarPath;
 
     return ExpressiveCard(
       padding: const EdgeInsets.all(20),
@@ -619,70 +796,32 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
       color: AppColors.darkSurfaceVariant.withValues(alpha: 0.75),
       child: Column(
         children: [
-          // Live Avatar with glowing multi-layer gradient
+          // Live Avatar with glowing multi-layer gradient or local photo
           Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: accent.withValues(alpha: 0.45),
-                        blurRadius: 28,
-                        spreadRadius: 4,
-                      ),
-                    ],
-                  ),
+            child: UserAvatar(
+              size: 92,
+              customAvatarPath: effectiveCustomPath,
+              avatarIcon: _selectedAvatarIcon,
+              avatarColorIndex: _selectedColorIndex,
+              accentColor: accent,
+              showGlow: true,
+              borderWidth: 2.5,
+              badge: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.darkBackground,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: accent, width: 1.5),
                 ),
-                Container(
-                  width: 86,
-                  height: 86,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        accent,
-                        accent.withValues(alpha: 0.65),
-                        AppColors.darkSurfaceElevated,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      width: 2.5,
-                    ),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      iconData,
-                      size: 40,
-                      color: Colors.black,
-                    ),
-                  ),
+                child: Icon(
+                  effectiveCustomPath != null
+                      ? LucideIcons.camera
+                      : LucideIcons.sparkles,
+                  size: 14,
+                  color: accent,
                 ),
-                Positioned(
-                  bottom: 2,
-                  right: 2,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: AppColors.darkBackground,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: accent, width: 1.5),
-                    ),
-                    child: Icon(
-                      LucideIcons.sparkles,
-                      size: 14,
-                      color: accent,
-                    ),
-                  ),
-                ),
-              ],
+              ),
+              onTap: () => _showImageSourcePicker(accent),
             ),
           ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
           const SizedBox(height: 16),
@@ -788,7 +927,125 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
     );
   }
 
+  Widget _buildCustomPhotoSection(Color accent) {
+    final hasCustom = _customAvatarPath != null && !_customAvatarRemoved;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.darkBackground.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasCustom ? accent.withValues(alpha: 0.4) : AppColors.glassBorder,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (hasCustom)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    File(_customAvatarPath!),
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 48,
+                      height: 48,
+                      color: AppColors.darkSurfaceElevated,
+                      child: const Icon(LucideIcons.image, size: 24),
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: accent.withValues(alpha: 0.3)),
+                  ),
+                  child: Icon(LucideIcons.imagePlus, color: accent, size: 24),
+                ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasCustom ? 'Custom Photo Active' : 'Custom Profile Picture',
+                      style: AppTypography.titleSmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: hasCustom ? accent : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasCustom
+                          ? 'Using local photo from device storage'
+                          : 'Upload an image from local storage or take a photo',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.tonalIcon(
+                  onPressed: () => _showImageSourcePicker(accent),
+                  icon: Icon(
+                    hasCustom ? LucideIcons.refreshCw : LucideIcons.upload,
+                    size: 16,
+                  ),
+                  label: Text(hasCustom ? 'Change Photo' : 'Choose from Storage'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: accent.withValues(alpha: 0.18),
+                    foregroundColor: accent,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: BorderSide(color: accent.withValues(alpha: 0.35)),
+                    ),
+                  ),
+                ),
+              ),
+              if (hasCustom) ...[
+                const SizedBox(width: 10),
+                OutlinedButton.icon(
+                  onPressed: _removeCustomAvatar,
+                  icon: const Icon(LucideIcons.trash2, size: 16),
+                  label: const Text('Remove'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.accentPink,
+                    side: BorderSide(color: AppColors.accentPink.withValues(alpha: 0.4)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAvatarGrid(Color accent) {
+    final hasCustom = _customAvatarPath != null && !_customAvatarRemoved;
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -801,12 +1058,14 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
       itemCount: avatarPresets.length,
       itemBuilder: (context, index) {
         final preset = avatarPresets[index];
-        final isSelected = preset.id == _selectedAvatarIcon;
+        final isSelected = !hasCustom && preset.id == _selectedAvatarIcon;
 
         return InkWell(
           onTap: () {
             setState(() {
               _selectedAvatarIcon = preset.id;
+              _customAvatarPath = null;
+              _customAvatarRemoved = true;
               _hasUnsavedChanges = true;
             });
           },

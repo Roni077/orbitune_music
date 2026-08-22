@@ -2,18 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
+import 'package:orbitune/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:orbitune/features/settings/data/settings_repository.dart';
 import 'package:orbitune/features/settings/domain/models/app_settings.dart';
-import 'package:orbitune/features/settings/presentation/screens/profile_customize_screen.dart';
 
 class MockSettingsRepository implements SettingsRepository {
-  AppSettings _settings = const AppSettings(
-    username: 'Test User',
-    bio: 'Music is life',
-    avatarIcon: 'headphones',
-    profileBadge: 'Hi-Fi',
-    favoriteGenre: 'Electronic / EDM',
-  );
+  AppSettings _settings = const AppSettings();
 
   @override
   AppSettings getSettings() => _settings;
@@ -73,9 +67,9 @@ class MockSettingsRepository implements SettingsRepository {
 }
 
 void main() {
-  testWidgets('ProfileCustomizeScreen renders header, inputs, and chips properly',
+  testWidgets('OnboardingScreen renders and navigates to clean country selection',
       (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1080, 3200);
+    tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
       tester.view.resetPhysicalSize();
@@ -90,25 +84,61 @@ void main() {
           settingsRepositoryProvider.overrideWithValue(mockRepo),
         ],
         child: const MaterialApp(
-          home: ProfileCustomizeScreen(),
+          home: OnboardingScreen(),
         ),
       ),
     );
 
     await tester.pumpAndSettle();
 
-    // Verify title and main sections
-    expect(find.text('Profile & Persona'), findsOneWidget);
-    expect(find.text('PROFILE PICTURE & AVATAR'), findsOneWidget);
-    expect(find.text('Choose from Storage'), findsOneWidget);
-    expect(find.text('AVATAR GLOW & COLOR THEME'), findsOneWidget);
-    expect(find.text('PROFILE IDENTITY'), findsOneWidget);
-    expect(find.text('MUSIC PERSONA BADGE'), findsOneWidget);
-    expect(find.text('PRIMARY VIBE / FAVORITE GENRE'), findsOneWidget);
-    expect(find.text('REGION & DISCOVERY PREFERENCES'), findsOneWidget);
+    // Verify Welcome Page
+    expect(find.text('Welcome to Orbitune'), findsOneWidget);
 
-    // Verify initial values in fields
-    expect(find.text('Test User'), findsNWidgets(2)); // Preview header + TextField
-    expect(find.text('Save Profile'), findsOneWidget);
+    // Tap Next through pages
+    // 1 -> Permissions
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(find.text('Optimize Your Experience'), findsOneWidget);
+
+    // 2 -> Username
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(find.text('What should we call you?'), findsOneWidget);
+
+    // 3 -> Country Selection
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(find.text('Select your region'), findsOneWidget);
+    expect(find.text('Search country or music region...'), findsOneWidget);
+
+    // Verify countries are listed directly by default without popup
+    expect(find.text('Global Worldwide'), findsOneWidget);
+    expect(find.text('United States'), findsOneWidget);
+    expect(find.text('India'), findsOneWidget);
+
+    // Test Search Filter
+    await tester.enterText(find.byType(TextField).last, 'Japan');
+    await tester.pumpAndSettle();
+
+    final japanTile = find.widgetWithText(InkWell, 'Japan');
+    expect(japanTile, findsOneWidget);
+    expect(find.text('United States'), findsNothing);
+
+    // Select Japan
+    await tester.tap(japanTile);
+    await tester.pumpAndSettle();
+
+    // 4 -> Ready Page
+    await tester.tap(find.text('Next'));
+    await tester.pumpAndSettle();
+    expect(find.text("You're all set!"), findsOneWidget);
+    expect(find.text('Get Started'), findsOneWidget);
+
+    // Finish onboarding
+    await tester.tap(find.text('Get Started'));
+    await tester.pumpAndSettle();
+
+    expect(mockRepo.getSettings().hasCompletedOnboarding, isTrue);
+    expect(mockRepo.getSettings().country, 'JP');
   });
 }
