@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:orbitune/features/audio_player/data/sponsor_block_service.dart';
 import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
 import 'package:orbitune/features/audio_player/domain/models/playback_mode.dart';
 import 'package:orbitune/features/audio_player/domain/models/playback_state.dart';
@@ -10,6 +11,7 @@ import 'package:orbitune/features/audio_player/domain/services/audio_session_ser
 import 'package:orbitune/features/library/data/library_repository.dart';
 import 'package:orbitune/features/search/data/search_repository.dart';
 import 'package:orbitune/features/settings/data/settings_repository.dart';
+import 'package:orbitune/features/settings/domain/models/app_settings.dart';
 
 /// Riverpod provider for PlayerRepository
 final playerRepositoryProvider = Provider<PlayerRepository>((ref) {
@@ -18,6 +20,7 @@ final playerRepositoryProvider = Provider<PlayerRepository>((ref) {
   final searchRepo = ref.watch(searchRepositoryProvider);
   final libraryRepo = ref.watch(libraryRepositoryProvider);
   final settingsRepo = ref.watch(settingsRepositoryProvider);
+  final sponsorService = ref.watch(sponsorBlockServiceProvider);
 
   final repository = PlayerRepository(
     playerService: playerService,
@@ -25,6 +28,7 @@ final playerRepositoryProvider = Provider<PlayerRepository>((ref) {
     searchRepository: searchRepo,
     libraryRepository: libraryRepo,
     settingsRepository: settingsRepo,
+    sponsorBlockService: sponsorService,
   );
 
   ref.onDispose(() => repository.dispose());
@@ -38,11 +42,14 @@ class PlayerRepository {
   final SearchRepository searchRepository;
   final LibraryRepository libraryRepository;
   final SettingsRepository settingsRepository;
+  final SponsorBlockService sponsorBlockService;
 
   StreamSubscription<PlayerStateSnapshot>? _snapshotSub;
+  StreamSubscription<AppSettings>? _settingsSub;
   Track? _lastTrackLogged;
   Duration _accumulatedPlayDuration = Duration.zero;
   bool _historyRecordedForCurrent = false;
+  List<SponsorBlockSegment> _activeSponsorSegments = const [];
 
   // Multi-tier In-Memory Stream Cache for instant 0ms track starts
   final Map<String, ({List<String> candidates, DateTime resolvedAt})> _streamCandidateCache = {};
@@ -55,8 +62,10 @@ class PlayerRepository {
     required this.searchRepository,
     required this.libraryRepository,
     required this.settingsRepository,
-  }) {
+    SponsorBlockService? sponsorBlockService,
+  }) : sponsorBlockService = sponsorBlockService ?? SponsorBlockService() {
     _initAudioSession();
+    _initSettingsSync();
     _listenToPlaybackProgress();
   }
 
@@ -66,6 +75,19 @@ class PlayerRepository {
       onResume: () => playerService.resume(),
       onDuckVolume: (duckLevel) => playerService.duckVolume(duckLevel),
     );
+  }
+
+  void _initSettingsSync() {
+    final settings = settingsRepository.getSettings();
+    playerService.setSkipSilenceEnabled(settings.skipSilence);
+
+    _settingsSub = settingsRepository.watchSettings().listen((newSettings) {
+      playerService.setSkipSilenceEnabled(newSettings.skipSilence);
+      if (_lastTrackLogged != null) {
+        final loudness = (_lastTrackLogged!.extra['loudnessDb'] as num?)?.toDouble();
+        playerService.applyLoudnessNormalization(loudness, enabled: newSettings.audioNormalization);
+      }
+    });
   }
 
   void _listenToPlaybackProgress() {
@@ -79,10 +101,27 @@ class PlayerRepository {
         _lastTrackLogged = current;
         _accumulatedPlayDuration = Duration.zero;
         _historyRecordedForCurrent = false;
+        _activeSponsorSegments = const [];
+
+        if (!current.isLocal) {
+          sponsorBlockService.getSkipSegments(current.id).then((segs) {
+            if (_lastTrackLogged?.id == current.id) {
+              _activeSponsorSegments = segs;
+            }
+          }).catchError((_) {});
+        }
       }
 
       // Track play duration
       _accumulatedPlayDuration = snapshot.position;
+
+      // SponsorBlock non-music segment skipping
+      if (_activeSponsorSegments.isNotEmpty && snapshot.isPlaying) {
+        final skipTarget = sponsorBlockService.findSkipTarget(snapshot.position, _activeSponsorSegments);
+        if (skipTarget != null && (skipTarget - snapshot.position).inMilliseconds > 300) {
+          playerService.seek(skipTarget);
+        }
+      }
 
       // Record to history once playback surpasses 15 seconds or completes
       if (!_historyRecordedForCurrent &&
@@ -322,6 +361,7 @@ class PlayerRepository {
   void dispose() {
     _flushHistoryIfNeeded();
     _snapshotSub?.cancel();
+    _settingsSub?.cancel();
     _streamCandidateCache.clear();
   }
 }

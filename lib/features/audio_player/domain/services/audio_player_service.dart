@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -344,13 +345,42 @@ class AudioPlayerService {
     }
   }
 
+  double _userVolume = 1.0;
+
   /// Sets the player volume (0.0 to 1.0)
   Future<void> setVolume(double volume) async {
     final clamped = volume.clamp(0.0, 1.0);
+    _userVolume = clamped;
     _snapshot = _snapshot.copyWith(volume: clamped);
     _snapshotController.add(_snapshot);
     try {
       await _player.setVolume(clamped);
+    } catch (_) {}
+  }
+
+  /// Dynamically normalizes volume based on track loudness metrics in dB (e.g. YouTube loudnessDb)
+  Future<void> applyLoudnessNormalization(double? loudnessDb, {bool enabled = true}) async {
+    if (!enabled || loudnessDb == null) {
+      try {
+        await _player.setVolume(_userVolume);
+      } catch (_) {}
+      return;
+    }
+
+    // Target reference level: -5.0 dB LUFS equivalent
+    final loudnessDifference = -5.0 - loudnessDb;
+    final volumeMultiplier = math.pow(10.0, loudnessDifference / 20.0).clamp(0.1, 1.0);
+    final effectiveVolume = (_userVolume * volumeMultiplier).clamp(0.0, 1.0);
+
+    try {
+      await _player.setVolume(effectiveVolume.toDouble());
+    } catch (_) {}
+  }
+
+  /// Enables or disables automatic skipping of silent audio segments
+  Future<void> setSkipSilenceEnabled(bool enabled) async {
+    try {
+      await _player.setSkipSilenceEnabled(enabled);
     } catch (_) {}
   }
 

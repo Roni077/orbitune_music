@@ -18,6 +18,7 @@ class HiveService {
   late Box _downloadsBox;
   late Box _lyricsCacheBox;
   late Box _searchCacheBox;
+  Box? _sessionBox;
 
   Box get settingsBox => _settingsBox;
   Box get favoritesBox => _favoritesBox;
@@ -27,6 +28,7 @@ class HiveService {
   Box get downloadsBox => _downloadsBox;
   Box get lyricsCacheBox => _lyricsCacheBox;
   Box get searchCacheBox => _searchCacheBox;
+  Box get sessionBox => _sessionBox ?? _settingsBox;
 
   /// Initializes Hive database and opens all application storage boxes.
   /// [customDirectoryPath] can be provided in tests or headless environments.
@@ -48,6 +50,7 @@ class HiveService {
       _downloadsBox = await Hive.openBox(HiveBoxes.downloads);
       _lyricsCacheBox = await Hive.openBox(HiveBoxes.lyricsCache);
       _searchCacheBox = await Hive.openBox(HiveBoxes.searchHistory);
+      _sessionBox = await Hive.openBox(HiveBoxes.session);
 
       _isInitialized = true;
     } catch (e, stack) {
@@ -65,6 +68,7 @@ class HiveService {
     required Box downloadsBox,
     required Box lyricsCacheBox,
     required Box searchCacheBox,
+    Box? sessionBox,
   }) {
     _settingsBox = settingsBox;
     _favoritesBox = favoritesBox;
@@ -74,12 +78,14 @@ class HiveService {
     _downloadsBox = downloadsBox;
     _lyricsCacheBox = lyricsCacheBox;
     _searchCacheBox = searchCacheBox;
+    _sessionBox = sessionBox ?? settingsBox;
     _isInitialized = true;
   }
 
   /// Resets initialization state for testing
   void resetForTesting() {
     _isInitialized = false;
+    _sessionBox = null;
   }
 
   /// Clears a specific box by name
@@ -110,6 +116,9 @@ class HiveService {
         case HiveBoxes.searchHistory:
           await _searchCacheBox.clear();
           break;
+        case HiveBoxes.session:
+          await (_sessionBox ?? _settingsBox).clear();
+          break;
       }
     } catch (e) {
       throw StorageException('Failed to clear box $boxName: $e');
@@ -131,5 +140,6 @@ class HiveService {
     await _downloadsBox.clear();
     await _lyricsCacheBox.clear();
     await _searchCacheBox.clear();
+    await (_sessionBox ?? _settingsBox).clear();
   }
 }

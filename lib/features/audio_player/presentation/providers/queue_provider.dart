@@ -733,7 +733,7 @@ class QueueNotifier extends StateNotifier<QueueState> {
   void _persistQueue() {
     try {
       if (!HiveService.instance.isInitialized) return;
-      final box = HiveService.instance.settingsBox;
+      final box = HiveService.instance.sessionBox;
       box.put(_queuePersistenceKey, state.toMap());
     } catch (e) {
       debugPrint('[QueueNotifier] Failed to persist queue: $e');
@@ -744,8 +744,15 @@ class QueueNotifier extends StateNotifier<QueueState> {
   void _restoreQueue() {
     try {
       if (!HiveService.instance.isInitialized) return;
-      final box = HiveService.instance.settingsBox;
-      final raw = box.get(_queuePersistenceKey);
+      final sessionBox = HiveService.instance.sessionBox;
+      dynamic raw = sessionBox.get(_queuePersistenceKey);
+      
+      // Fallback check in settingsBox for backward migration
+      if (raw == null) {
+        final settingsBox = HiveService.instance.settingsBox;
+        raw = settingsBox.get(_queuePersistenceKey);
+      }
+
       if (raw != null && raw is Map) {
         final restored = QueueState.fromMap(raw);
         if (restored.items.isNotEmpty) {

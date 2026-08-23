@@ -19,16 +19,18 @@ class SettingsRepository {
   static const String _settingsKey = 'app_settings';
 
   AppSettings getSettings() {
-    final raw = _box.get(_settingsKey);
-    if (raw != null && raw is Map) {
-      try {
+    try {
+      if (!_hiveService.isInitialized) return const AppSettings();
+      final raw = _box.get(_settingsKey);
+      if (raw != null && raw is Map) {
         return AppSettings.fromMap(raw);
-      } catch (_) {}
-    }
+      }
+    } catch (_) {}
     return const AppSettings();
   }
 
   Future<void> saveSettings(AppSettings settings) async {
+    if (!_hiveService.isInitialized) return;
     await _box.put(_settingsKey, settings.toMap());
   }
 
@@ -76,6 +78,11 @@ class SettingsRepository {
   }
 
   Stream<AppSettings> watchSettings() {
-    return _box.watch(key: _settingsKey).map((_) => getSettings());
+    try {
+      if (!_hiveService.isInitialized) return const Stream.empty();
+      return _box.watch(key: _settingsKey).map((_) => getSettings());
+    } catch (_) {
+      return const Stream.empty();
+    }
   }
 }

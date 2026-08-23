@@ -10,6 +10,7 @@ class HiveBoxes {
   static const String downloads = 'downloads_box';
   static const String lyricsCache = 'lyrics_cache_box';
   static const String searchHistory = 'search_cache_box';
+  static const String session = 'session_box';
 
   // Common Storage Keys
   static const String keyThemeMode = 'theme_mode';
