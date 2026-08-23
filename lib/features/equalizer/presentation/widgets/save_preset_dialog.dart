@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 
-/// Modal Bottom Sheet to save custom frequency gain configurations as a named EQ preset
+/// Modal Dialog to save custom frequency gain configurations as a named EQ preset
 class SavePresetDialog extends StatefulWidget {
   final ValueChanged<String> onSave;
   final String? initialName;
@@ -14,17 +14,16 @@ class SavePresetDialog extends StatefulWidget {
     this.initialName,
   });
 
-  /// Shows the save preset bottom sheet
+  /// Shows the save preset modal dialog
   static Future<void> show(
     BuildContext context, {
     required ValueChanged<String> onSave,
     String? initialName,
   }) {
     HapticFeedback.lightImpact();
-    return showModalBottomSheet(
+    return showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierDismissible: true,
       builder: (_) => SavePresetDialog(
         onSave: onSave,
         initialName: initialName,
@@ -73,50 +72,41 @@ class _SavePresetDialogState extends State<SavePresetDialog> {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border(
-            top: BorderSide(
-              color: theme.colorScheme.outline.withValues(alpha: 0.25),
-              width: 1.5,
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              width: 1.2,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.45),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+              ),
+            ],
           ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-        child: SafeArea(
-          top: false,
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Drag Handle
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  margin: const EdgeInsets.only(top: 4, bottom: 16),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-
               // Header
               Row(
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
                       color: primary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: primary.withValues(alpha: 0.35),
                       ),
@@ -124,10 +114,10 @@ class _SavePresetDialogState extends State<SavePresetDialog> {
                     child: Icon(
                       LucideIcons.slidersHorizontal,
                       color: primary,
-                      size: 20,
+                      size: 22,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Text(
                       'Save EQ Preset',
@@ -146,7 +136,7 @@ class _SavePresetDialogState extends State<SavePresetDialog> {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
 
               // Text Field
               TextField(
@@ -211,7 +201,6 @@ class _SavePresetDialogState extends State<SavePresetDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
             ],
           ),
         ),

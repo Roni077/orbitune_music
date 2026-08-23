@@ -26,12 +26,12 @@ class LyricsProviderInfo {
   });
 }
 
-/// Material 3 Expressive Selection Sheet & Dialog for Lyrics & Metadata Providers
-class LyricsProviderSelectionSheet extends StatelessWidget {
+/// Material 3 Expressive Selection Dialog for Lyrics & Metadata Providers
+class LyricsProviderSelectionDialog extends StatelessWidget {
   final String currentProviderKey;
   final ValueChanged<String> onProviderSelected;
 
-  const LyricsProviderSelectionSheet({
+  const LyricsProviderSelectionDialog({
     super.key,
     required this.currentProviderKey,
     required this.onProviderSelected,
@@ -107,26 +107,8 @@ class LyricsProviderSelectionSheet extends StatelessWidget {
     );
   }
 
-  /// Shows the Lyrics Provider Selection Sheet
+  /// Shows the Lyrics Provider Selection Dialog
   static Future<String?> show(
-    BuildContext context, {
-    required String currentProviderKey,
-    required ValueChanged<String> onProviderSelected,
-  }) {
-    HapticFeedback.lightImpact();
-    return showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => LyricsProviderSelectionSheet(
-        currentProviderKey: currentProviderKey,
-        onProviderSelected: onProviderSelected,
-      ),
-    );
-  }
-
-  /// Shows the dialog version
-  static Future<String?> showAsDialog(
     BuildContext context, {
     required String currentProviderKey,
     required ValueChanged<String> onProviderSelected,
@@ -134,21 +116,35 @@ class LyricsProviderSelectionSheet extends StatelessWidget {
     HapticFeedback.lightImpact();
     return showDialog<String>(
       context: context,
+      barrierDismissible: true,
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Center(
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 500, maxHeight: 680),
-            color: AppColors.darkSurfaceElevated,
+            constraints: const BoxConstraints(maxWidth: 460, maxHeight: 680),
+            decoration: BoxDecoration(
+              color: AppColors.darkSurfaceElevated,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: AppColors.glassBorder,
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(22),
               child: _LyricsProviderContent(
                 currentProviderKey: currentProviderKey,
                 onSelect: (k) {
                   onProviderSelected(k);
-                  Navigator.of(context).pop(k);
+                  Navigator.of(ctx).pop(k);
                 },
               ),
             ),
@@ -158,51 +154,29 @@ class LyricsProviderSelectionSheet extends StatelessWidget {
     );
   }
 
+  /// Shows the dialog version
+  static Future<String?> showAsDialog(
+    BuildContext context, {
+    required String currentProviderKey,
+    required ValueChanged<String> onProviderSelected,
+  }) =>
+      show(
+        context,
+        currentProviderKey: currentProviderKey,
+        onProviderSelected: onProviderSelected,
+      );
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.darkSurfaceElevated,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border(
-          top: BorderSide(color: AppColors.glassBorder, width: 1.5),
-          left: BorderSide(color: AppColors.glassBorder, width: 0.5),
-          right: BorderSide(color: AppColors.glassBorder, width: 0.5),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // M3 Drag Handle
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  margin: const EdgeInsets.only(bottom: 18),
-                  decoration: BoxDecoration(
-                    color: AppColors.textMuted.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              _LyricsProviderContent(
-                currentProviderKey: currentProviderKey,
-                onSelect: (k) {
-                  onProviderSelected(k);
-                  Navigator.of(context).pop(k);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+    return _LyricsProviderContent(
+      currentProviderKey: currentProviderKey,
+      onSelect: onProviderSelected,
     );
   }
 }
+
+/// Backward compatibility alias
+typedef LyricsProviderSelectionSheet = LyricsProviderSelectionDialog;
 
 class _LyricsProviderContent extends StatelessWidget {
   final String currentProviderKey;
@@ -224,11 +198,11 @@ class _LyricsProviderContent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 46,
-              height: 46,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: AppColors.accentYellow.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppColors.accentYellow.withValues(alpha: 0.35),
                   width: 1.5,
@@ -245,12 +219,26 @@ class _LyricsProviderContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Lyrics & Metadata Engine',
-                    style: AppTypography.headlineSmall.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Lyrics & Metadata Engine',
+                          style: AppTypography.headlineSmall.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                            fontSize: 20,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(LucideIcons.x, size: 18, color: AppColors.textMuted),
+                        onPressed: () => Navigator.of(context).pop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 3),
                   Text(
@@ -268,7 +256,7 @@ class _LyricsProviderContent extends StatelessWidget {
         const SizedBox(height: 20),
 
         // Providers List
-        ...LyricsProviderSelectionSheet.providers.map((provider) {
+        ...LyricsProviderSelectionDialog.providers.map((provider) {
           final isSelected = provider.key == currentProviderKey;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
@@ -313,7 +301,6 @@ class _ProviderCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Top Row: Icon + Title + Badge + Radio
           Row(
             children: [
               Container(
@@ -362,37 +349,44 @@ class _ProviderCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
-                            vertical: 2,
+                            vertical: 1.5,
                           ),
                           decoration: BoxDecoration(
-                            color:
-                                provider.accentColor.withValues(alpha: 0.18),
+                            color: provider.accentColor.withValues(alpha: 0.18),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color:
-                                  provider.accentColor.withValues(alpha: 0.4),
+                              color: provider.accentColor.withValues(alpha: 0.4),
+                              width: 1,
                             ),
                           ),
                           child: Text(
                             provider.badgeText,
-                            style: AppTypography.caption.copyWith(
+                            style: AppTypography.labelSmall.copyWith(
                               color: provider.accentColor,
                               fontWeight: FontWeight.bold,
-                              fontSize: 9.5,
-                              letterSpacing: 0.4,
+                              fontSize: 9,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 2),
+                    Text(
+                      provider.subtitle,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 11.5,
+                        height: 1.25,
+                      ),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-
               // Radio Indicator
               AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+                duration: const Duration(milliseconds: 200),
                 width: 22,
                 height: 22,
                 decoration: BoxDecoration(
@@ -404,15 +398,6 @@ class _ProviderCard extends StatelessWidget {
                         : AppColors.textMuted,
                     width: 2,
                   ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: provider.accentColor.withValues(alpha: 0.4),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : null,
                 ),
                 child: isSelected
                     ? const Icon(
@@ -424,49 +409,28 @@ class _ProviderCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          // Subtitle Description
-          Text(
-            provider.subtitle,
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 12,
-              height: 1.3,
-            ),
-          ),
           const SizedBox(height: 10),
-
-          // Feature Tags
+          // Features tags
           Wrap(
             spacing: 6,
             runSpacing: 4,
-            children: provider.features.map((feature) {
+            children: provider.features.map((feat) {
               return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? provider.accentColor.withValues(alpha: 0.10)
+                      ? provider.accentColor.withValues(alpha: 0.15)
                       : AppColors.darkSurfaceElevated.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: isSelected
-                        ? provider.accentColor.withValues(alpha: 0.25)
-                        : AppColors.glassBorder.withValues(alpha: 0.3),
-                    width: 0.8,
-                  ),
                 ),
                 child: Text(
-                  feature,
+                  feat,
                   style: AppTypography.caption.copyWith(
+                    fontSize: 10,
                     color: isSelected
                         ? provider.accentColor
-                        : AppColors.textSecondary,
-                    fontSize: 10.5,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        : AppColors.textMuted,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               );

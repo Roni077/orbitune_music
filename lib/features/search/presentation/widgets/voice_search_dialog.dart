@@ -5,11 +5,11 @@ import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_constants.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 
-/// Interactive Voice Search Modal with animated soundwave pulsation
-class VoiceSearchModal extends StatefulWidget {
+/// Interactive Voice Search Modal Dialog with animated soundwave pulsation
+class VoiceSearchDialog extends StatefulWidget {
   final ValueChanged<String> onVoiceRecognized;
 
-  const VoiceSearchModal({
+  const VoiceSearchDialog({
     super.key,
     required this.onVoiceRecognized,
   });
@@ -18,21 +18,21 @@ class VoiceSearchModal extends StatefulWidget {
     BuildContext context, {
     required ValueChanged<String> onVoiceRecognized,
   }) {
-    return showModalBottomSheet(
+    HapticFeedback.lightImpact();
+    return showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => VoiceSearchModal(
+      barrierDismissible: true,
+      builder: (context) => VoiceSearchDialog(
         onVoiceRecognized: onVoiceRecognized,
       ),
     );
   }
 
   @override
-  State<VoiceSearchModal> createState() => _VoiceSearchModalState();
+  State<VoiceSearchDialog> createState() => _VoiceSearchDialogState();
 }
 
-class _VoiceSearchModalState extends State<VoiceSearchModal>
+class _VoiceSearchDialogState extends State<VoiceSearchDialog>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -74,174 +74,185 @@ class _VoiceSearchModalState extends State<VoiceSearchModal>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(
-        left: 24.0,
-        right: 24.0,
-        top: 20.0,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 32.0,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.darkSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(
-          color: AppColors.glassBorder,
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag Handle
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 24),
+    final theme = Theme.of(context);
 
-          // Title
-          Text(
-            'Listening...',
-            style: AppTypography.titleLarge.copyWith(
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              width: 1.2,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.45),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Say the name of a song, artist, album, or playlist',
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 13.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 36),
-
-          // Pulsing Microphone Core
-          AnimatedBuilder(
-            animation: _pulseAnimation,
-            builder: (context, child) {
-              return Stack(
-                alignment: Alignment.center,
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header Close button & Title
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Outer Glow Ring
-                  Container(
-                    width: 120 * _pulseAnimation.value,
-                    height: 120 * _pulseAnimation.value,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.accentGreen.withValues(
-                        alpha: 0.15 * (1.2 - _pulseAnimation.value),
-                      ),
+                  Text(
+                    'Listening...',
+                    style: AppTypography.titleMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
                     ),
                   ),
-                  // Middle Ring
-                  Container(
-                    width: 96 * _pulseAnimation.value,
-                    height: 96 * _pulseAnimation.value,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.accentGreen.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  // Central Mic Button
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.heavyImpact();
-                    },
-                    child: Container(
-                      width: 76,
-                      height: 76,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.accentGreen,
-                            AppColors.accentCyan,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x6600E5FF),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        LucideIcons.mic,
-                        size: 34,
-                        color: Colors.black,
-                      ),
-                    ),
+                  IconButton(
+                    icon: Icon(LucideIcons.x, size: 20, color: theme.colorScheme.onSurfaceVariant),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
-              );
-            },
-          ),
-
-          const SizedBox(height: 36),
-
-          // Quick Voice Prompt Suggestions
-          Text(
-            'Or try saying:',
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: _quickVoicePrompts.map((prompt) {
-              return ActionChip(
-                backgroundColor: AppColors.darkSurfaceVariant,
-                label: Text(
-                  prompt,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Say the name of a song, artist, album, or playlist',
+                style: AppTypography.bodySmall.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
-                onPressed: () => _submitVoiceText(prompt),
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Fallback text input inside modal
-          TextField(
-            controller: _textController,
-            style: AppTypography.bodyMedium.copyWith(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'Or type speech manually...',
-              hintStyle: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
-              filled: true,
-              fillColor: AppColors.darkSurfaceVariant,
-              border: OutlineInputBorder(
-                borderRadius: AppConstants.roundedMedium,
-                borderSide: BorderSide.none,
+                textAlign: TextAlign.center,
               ),
-              suffixIcon: IconButton(
-                icon: const Icon(LucideIcons.arrowRight, color: AppColors.accentGreen),
-                onPressed: () => _submitVoiceText(_textController.text),
+              const SizedBox(height: 28),
+
+              // Pulsing Microphone Core
+              AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Outer Glow Ring
+                      Container(
+                        width: 110 * _pulseAnimation.value,
+                        height: 110 * _pulseAnimation.value,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.accentGreen.withValues(
+                            alpha: 0.15 * (1.2 - _pulseAnimation.value),
+                          ),
+                        ),
+                      ),
+                      // Middle Ring
+                      Container(
+                        width: 90 * _pulseAnimation.value,
+                        height: 90 * _pulseAnimation.value,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.accentGreen.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      // Central Mic Button
+                      GestureDetector(
+                        onTap: () {
+                          HapticFeedback.heavyImpact();
+                        },
+                        child: Container(
+                          width: 70,
+                          height: 70,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.accentGreen,
+                                AppColors.accentCyan,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0x6600E5FF),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            LucideIcons.mic,
+                            size: 30,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-            onSubmitted: _submitVoiceText,
+
+              const SizedBox(height: 28),
+
+              // Quick Voice Prompt Suggestions
+              Text(
+                'Try saying:',
+                style: AppTypography.caption.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: _quickVoicePrompts.map((prompt) {
+                  return ActionChip(
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                    label: Text(
+                      prompt,
+                      style: AppTypography.caption.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    onPressed: () => _submitVoiceText(prompt),
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 18),
+
+              // Fallback text input inside dialog
+              TextField(
+                controller: _textController,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  hintText: 'Or type search query...',
+                  hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6)),
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: AppConstants.roundedMedium,
+                    borderSide: BorderSide.none,
+                  ),
+                  suffixIcon: IconButton(
+                    icon: const Icon(LucideIcons.arrowRight, color: AppColors.accentGreen),
+                    onPressed: () => _submitVoiceText(_textController.text),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                ),
+                onSubmitted: _submitVoiceText,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
+
+/// Backward compatibility alias
+typedef VoiceSearchModal = VoiceSearchDialog;

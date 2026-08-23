@@ -6,20 +6,20 @@ import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/widgets/expressive_card.dart';
 import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
 
-/// Material 3 Expressive Selection Sheet & Dialog for Streaming and Download Audio Quality
-class AudioQualitySelectionSheet extends StatelessWidget {
+/// Material 3 Expressive Selection Dialog for Streaming and Download Audio Quality
+class AudioQualitySelectionDialog extends StatelessWidget {
   final AudioQuality currentQuality;
   final ValueChanged<AudioQuality> onQualitySelected;
   final bool isDownload;
 
-  const AudioQualitySelectionSheet({
+  const AudioQualitySelectionDialog({
     super.key,
     required this.currentQuality,
     required this.onQualitySelected,
     this.isDownload = false,
   });
 
-  /// Presents the Audio Quality selection as a Material 3 Expressive Modal Bottom Sheet
+  /// Presents the Audio Quality selection as a centered Material 3 Expressive Modal Dialog
   static Future<AudioQuality?> show(
     BuildContext context, {
     required AudioQuality currentQuality,
@@ -27,14 +27,43 @@ class AudioQualitySelectionSheet extends StatelessWidget {
     bool isDownload = false,
   }) {
     HapticFeedback.lightImpact();
-    return showModalBottomSheet<AudioQuality>(
+    return showDialog<AudioQuality>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => AudioQualitySelectionSheet(
-        currentQuality: currentQuality,
-        onQualitySelected: onQualitySelected,
-        isDownload: isDownload,
+      barrierDismissible: true,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 440),
+            decoration: BoxDecoration(
+              color: AppColors.darkSurfaceElevated,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: AppColors.glassBorder,
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(22),
+              child: _AudioQualityContent(
+                currentQuality: currentQuality,
+                isDownload: isDownload,
+                onSelect: (q) {
+                  onQualitySelected(q);
+                  Navigator.of(ctx).pop(q);
+                },
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -45,81 +74,26 @@ class AudioQualitySelectionSheet extends StatelessWidget {
     required AudioQuality currentQuality,
     required ValueChanged<AudioQuality> onQualitySelected,
     bool isDownload = false,
-  }) {
-    HapticFeedback.lightImpact();
-    return showDialog<AudioQuality>(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 480),
-            color: AppColors.darkSurfaceElevated,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: _AudioQualityContent(
-                currentQuality: currentQuality,
-                isDownload: isDownload,
-                onSelect: (q) {
-                  onQualitySelected(q);
-                  Navigator.of(context).pop(q);
-                },
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  }) =>
+      show(
+        context,
+        currentQuality: currentQuality,
+        onQualitySelected: onQualitySelected,
+        isDownload: isDownload,
+      );
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.darkSurfaceElevated,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border(
-          top: BorderSide(color: AppColors.glassBorder, width: 1.5),
-          left: BorderSide(color: AppColors.glassBorder, width: 0.5),
-          right: BorderSide(color: AppColors.glassBorder, width: 0.5),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // M3 Drag Handle
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  margin: const EdgeInsets.only(bottom: 18),
-                  decoration: BoxDecoration(
-                    color: AppColors.textMuted.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              _AudioQualityContent(
-                currentQuality: currentQuality,
-                isDownload: isDownload,
-                onSelect: (q) {
-                  onQualitySelected(q);
-                  Navigator.of(context).pop(q);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+    return _AudioQualityContent(
+      currentQuality: currentQuality,
+      isDownload: isDownload,
+      onSelect: onQualitySelected,
     );
   }
 }
+
+/// Backward compatibility alias
+typedef AudioQualitySelectionSheet = AudioQualitySelectionDialog;
 
 class _AudioQualityContent extends StatelessWidget {
   final AudioQuality currentQuality;
@@ -150,11 +124,11 @@ class _AudioQualityContent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 46,
-              height: 46,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: headerColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: headerColor.withValues(alpha: 0.35),
                   width: 1.5,
@@ -167,12 +141,26 @@ class _AudioQualityContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: AppTypography.headlineSmall.copyWith(
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: -0.5,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: AppTypography.headlineSmall.copyWith(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.5,
+                            fontSize: 20,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(LucideIcons.x, size: 18, color: AppColors.textMuted),
+                        onPressed: () => Navigator.of(context).pop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 3),
                   Text(

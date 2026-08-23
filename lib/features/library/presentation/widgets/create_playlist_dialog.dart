@@ -8,7 +8,7 @@ import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/library/domain/models/user_playlist.dart';
 import 'package:orbitune/features/library/presentation/providers/user_playlists_provider.dart';
 
-/// Modal Bottom Sheet to create a new user playlist or rename an existing playlist
+/// Modal Dialog to create a new user playlist or rename an existing playlist
 class CreatePlaylistDialog extends ConsumerStatefulWidget {
   final UserPlaylist? initialPlaylist;
   final List<Track> initialTracks;
@@ -25,10 +25,9 @@ class CreatePlaylistDialog extends ConsumerStatefulWidget {
     List<Track> initialTracks = const [],
   }) {
     HapticFeedback.lightImpact();
-    return showModalBottomSheet<UserPlaylist?>(
+    return showDialog<UserPlaylist?>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      barrierDismissible: true,
       builder: (_) => CreatePlaylistDialog(
         initialPlaylist: initialPlaylist,
         initialTracks: initialTracks,
@@ -109,52 +108,43 @@ class _CreatePlaylistDialogState extends ConsumerState<CreatePlaylistDialog> {
     final primary = theme.colorScheme.primary;
     final isEditing = widget.initialPlaylist != null;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border(
-            top: BorderSide(
-              color: theme.colorScheme.outline.withValues(alpha: 0.25),
-              width: 1.5,
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 420),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+              width: 1.2,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.45),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+              ),
+            ],
           ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-        child: SafeArea(
-          top: false,
+          padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Drag Handle
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 4,
-                    margin: const EdgeInsets.only(top: 4, bottom: 16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.outline.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-
                 // Header
                 Row(
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: primary.withValues(alpha: 0.35),
                         ),
@@ -162,10 +152,10 @@ class _CreatePlaylistDialogState extends ConsumerState<CreatePlaylistDialog> {
                       child: Icon(
                         isEditing ? LucideIcons.pencil : LucideIcons.listPlus,
                         color: primary,
-                        size: 20,
+                        size: 22,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Text(
                         isEditing ? 'Edit Playlist' : 'New Playlist',
@@ -296,7 +286,6 @@ class _CreatePlaylistDialogState extends ConsumerState<CreatePlaylistDialog> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
               ],
             ),
           ),

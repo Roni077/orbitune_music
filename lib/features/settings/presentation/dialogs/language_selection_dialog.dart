@@ -175,20 +175,43 @@ class LanguageSelectionSheet extends StatefulWidget {
     );
   }
 
-  /// Shows the Language Selection Sheet
+  /// Shows the Language Selection Dialog
   static Future<String?> show(
     BuildContext context, {
     required String currentLanguageCode,
     required ValueChanged<String> onLanguageSelected,
   }) {
     HapticFeedback.lightImpact();
-    return showModalBottomSheet<String>(
+    return showDialog<String>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => LanguageSelectionSheet(
-        currentLanguageCode: currentLanguageCode,
-        onLanguageSelected: onLanguageSelected,
+      barrierDismissible: true,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 480, maxHeight: 660),
+            decoration: BoxDecoration(
+              color: AppColors.darkSurfaceElevated,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: AppColors.glassBorder, width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 30,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: LanguageSelectionSheet(
+                currentLanguageCode: currentLanguageCode,
+                onLanguageSelected: onLanguageSelected,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -198,31 +221,19 @@ class LanguageSelectionSheet extends StatefulWidget {
     BuildContext context, {
     required String currentLanguageCode,
     required ValueChanged<String> onLanguageSelected,
-  }) {
-    HapticFeedback.lightImpact();
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 480, maxHeight: 650),
-            color: AppColors.darkSurfaceElevated,
-            child: LanguageSelectionSheet(
-              currentLanguageCode: currentLanguageCode,
-              onLanguageSelected: onLanguageSelected,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  }) =>
+      show(
+        context,
+        currentLanguageCode: currentLanguageCode,
+        onLanguageSelected: onLanguageSelected,
+      );
 
   @override
   State<LanguageSelectionSheet> createState() => _LanguageSelectionSheetState();
 }
+
+/// Backward compatibility alias
+typedef LanguageSelectionDialog = LanguageSelectionSheet;
 
 class _LanguageSelectionSheetState extends State<LanguageSelectionSheet> {
   final TextEditingController _searchController = TextEditingController();
@@ -248,34 +259,17 @@ class _LanguageSelectionSheetState extends State<LanguageSelectionSheet> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredLanguages;
-    final screenHeight = MediaQuery.of(context).size.height;
 
     return Container(
-      height: screenHeight * 0.80,
+      constraints: const BoxConstraints(maxHeight: 660),
       decoration: const BoxDecoration(
         color: AppColors.darkSurfaceElevated,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        border: Border(
-          top: BorderSide(color: AppColors.glassBorder, width: 1.5),
-          left: BorderSide(color: AppColors.glassBorder, width: 0.5),
-          right: BorderSide(color: AppColors.glassBorder, width: 0.5),
-        ),
       ),
       child: SafeArea(
         top: false,
         child: Column(
           children: [
-            // M3 Drag Handle
-            Container(
-              width: 44,
-              height: 5,
-              margin: const EdgeInsets.only(top: 12, bottom: 12),
-              decoration: BoxDecoration(
-                color: AppColors.textMuted.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(999),
-              ),
-            ),
-
+            const SizedBox(height: 18),
             // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
