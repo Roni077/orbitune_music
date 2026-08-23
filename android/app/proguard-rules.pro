@@ -71,5 +71,22 @@
 # Kotlin Coroutines & Metadata
 # ==============================================================================
 -keep class kotlin.Metadata { *; }
+-dontwarn kotlin.Metadata
 -keep class kotlinx.coroutines.** { *; }
 -dontwarn kotlinx.coroutines.**
+
+# ==============================================================================
+# File Picker, MIME & Apache Tika
+# ==============================================================================
+-keep class com.mr.flutter.plugin.filepicker.** { *; }
+-dontwarn com.mr.flutter.plugin.filepicker.**
+-dontwarn org.apache.tika.**
+-dontwarn javax.xml.stream.**
+-dontwarn javax.xml.**
+-dontwarn javax.annotation.**
+-dontwarn javax.naming.**
+-dontwarn javax.management.**
+-dontwarn org.w3c.dom.**
+-dontwarn org.xml.sax.**
+-dontwarn java.awt.**
+
