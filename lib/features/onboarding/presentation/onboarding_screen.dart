@@ -414,32 +414,75 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  final Set<String> _selectedGenres = {'Pop', 'Lo-Fi'};
+
+  static const List<String> _genrePresets = [
+    'Pop', 'Hip-Hop', 'EDM', 'Rock', 'Lo-Fi', 'R&B', 'Indie', 'Bollywood', 'Classical'
+  ];
+
   Widget _buildReadyPage() {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+
     return Padding(
-      padding: const EdgeInsets.all(AppConstants.horizontalPadding * 2),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            LucideIcons.sparkles,
-            size: 100,
-            color: Theme.of(context).colorScheme.primary,
-          ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
-          const SizedBox(height: 32),
-          Text(
-            'You\'re all set!',
-            style: AppTypography.headlineLarge,
-            textAlign: TextAlign.center,
-          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
-          const SizedBox(height: 16),
-          Text(
-            'Dive in and start exploring millions of tracks.',
-            style: AppTypography.bodyLarge.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
-        ],
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.horizontalPadding * 1.5,
+        vertical: 16.0,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.sparkles,
+              size: 72,
+              color: primary,
+            ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+            const SizedBox(height: 20),
+            Text(
+              'You\'re all set!',
+              style: AppTypography.headlineLarge,
+              textAlign: TextAlign.center,
+            ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
+            const SizedBox(height: 10),
+            Text(
+              'Select genres you enjoy to seed your discovery mix:',
+              style: AppTypography.bodyMedium.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ).animate().fadeIn(delay: 300.ms),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 10.0,
+              alignment: WrapAlignment.center,
+              children: _genrePresets.map((genre) {
+                final isSelected = _selectedGenres.contains(genre);
+                return FilterChip(
+                  label: Text(genre),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedGenres.add(genre);
+                      } else {
+                        _selectedGenres.remove(genre);
+                      }
+                    });
+                  },
+                  showCheckmark: false,
+                  avatar: isSelected
+                      ? const Icon(LucideIcons.check, size: 14)
+                      : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                );
+              }).toList(),
+            ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1, end: 0),
+          ],
+        ),
       ),
     );
   }

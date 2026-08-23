@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
 import '../constants/app_constants.dart';
 
 /// Frosted Glassmorphism Container with BackdropFilter and gradient border
@@ -32,17 +31,20 @@ class GlassContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final effectiveRadius = borderRadius ?? AppConstants.roundedMedium;
+    final effectiveColor = color ?? theme.colorScheme.surface.withValues(alpha: 0.70);
+    final effectiveBorderColor = borderColor ?? theme.colorScheme.outline.withValues(alpha: 0.25);
 
     Widget container = Container(
       width: width,
       height: height,
       margin: margin,
       decoration: BoxDecoration(
-        color: color ?? AppColors.glassFill,
+        color: effectiveColor,
         borderRadius: effectiveRadius,
         border: Border.all(
-          color: borderColor ?? AppColors.glassBorder,
+          color: effectiveBorderColor,
           width: 1.0,
         ),
       ),

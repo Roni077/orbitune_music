@@ -88,69 +88,65 @@ class CustomBottomNav extends StatelessWidget {
                 final item = items[index];
                 final isSelected = index == currentIndex;
 
-                return _buildNavItem(context, index, item, isSelected);
+                return Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      if (!isSelected) {
+                        HapticFeedback.selectionClick();
+                        onTabSelected(index);
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(24.0),
+                    child: Center(
+                      child: AnimatedContainer(
+                        duration: AppConstants.fastAnimation,
+                        curve: Curves.easeOutCubic,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isSelected ? 16.0 : 8.0,
+                          vertical: 10.0,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? colorScheme.primary.withValues(alpha: 0.16)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(24.0),
+                          border: isSelected
+                              ? Border.all(
+                                  color: colorScheme.primary.withValues(alpha: 0.35),
+                                  width: 1.0,
+                                )
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isSelected ? (item.activeIcon ?? item.icon) : item.icon,
+                              size: 21,
+                              color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                            ),
+                            if (isSelected) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                item.label,
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
               }),
             ),
           ),
         ),
       ),
     ));
-  }
-
-  Widget _buildNavItem(BuildContext context, int index, CustomBottomNavItem item, bool isSelected) {
-    final theme = Theme.of(context);
-    final primary = theme.colorScheme.primary;
-    final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
-
-    return GestureDetector(
-      onTap: () {
-        if (!isSelected) {
-          HapticFeedback.selectionClick();
-          onTabSelected(index);
-        }
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: AppConstants.fastAnimation,
-        curve: Curves.easeOutCubic,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16.0 : 12.0,
-          vertical: 8.0,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? primary.withValues(alpha: 0.16)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(20.0),
-          border: isSelected
-              ? Border.all(
-                  color: primary.withValues(alpha: 0.35),
-                  width: 1.0,
-                )
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? (item.activeIcon ?? item.icon) : item.icon,
-              size: 21,
-              color: isSelected ? primary : onSurfaceVariant,
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 8),
-              Text(
-                item.label,
-                style: AppTypography.bodySmall.copyWith(
-                  color: primary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
   }
 }

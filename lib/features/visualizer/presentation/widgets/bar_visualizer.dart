@@ -143,6 +143,11 @@ class _BarVisualizerPainter extends CustomPainter {
     required this.secondaryColor,
   });
 
+  static Shader? _cachedShader;
+  static Size? _lastShaderSize;
+  static Color? _lastPrimary;
+  static Color? _lastSecondary;
+
   @override
   void paint(Canvas canvas, Size size) {
     final count = heights.length;
@@ -151,13 +156,21 @@ class _BarVisualizerPainter extends CustomPainter {
     final totalSpacing = (count - 1) * 3.0;
     final barWidth = ((size.width - totalSpacing) / count).clamp(2.0, 12.0);
 
-    final gradientShader = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [primaryColor, secondaryColor],
-    ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    if (_cachedShader == null ||
+        _lastShaderSize != size ||
+        _lastPrimary != primaryColor ||
+        _lastSecondary != secondaryColor) {
+      _lastShaderSize = size;
+      _lastPrimary = primaryColor;
+      _lastSecondary = secondaryColor;
+      _cachedShader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [primaryColor, secondaryColor],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    }
 
-    _barPaint.shader = gradientShader;
+    _barPaint.shader = _cachedShader;
     _peakPaint.color = primaryColor;
 
     for (int i = 0; i < count; i++) {

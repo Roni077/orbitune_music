@@ -50,7 +50,7 @@ class _AnimatedPlayButtonState extends State<AnimatedPlayButton> with SingleTick
   @override
   Widget build(BuildContext context) {
     final effectiveColor = widget.color ?? AppColors.accentGreen;
-    final effectiveIconColor = widget.iconColor ?? Colors.black;
+    final effectiveIconColor = widget.iconColor ?? AppColors.getAccessibleTextColor(effectiveColor);
 
     return AnimatedBuilder(
       animation: _scaleAnimation,
@@ -61,7 +61,7 @@ class _AnimatedPlayButtonState extends State<AnimatedPlayButton> with SingleTick
       child: GestureDetector(
         onTapDown: (_) {
           _controller.forward();
-          HapticFeedback.mediumImpact();
+          HapticFeedback.lightImpact();
         },
         onTapUp: (_) {
           _controller.reverse();
@@ -69,24 +69,29 @@ class _AnimatedPlayButtonState extends State<AnimatedPlayButton> with SingleTick
         },
         onTapCancel: () => _controller.reverse(),
         child: Container(
-          width: widget.size,
-          height: widget.size,
+          width: widget.size.clamp(AppConstants.minTouchTarget, 120.0),
+          height: widget.size.clamp(AppConstants.minTouchTarget, 120.0),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: effectiveColor,
             boxShadow: [
               BoxShadow(
-                color: effectiveColor.withValues(alpha: 0.35),
-                blurRadius: 16.0,
+                color: effectiveColor.withValues(alpha: widget.isPlaying ? 0.45 : 0.25),
+                blurRadius: widget.isPlaying ? 20.0 : 12.0,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Center(
-            child: Icon(
-              widget.isPlaying ? LucideIcons.pause : LucideIcons.play,
-              color: effectiveIconColor,
-              size: widget.size * 0.45,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+              child: Icon(
+                widget.isPlaying ? LucideIcons.pause : LucideIcons.play,
+                key: ValueKey<bool>(widget.isPlaying),
+                color: effectiveIconColor,
+                size: widget.size * 0.45,
+              ),
             ),
           ),
         ),

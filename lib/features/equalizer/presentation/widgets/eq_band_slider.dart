@@ -78,7 +78,7 @@ class EQBandSlider extends StatelessWidget {
               ),
               child: Text(
                 gainLabel,
-                style: AppTypography.labelSmall.copyWith(
+                style: AppTypography.tabularTimer.copyWith(
                   color: isEnabled ? gainColor : AppColors.textMuted,
                   fontWeight: FontWeight.bold,
                   fontSize: 10,

@@ -167,7 +167,7 @@ class VolumeSpeedSlider extends ConsumerWidget {
                   child: Text(
                     '${speed}x',
                     style: AppTypography.labelMedium.copyWith(
-                      color: isSelected ? Colors.black : AppColors.textPrimary,
+                      color: isSelected ? AppColors.getAccessibleTextColor(AppColors.accentGreen) : AppColors.textPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

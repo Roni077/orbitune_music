@@ -272,6 +272,48 @@ class _EQCurvePainter extends CustomPainter {
         ..color = Colors.white
         ..style = PaintingStyle.fill;
       canvas.drawCircle(pt, 1.5, whiteCorePaint);
+
+      // 7. Draw floating tooltip pill above active dragging node
+      if (isActive && isEnabled) {
+        final gain = (bandGains[freq] ?? 0.0);
+        final gainText = gain > 0 ? '+${gain.toStringAsFixed(1)}dB' : '${gain.toStringAsFixed(1)}dB';
+        
+        final tooltipPainter = TextPainter(
+          text: TextSpan(
+            text: gainText,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+
+        final tooltipWidth = tooltipPainter.width + 12;
+        final tooltipHeight = tooltipPainter.height + 6;
+        final tooltipRect = RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(pt.dx, pt.dy - 18),
+            width: tooltipWidth,
+            height: tooltipHeight,
+          ),
+          const Radius.circular(6),
+        );
+
+        final tooltipBgPaint = Paint()..color = AppColors.darkSurfaceElevated;
+        final tooltipBorderPaint = Paint()
+          ..color = AppColors.accentPink
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0;
+
+        canvas.drawRRect(tooltipRect, tooltipBgPaint);
+        canvas.drawRRect(tooltipRect, tooltipBorderPaint);
+        tooltipPainter.paint(
+          canvas,
+          Offset(pt.dx - (tooltipPainter.width / 2), pt.dy - 18 - (tooltipPainter.height / 2)),
+        );
+      }
     }
   }
 

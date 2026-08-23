@@ -453,6 +453,24 @@ class _QueueSheetState extends ConsumerState<QueueSheet> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: upcoming.length,
+      proxyDecorator: (child, index, animation) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) {
+            final t = Curves.easeInOutCubic.transform(animation.value);
+            return Material(
+              color: Colors.transparent,
+              elevation: 8.0 * t,
+              shadowColor: Colors.black.withValues(alpha: 0.5),
+              child: Transform.scale(
+                scale: 1.0 + (0.04 * t),
+                child: child,
+              ),
+            );
+          },
+          child: child,
+        );
+      },
       // ignore: deprecated_member_use
       onReorder: (oldIndex, newIndex) {
         HapticFeedback.selectionClick();

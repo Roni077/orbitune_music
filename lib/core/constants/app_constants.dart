@@ -9,10 +9,18 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   // Animation Durations
-  static const Duration fastAnimation = Duration(milliseconds: 150);
-  static const Duration standardAnimation = Duration(milliseconds: 250);
-  static const Duration slowAnimation = Duration(milliseconds: 400);
+  static const Duration microAnimation = Duration(milliseconds: 100);
+  static const Duration fastAnimation = Duration(milliseconds: 180);
+  static const Duration standardAnimation = Duration(milliseconds: 280);
+  static const Duration slowAnimation = Duration(milliseconds: 450);
   static const Duration discRotationDuration = Duration(seconds: 20);
+
+  // M3 Expressive Motion Curves
+  static const Curve emphasizedCurve = Curves.easeInOutCubicEmphasized;
+  static const Curve springDecelCurve = Curves.easeOutBack;
+
+  // Accessibility & Touch Target Tokens
+  static const double minTouchTarget = 48.0;
 
   // Border Radii
   static const double radiusSmall = 8.0;
@@ -33,4 +41,5 @@ class AppConstants {
 
   // Blur Tokens
   static const double glassBlurSigma = 16.0;
+  static const double glassBlurSigmaFast = 8.0;
 }

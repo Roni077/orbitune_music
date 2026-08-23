@@ -158,75 +158,83 @@ class _ArtworkDiscViewState extends ConsumerState<ArtworkDiscView>
   }
 
   Widget _buildVinylDisc(Color glowColor) {
-    return RotationTransition(
-      turns: _rotationController,
-      child: Container(
-        width: widget.size,
-        height: widget.size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const RadialGradient(
-            colors: [
-              Color(0xFF1E1E28),
-              Color(0xFF0F0F16),
-              Color(0xFF232332),
-              Color(0xFF0A0A10),
-            ],
-            stops: [0.35, 0.6, 0.85, 1.0],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: glowColor.withValues(alpha: 0.3),
-              blurRadius: 32,
-              offset: const Offset(0, 8),
-            ),
-            const BoxShadow(
-              color: Color(0xCC000000),
-              blurRadius: 24,
-              offset: Offset(0, 6),
-            ),
-          ],
-          border: Border.all(
-            color: const Color(0xFF33334A),
-            width: 3.0,
-          ),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Concentric vinyl grooves
-            CustomPaint(
-              size: Size(widget.size, widget.size),
-              painter: _VinylGroovesPainter(),
-            ),
-
-            // Center Artwork Label
-            ClipOval(
-              child: SizedBox(
-                width: widget.size * 0.42,
-                height: widget.size * 0.42,
-                child: ImageShimmer(
-                  imageUrl: widget.imageUrl,
-                  width: widget.size * 0.42,
-                  height: widget.size * 0.42,
+    return RepaintBoundary(
+      child: Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.identity()
+          ..setEntry(3, 2, 0.001)
+          ..rotateX(0.05),
+        child: RotationTransition(
+          turns: _rotationController,
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const RadialGradient(
+                colors: [
+                  Color(0xFF1E1E28),
+                  Color(0xFF0F0F16),
+                  Color(0xFF232332),
+                  Color(0xFF0A0A10),
+                ],
+                stops: [0.35, 0.6, 0.85, 1.0],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: glowColor.withValues(alpha: 0.35),
+                  blurRadius: 36,
+                  offset: const Offset(0, 10),
                 ),
+                const BoxShadow(
+                  color: Color(0xCC000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 8),
+                ),
+              ],
+              border: Border.all(
+                color: const Color(0xFF33334A),
+                width: 3.0,
               ),
             ),
-
-            // Center spindle hole
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF0B0B14),
-                border: Border.all(
-                  color: const Color(0xFF8888AA),
-                  width: 2.0,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Concentric vinyl grooves with specular reflection
+                CustomPaint(
+                  size: Size(widget.size, widget.size),
+                  painter: _VinylGroovesPainter(),
                 ),
-              ),
+
+                // Center Artwork Label
+                ClipOval(
+                  child: SizedBox(
+                    width: widget.size * 0.42,
+                    height: widget.size * 0.42,
+                    child: ImageShimmer(
+                      imageUrl: widget.imageUrl,
+                      width: widget.size * 0.42,
+                      height: widget.size * 0.42,
+                    ),
+                  ),
+                ),
+
+                // Center spindle hole
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF0B0B14),
+                    border: Border.all(
+                      color: const Color(0xFF8888AA),
+                      width: 2.0,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -234,18 +242,36 @@ class _ArtworkDiscViewState extends ConsumerState<ArtworkDiscView>
 }
 
 class _VinylGroovesPainter extends CustomPainter {
+  static final Paint _groovePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..color = const Color(0x22FFFFFF)
+    ..strokeWidth = 1.0;
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..color = const Color(0x22FFFFFF)
-      ..strokeWidth = 1.0;
-
     final maxRadius = size.width / 2;
-    for (double r = maxRadius * 0.5; r < maxRadius - 6; r += 8.0) {
-      canvas.drawCircle(center, r, paint);
+
+    // Draw concentric grooves
+    for (double r = maxRadius * 0.46; r < maxRadius - 6; r += 7.0) {
+      canvas.drawCircle(center, r, _groovePaint);
     }
+
+    // Anisotropic light reflection sweep
+    final shimmerPaint = Paint()
+      ..shader = SweepGradient(
+        colors: [
+          Colors.transparent,
+          Colors.white.withValues(alpha: 0.08),
+          Colors.transparent,
+          Colors.white.withValues(alpha: 0.12),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: maxRadius))
+      ..style = PaintingStyle.fill;
+
+    canvas.drawCircle(center, maxRadius - 3, shimmerPaint);
   }
 
   @override

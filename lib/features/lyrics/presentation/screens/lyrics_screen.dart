@@ -273,9 +273,6 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
     if (track == null) return const SizedBox.shrink();
 
     final isPlaying = playerState.isPlaying;
-    final progress = (playerState.duration.inMilliseconds > 0)
-        ? (playerState.position.inMilliseconds / playerState.duration.inMilliseconds).clamp(0.0, 1.0)
-        : 0.0;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -344,17 +341,11 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
             ],
           ),
           const SizedBox(height: 4),
-          LinearProgressIndicator(
-            value: progress,
-            minHeight: 2.0,
-            backgroundColor: AppColors.darkSurfaceVariant,
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accentGreen),
-          ),
+          const _LyricsProgressBar(),
         ],
       ),
     );
   }
-
   void _showFontSizeDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -399,6 +390,26 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
           },
         );
       },
+    );
+  }
+}
+
+class _LyricsProgressBar extends ConsumerWidget {
+  const _LyricsProgressBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final position = ref.watch(playerPositionProvider);
+    final duration = ref.watch(playerDurationProvider);
+    final progress = (duration.inMilliseconds > 0)
+        ? (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
+        : 0.0;
+
+    return LinearProgressIndicator(
+      value: progress,
+      minHeight: 2.0,
+      backgroundColor: AppColors.darkSurfaceVariant,
+      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accentGreen),
     );
   }
 }

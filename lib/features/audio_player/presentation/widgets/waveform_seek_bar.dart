@@ -56,87 +56,127 @@ class _WaveformSeekBarState extends ConsumerState<WaveformSeekBar> {
     final displayedPosition = Duration(milliseconds: currentMs.toInt());
     final remainingDuration = widget.duration - displayedPosition;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Waveform Visual & Scrubber Slider
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onHorizontalDragStart: (details) {
-            setState(() {
-              _isDragging = true;
-            });
-          },
-          onHorizontalDragUpdate: (details) {
-            final box = context.findRenderObject() as RenderBox?;
-            if (box != null) {
-              final localX = details.localPosition.dx;
-              final width = box.size.width;
-              final ratio = (localX / width).clamp(0.0, 1.0);
-              setState(() {
-                _dragValue = ratio * totalMs;
-              });
-              HapticFeedback.selectionClick();
-            }
-          },
-          onHorizontalDragEnd: (details) {
-            if (_dragValue != null) {
-              final seekTo = Duration(milliseconds: _dragValue!.toInt());
-              if (widget.onSeek != null) {
-                widget.onSeek!(seekTo);
-              } else {
-                ref.read(playerProvider.notifier).seek(seekTo);
-              }
-            }
-            setState(() {
-              _isDragging = false;
-              _dragValue = null;
-            });
-            HapticFeedback.mediumImpact();
-          },
-          child: SizedBox(
-            height: 38,
-            child: CustomPaint(
-              size: const Size(double.infinity, 38),
-              painter: _WaveformPainter(
-                progress: progressRatio,
-                waveformHeights: _waveformHeights,
-                activeColor: activeColor,
-                inactiveColor: inactiveColor,
-                isDragging: _isDragging,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final thumbX = (progressRatio * constraints.maxWidth).clamp(0.0, constraints.maxWidth);
+
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Waveform Visual & Scrubber Slider with floating seek tooltip
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragStart: (details) {
+                    setState(() {
+                      _isDragging = true;
+                    });
+                  },
+                  onHorizontalDragUpdate: (details) {
+                    final box = context.findRenderObject() as RenderBox?;
+                    if (box != null) {
+                      final localX = details.localPosition.dx;
+                      final width = box.size.width;
+                      final ratio = (localX / width).clamp(0.0, 1.0);
+                      setState(() {
+                        _dragValue = ratio * totalMs;
+                      });
+                      HapticFeedback.selectionClick();
+                    }
+                  },
+                  onHorizontalDragEnd: (details) {
+                    if (_dragValue != null) {
+                      final seekTo = Duration(milliseconds: _dragValue!.toInt());
+                      if (widget.onSeek != null) {
+                        widget.onSeek!(seekTo);
+                      } else {
+                        ref.read(playerProvider.notifier).seek(seekTo);
+                      }
+                    }
+                    setState(() {
+                      _isDragging = false;
+                      _dragValue = null;
+                    });
+                    HapticFeedback.mediumImpact();
+                  },
+                  child: SizedBox(
+                    height: 38,
+                    child: CustomPaint(
+                      size: Size(constraints.maxWidth, 38),
+                      painter: _WaveformPainter(
+                        progress: progressRatio,
+                        waveformHeights: _waveformHeights,
+                        activeColor: activeColor,
+                        inactiveColor: inactiveColor,
+                        isDragging: _isDragging,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Floating Time Tooltip Bubble during scrub
+                if (_isDragging)
+                  Positioned(
+                    left: (thumbX - 28).clamp(0.0, constraints.maxWidth - 56),
+                    top: -24,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.darkSurfaceElevated,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: activeColor.withValues(alpha: 0.6)),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x66000000),
+                            blurRadius: 8,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        Formatters.formatDuration(displayedPosition),
+                        style: AppTypography.tabularTimer.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 6),
+
+            // Time Stamps (Elapsed vs Remaining with Tabular Figures)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    Formatters.formatDuration(displayedPosition),
+                    style: AppTypography.tabularTimer.copyWith(
+                      color: _isDragging
+                          ? activeColor
+                          : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    '-${Formatters.formatDuration(remainingDuration.isNegative ? Duration.zero : remainingDuration)}',
+                    style: AppTypography.tabularTimer.copyWith(
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ),
-
-        const SizedBox(height: 6),
-
-        // Time Stamps (Elapsed vs Remaining)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                Formatters.formatDuration(displayedPosition),
-                style: AppTypography.labelSmall.copyWith(
-                  color: _isDragging
-                      ? activeColor
-                      : AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Text(
-                '-${Formatters.formatDuration(remainingDuration.isNegative ? Duration.zero : remainingDuration)}',
-                style: AppTypography.labelSmall.copyWith(
-                  color: AppColors.textMuted,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }

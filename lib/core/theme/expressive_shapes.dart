@@ -28,4 +28,11 @@ class ExpressiveShapes {
   static const RoundedRectangleBorder sheetShape = RoundedRectangleBorder(
     borderRadius: BorderRadius.vertical(top: Radius.circular(extraLarge)),
   );
+
+  /// Dynamically computes custom rounded rectangle borders
+  static RoundedRectangleBorder buildCustomCardShape(double radius) {
+    return RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(radius)),
+    );
+  }
 }

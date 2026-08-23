@@ -29,11 +29,12 @@ class PaletteHelper {
           ? CachedNetworkImageProvider(imageUrl)
           : NetworkImage(imageUrl);
 
+      // Performance Optimization: Downscale to 32x32 (1024 pixels, 9x fewer pixels to quantize)
       final generator = await PaletteGenerator.fromImageProvider(
         imageProvider,
-        size: const Size(96, 96),
-        maximumColorCount: 12,
-      ).timeout(const Duration(seconds: 3));
+        size: const Size(32, 32),
+        maximumColorCount: 6,
+      ).timeout(const Duration(seconds: 2));
 
       if (_cache.length >= _maxCacheSize) {
         _cache.remove(_cache.keys.first);

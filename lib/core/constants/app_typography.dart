@@ -14,6 +14,7 @@ class AppTypography {
     double? letterSpacing,
     Color? color,
     double? height,
+    List<FontFeature>? fontFeatures,
   }) {
     final effectiveColor = color ?? AppColors.textPrimary;
     switch (activeFontKey) {
@@ -24,6 +25,7 @@ class AppTypography {
           letterSpacing: letterSpacing,
           color: effectiveColor,
           height: height,
+          fontFeatures: fontFeatures,
         );
       case 'inter':
         return GoogleFonts.inter(
@@ -32,6 +34,7 @@ class AppTypography {
           letterSpacing: letterSpacing,
           color: effectiveColor,
           height: height,
+          fontFeatures: fontFeatures,
         );
       case 'outfit':
         return GoogleFonts.outfit(
@@ -40,6 +43,7 @@ class AppTypography {
           letterSpacing: letterSpacing,
           color: effectiveColor,
           height: height,
+          fontFeatures: fontFeatures,
         );
       case 'righteous_poppins':
       default:
@@ -49,6 +53,7 @@ class AppTypography {
           letterSpacing: letterSpacing ?? 0.5,
           color: effectiveColor,
           height: height,
+          fontFeatures: fontFeatures,
         );
     }
   }
@@ -59,6 +64,7 @@ class AppTypography {
     double? letterSpacing,
     Color? color,
     double? height,
+    List<FontFeature>? fontFeatures,
   }) {
     final effectiveColor = color ?? AppColors.textPrimary;
     switch (activeFontKey) {
@@ -69,6 +75,7 @@ class AppTypography {
           letterSpacing: letterSpacing,
           color: effectiveColor,
           height: height,
+          fontFeatures: fontFeatures,
         );
       case 'inter':
         return GoogleFonts.inter(
@@ -77,6 +84,7 @@ class AppTypography {
           letterSpacing: letterSpacing,
           color: effectiveColor,
           height: height,
+          fontFeatures: fontFeatures,
         );
       case 'outfit':
         return GoogleFonts.plusJakartaSans(
@@ -85,6 +93,7 @@ class AppTypography {
           letterSpacing: letterSpacing,
           color: effectiveColor,
           height: height,
+          fontFeatures: fontFeatures,
         );
       case 'righteous_poppins':
       default:
@@ -94,6 +103,7 @@ class AppTypography {
           letterSpacing: letterSpacing,
           color: effectiveColor,
           height: height,
+          fontFeatures: fontFeatures,
         );
     }
   }
@@ -166,6 +176,14 @@ class AppTypography {
         fontSize: 11,
         fontWeight: FontWeight.normal,
         color: AppColors.textMuted,
+      ));
+
+  // Tabular Numerals for Live Timer / Bitrate Displays (Eliminates Jitter)
+  static TextStyle get tabularTimer => _getCachedStyle('tabularTimer', () => _getBodyStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textMuted,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ));
 
   // Labels & Badges

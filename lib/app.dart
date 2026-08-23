@@ -20,9 +20,42 @@ class OrbituneApp extends ConsumerWidget {
       title: 'Orbitune',
       debugShowCheckedModeBanner: false,
       theme: themeData,
+      builder: (context, child) {
+        // Enforce accessible text scaling bounds (0.85x - 1.25x)
+        final mediaQuery = MediaQuery.of(context);
+        final clampedScaler = mediaQuery.textScaler.clamp(
+          minScaleFactor: 0.85,
+          maxScaleFactor: 1.25,
+        );
+
+        return MediaQuery(
+          data: mediaQuery.copyWith(textScaler: clampedScaler),
+          child: ScrollConfiguration(
+            behavior: const _OrbituneScrollBehavior(),
+            child: AnimatedTheme(
+              data: themeData,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOutCubic,
+              child: child!,
+            ),
+          ),
+        );
+      },
       home: hasCompletedOnboarding 
           ? const MainNavigationShell() 
           : const OnboardingScreen(),
     );
   }
+}
+
+class _OrbituneScrollBehavior extends ScrollBehavior {
+  const _OrbituneScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
+
+  @override
+  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) =>
+      child;
 }

@@ -22,6 +22,7 @@ class DownloadTask {
   final int totalBytes;
   final String? localFilePath;
   final AudioQuality quality;
+  final int bytesPerSecond;
   final String? errorMessage;
   final DateTime startedAt;
   final DateTime? completedAt;
@@ -33,6 +34,7 @@ class DownloadTask {
     this.progress = 0.0,
     this.downloadedBytes = 0,
     this.totalBytes = 0,
+    this.bytesPerSecond = 0,
     this.localFilePath,
     this.quality = AudioQuality.high320k,
     this.errorMessage,
@@ -44,6 +46,12 @@ class DownloadTask {
   bool get isDownloading => status == DownloadStatus.downloading;
   bool get isFailed => status == DownloadStatus.failed;
   bool get isPaused => status == DownloadStatus.paused;
+
+  Duration? get estimatedTimeRemaining {
+    if (bytesPerSecond <= 0 || totalBytes <= downloadedBytes) return null;
+    final remainingBytes = totalBytes - downloadedBytes;
+    return Duration(seconds: (remainingBytes / bytesPerSecond).ceil());
+  }
 
   DownloadTask copyWith({
     String? id,

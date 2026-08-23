@@ -48,7 +48,7 @@ class _BannerCarouselState extends State<BannerCarousel> {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          height: 190,
+          height: 195,
           child: PageView.builder(
             controller: _pageController,
             itemCount: widget.items.length,
@@ -59,7 +59,22 @@ class _BannerCarouselState extends State<BannerCarousel> {
             },
             itemBuilder: (context, index) {
               final item = widget.items[index];
-              return _buildBannerCard(item);
+              return AnimatedBuilder(
+                animation: _pageController,
+                builder: (context, child) {
+                  double scale = 1.0;
+                  if (_pageController.position.haveDimensions) {
+                    final page = _pageController.page ?? _currentPage.toDouble();
+                    final diff = (page - index).abs();
+                    scale = (1.0 - (diff * 0.08)).clamp(0.88, 1.0);
+                  }
+                  return Transform.scale(
+                    scale: scale,
+                    child: child,
+                  );
+                },
+                child: _buildBannerCard(item),
+              );
             },
           ),
         ),
@@ -71,10 +86,10 @@ class _BannerCarouselState extends State<BannerCarousel> {
             children: List.generate(widget.items.length, (index) {
               final isActive = index == _currentPage;
               return AnimatedContainer(
-                duration: AppConstants.fastAnimation,
+                duration: const Duration(milliseconds: 260),
                 curve: Curves.easeOutCubic,
-                margin: const EdgeInsets.symmetric(horizontal: 3.0),
-                width: isActive ? 18.0 : 6.0,
+                margin: const EdgeInsets.symmetric(horizontal: 3.5),
+                width: isActive ? 22.0 : 6.0,
                 height: 6.0,
                 decoration: BoxDecoration(
                   color: isActive ? AppColors.accentGreen : AppColors.divider,
