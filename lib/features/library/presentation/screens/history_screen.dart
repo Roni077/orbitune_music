@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/widgets/empty_state_view.dart';
+import 'package:orbitune/core/widgets/expressive_confirmation_sheet.dart';
 import 'package:orbitune/core/widgets/image_shimmer.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/player_provider.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/queue_provider.dart';
@@ -28,7 +29,7 @@ class HistoryScreen extends ConsumerWidget {
     final isPlaying = ref.watch(isPlayingProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -200,36 +201,18 @@ class HistoryScreen extends ConsumerWidget {
     }
   }
 
-  void _showClearHistoryDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Clear History?', style: AppTypography.titleMedium),
-        content: Text(
-          'Are you sure you want to clear your listening history?',
-          style: AppTypography.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentPink,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              ref.read(historyProvider.notifier).clearHistory();
-            },
-            child: const Text('Clear All'),
-          ),
-        ],
-      ),
+  void _showClearHistoryDialog(BuildContext context, WidgetRef ref) async {
+    final confirmed = await ExpressiveConfirmationSheet.show(
+      context,
+      title: 'Clear History?',
+      message: 'Are you sure you want to clear your listening history? This cannot be undone.',
+      confirmLabel: 'Clear All',
+      icon: LucideIcons.history,
+      isDestructive: true,
     );
+
+    if (confirmed == true) {
+      ref.read(historyProvider.notifier).clearHistory();
+    }
   }
 }

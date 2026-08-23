@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
@@ -7,7 +8,7 @@ import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/library/domain/models/user_playlist.dart';
 import 'package:orbitune/features/library/presentation/providers/user_playlists_provider.dart';
 
-/// Dialog to create a new user playlist or rename an existing playlist
+/// Modal Bottom Sheet to create a new user playlist or rename an existing playlist
 class CreatePlaylistDialog extends ConsumerStatefulWidget {
   final UserPlaylist? initialPlaylist;
   final List<Track> initialTracks;
@@ -23,8 +24,11 @@ class CreatePlaylistDialog extends ConsumerStatefulWidget {
     UserPlaylist? initialPlaylist,
     List<Track> initialTracks = const [],
   }) {
-    return showDialog<UserPlaylist?>(
+    HapticFeedback.lightImpact();
+    return showModalBottomSheet<UserPlaylist?>(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => CreatePlaylistDialog(
         initialPlaylist: initialPlaylist,
         initialTracks: initialTracks,
@@ -101,132 +105,203 @@ class _CreatePlaylistDialogState extends ConsumerState<CreatePlaylistDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
     final isEditing = widget.initialPlaylist != null;
 
-    return AlertDialog(
-      backgroundColor: AppColors.darkSurface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-      title: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.accentGreen.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isEditing ? LucideIcons.pencil : LucideIcons.listPlus,
-              color: AppColors.accentGreen,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            isEditing ? 'Edit Playlist' : 'New Playlist',
-            style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-          ),
-        ],
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                autofocus: true,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: InputDecoration(
-                  labelText: 'Playlist Name',
-                  labelStyle: const TextStyle(color: AppColors.textSecondary),
-                  hintText: 'e.g. Midnight Vibes',
-                  hintStyle: TextStyle(color: AppColors.textTertiary),
-                  filled: true,
-                  fillColor: AppColors.darkSurfaceVariant,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.accentGreen, width: 1.5),
-                  ),
-                ),
-                validator: (val) {
-                  if (val == null || val.trim().isEmpty) {
-                    return 'Please enter a playlist name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: _descController,
-                maxLines: 2,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: InputDecoration(
-                  labelText: 'Description (Optional)',
-                  labelStyle: const TextStyle(color: AppColors.textSecondary),
-                  hintText: 'Add an optional description',
-                  hintStyle: TextStyle(color: AppColors.textTertiary),
-                  filled: true,
-                  fillColor: AppColors.darkSurfaceVariant,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.accentGreen, width: 1.5),
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(
+            top: BorderSide(
+              color: theme.colorScheme.outline.withValues(alpha: 0.25),
+              width: 1.5,
+            ),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+        child: SafeArea(
+          top: false,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Drag Handle
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 4, bottom: 16),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-              ),
-              if (widget.initialTracks.isNotEmpty) ...[
-                const SizedBox(height: 12),
+
+                // Header
                 Row(
                   children: [
-                    const Icon(LucideIcons.music, size: 14, color: AppColors.accentCyan),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Includes ${widget.initialTracks.length} tracks',
-                      style: AppTypography.caption.copyWith(color: AppColors.accentCyan),
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: primary.withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Icon(
+                        isEditing ? LucideIcons.pencil : LucideIcons.listPlus,
+                        color: primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        isEditing ? 'Edit Playlist' : 'New Playlist',
+                        style: AppTypography.titleMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 20),
+
+                // Form Fields
+                TextFormField(
+                  controller: _nameController,
+                  autofocus: true,
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    labelText: 'Playlist Name',
+                    labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                    hintText: 'e.g. Midnight Vibes',
+                    hintStyle: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: primary, width: 1.5),
+                    ),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.trim().isEmpty) {
+                      return 'Please enter a playlist name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _descController,
+                  maxLines: 2,
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    labelText: 'Description (Optional)',
+                    labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                    hintText: 'Add an optional description',
+                    hintStyle: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: primary, width: 1.5),
+                    ),
+                  ),
+                ),
+                if (widget.initialTracks.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(LucideIcons.music, size: 14, color: primary),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Includes ${widget.initialTracks.length} tracks',
+                        style: AppTypography.caption.copyWith(color: primary),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 24),
+
+                // Action Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: theme.colorScheme.onSurface,
+                          side: BorderSide(
+                            color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: primary,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: _isLoading ? null : _handleSave,
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                ),
+                              )
+                            : Text(
+                                isEditing ? 'Save' : 'Create',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
               ],
-            ],
+            ),
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accentGreen,
-            foregroundColor: Colors.black,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          ),
-          onPressed: _isLoading ? null : _handleSave,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                  ),
-                )
-              : Text(
-                  isEditing ? 'Save' : 'Create',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-        ),
-      ],
     );
   }
 }

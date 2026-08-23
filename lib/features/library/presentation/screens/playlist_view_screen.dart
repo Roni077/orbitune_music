@@ -6,6 +6,7 @@ import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/utils/formatters.dart';
 import 'package:orbitune/core/widgets/empty_state_view.dart';
+import 'package:orbitune/core/widgets/expressive_confirmation_sheet.dart';
 import 'package:orbitune/core/widgets/image_shimmer.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/queue_provider.dart';
@@ -63,7 +64,7 @@ class _PlaylistViewScreenState extends ConsumerState<PlaylistViewScreen> {
     final songs = playlist.songs;
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -409,39 +410,21 @@ class _PlaylistViewScreenState extends ConsumerState<PlaylistViewScreen> {
     );
   }
 
-  void _confirmDeletePlaylist(BuildContext context, UserPlaylist playlist) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Delete Playlist?', style: AppTypography.titleMedium),
-        content: Text(
-          'Are you sure you want to delete "${playlist.name}"? This action cannot be undone.',
-          style: AppTypography.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentPink,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () async {
-              Navigator.of(ctx).pop(); // Close dialog
-              await ref.read(userPlaylistsProvider.notifier).deletePlaylist(playlist.id);
-              if (mounted) {
-                Navigator.of(context).pop(); // Go back from playlist view
-              }
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+  void _confirmDeletePlaylist(BuildContext context, UserPlaylist playlist) async {
+    final confirmed = await ExpressiveConfirmationSheet.show(
+      context,
+      title: 'Delete Playlist?',
+      message: 'Are you sure you want to delete "${playlist.name}"? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      icon: LucideIcons.trash2,
+      isDestructive: true,
     );
+
+    if (confirmed == true && mounted) {
+      await ref.read(userPlaylistsProvider.notifier).deletePlaylist(playlist.id);
+      if (mounted) {
+        Navigator.of(context).pop(); // Go back from playlist view
+      }
+    }
   }
 }

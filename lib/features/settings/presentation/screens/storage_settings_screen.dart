@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
@@ -8,6 +9,7 @@ import 'package:orbitune/core/widgets/expressive_card.dart';
 import 'package:orbitune/features/downloader/presentation/screens/downloads_screen.dart';
 import 'package:orbitune/features/search/data/search_cache_repository.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
+import 'package:orbitune/features/settings/presentation/providers/storage_analyzer_provider.dart';
 import 'package:orbitune/features/settings/presentation/widgets/settings_tile.dart';
 import 'package:orbitune/features/settings/presentation/widgets/storage_breakdown_bar.dart';
 
@@ -25,9 +27,14 @@ class StorageSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
+    final storageStats = ref.watch(storageStatsProvider);
+
+    final downloadsPath = storageStats.downloadsDirectoryPath.isNotEmpty
+        ? storageStats.downloadsDirectoryPath
+        : '/storage/emulated/0/Download/Orbitune_Downloads';
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -40,8 +47,8 @@ class StorageSettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
         children: [
-          // 1. Storage Breakdown Bar
-          const StorageBreakdownBar(),
+          // 1. Live Real-time Storage Breakdown Bar
+          StorageBreakdownBar(stats: storageStats),
           const SizedBox(height: 24),
 
           // 2. NETWORK DATA POLICIES & OFFLINE
@@ -85,6 +92,22 @@ class StorageSettingsScreen extends ConsumerWidget {
                   value: settings.wifiOnlyDownloads,
                   activeTrackColor: AppColors.accentGreen,
                   onChanged: (val) => notifier.setWifiOnlyDownloads(val),
+                ),
+                const Divider(color: AppColors.glassBorder, height: 16),
+                SettingsTile(
+                  icon: LucideIcons.folderDown,
+                  iconColor: AppColors.accentCyan,
+                  title: 'Download Storage Location',
+                  subtitle: downloadsPath,
+                  trailing: IconButton(
+                    icon: const Icon(LucideIcons.copy, size: 18, color: AppColors.accentCyan),
+                    tooltip: 'Copy Path',
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: downloadsPath));
+                      HapticFeedback.lightImpact();
+                      _showFeedback(context, 'Storage directory path copied to clipboard!');
+                    },
+                  ),
                 ),
                 const Divider(color: AppColors.glassBorder, height: 20),
                 SettingsTile(
@@ -146,6 +169,7 @@ class StorageSettingsScreen extends ConsumerWidget {
                   subtitle: 'Flush cached autocomplete queries',
                   onTap: () async {
                     await ref.read(searchCacheRepositoryProvider).clearCache();
+                    ref.read(storageStatsProvider.notifier).refresh();
                     if (context.mounted) {
                       _showFeedback(context, 'Search cache cleared!');
                     }
@@ -159,6 +183,7 @@ class StorageSettingsScreen extends ConsumerWidget {
                   subtitle: 'Remove cached synced LRCLIB files',
                   onTap: () async {
                     await HiveService.instance.clearBox('lyrics_cache');
+                    ref.read(storageStatsProvider.notifier).refresh();
                     if (context.mounted) {
                       _showFeedback(context, 'Lyrics cache cleared!');
                     }
@@ -174,6 +199,7 @@ class StorageSettingsScreen extends ConsumerWidget {
                   onTap: () async {
                     await HiveService.instance.clearCache();
                     await ref.read(searchCacheRepositoryProvider).clearCache();
+                    ref.read(storageStatsProvider.notifier).refresh();
                     if (context.mounted) {
                       _showFeedback(context, 'All temporary cache flushed successfully!');
                     }

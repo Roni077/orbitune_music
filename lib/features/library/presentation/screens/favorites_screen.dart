@@ -53,15 +53,17 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
       (prev, t) => prev + t.duration,
     );
 
+    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
+
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: scaffoldBg,
       body: CustomScrollView(
         slivers: [
           // Collapsible Ambient Header with Pink Gradient
           SliverAppBar(
             expandedHeight: 240.0,
             pinned: true,
-            backgroundColor: AppColors.darkBackground,
+            backgroundColor: scaffoldBg,
             elevation: 0,
             leading: IconButton(
               icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),

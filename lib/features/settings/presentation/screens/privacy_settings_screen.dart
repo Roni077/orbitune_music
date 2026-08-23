@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/widgets/expressive_card.dart';
+import 'package:orbitune/core/widgets/expressive_confirmation_sheet.dart';
 import 'package:orbitune/features/library/presentation/providers/history_provider.dart';
 import 'package:orbitune/features/search/data/search_cache_repository.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
@@ -25,7 +26,7 @@ class PrivacySettingsScreen extends ConsumerWidget {
     final notifier = ref.read(settingsProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -135,66 +136,40 @@ class PrivacySettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _confirmClearHistory(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        title: Text('Clear Listening History?', style: AppTypography.titleMedium),
-        content: Text(
-          'This will remove all recorded songs from your history and cannot be undone.',
-          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentPink),
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await ref.read(historyProvider.notifier).clearHistory();
-              if (context.mounted) {
-                _showFeedback(context, 'Listening history cleared!');
-              }
-            },
-            child: const Text('Clear', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+  void _confirmClearHistory(BuildContext context, WidgetRef ref) async {
+    final confirmed = await ExpressiveConfirmationSheet.show(
+      context,
+      title: 'Clear Listening History?',
+      message: 'This will remove all recorded songs from your history and cannot be undone.',
+      confirmLabel: 'Clear History',
+      icon: LucideIcons.history,
+      isDestructive: true,
     );
+
+    if (confirmed == true && context.mounted) {
+      await ref.read(historyProvider.notifier).clearHistory();
+      if (context.mounted) {
+        _showFeedback(context, 'Listening history cleared!');
+      }
+    }
   }
 
-  void _confirmClearSearch(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        title: Text('Clear Search History?', style: AppTypography.titleMedium),
-        content: Text(
-          'All past search terms will be permanently erased.',
-          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentPink),
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await ref.read(searchCacheRepositoryProvider).clearCache();
-              if (context.mounted) {
-                _showFeedback(context, 'Search history cleared!');
-              }
-            },
-            child: const Text('Clear', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+  void _confirmClearSearch(BuildContext context, WidgetRef ref) async {
+    final confirmed = await ExpressiveConfirmationSheet.show(
+      context,
+      title: 'Clear Search History?',
+      message: 'All past search terms will be permanently erased.',
+      confirmLabel: 'Clear Search',
+      icon: LucideIcons.searchX,
+      isDestructive: true,
     );
+
+    if (confirmed == true && context.mounted) {
+      await ref.read(searchCacheRepositoryProvider).clearCache();
+      if (context.mounted) {
+        _showFeedback(context, 'Search history cleared!');
+      }
+    }
   }
 
   void _showFeedback(BuildContext context, String message) {

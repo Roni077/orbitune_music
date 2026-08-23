@@ -44,7 +44,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
     final playlistAsync = ref.watch(onlinePlaylistProvider((playlistId, source, playlistTitle)));
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [

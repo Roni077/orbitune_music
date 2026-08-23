@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../constants/app_colors.dart';
 import '../constants/app_constants.dart';
 
 /// Material 3 Expressive Card with spring scale feedback on tap
@@ -96,10 +95,10 @@ class _ExpressiveCardState extends State<ExpressiveCard> with SingleTickerProvid
           height: widget.height,
           margin: widget.margin,
           decoration: BoxDecoration(
-            color: widget.color ?? AppColors.darkSurface,
+            color: widget.color ?? Theme.of(context).colorScheme.surface,
             borderRadius: effectiveRadius,
             border: Border.all(
-              color: widget.borderColor ?? AppColors.divider,
+              color: widget.borderColor ?? Theme.of(context).colorScheme.outline.withValues(alpha: 0.25),
               width: 1.0,
             ),
           ),

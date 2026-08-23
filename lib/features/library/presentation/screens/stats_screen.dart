@@ -31,7 +31,7 @@ class StatsScreen extends ConsumerWidget {
     final hasStats = stats.totalPlays > 0 || stats.totalListeningTime > Duration.zero;
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

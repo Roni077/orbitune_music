@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
@@ -6,6 +7,7 @@ import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/utils/formatters.dart';
 import 'package:orbitune/core/widgets/empty_state_view.dart';
 import 'package:orbitune/core/widgets/expressive_card.dart';
+import 'package:orbitune/core/widgets/expressive_confirmation_sheet.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/player_provider.dart';
 import 'package:orbitune/features/downloader/data/download_service.dart';
 import 'package:orbitune/features/downloader/domain/models/download_task.dart';
@@ -29,6 +31,7 @@ class DownloadsScreen extends ConsumerStatefulWidget {
 class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
   int _selectedFilterIndex = 0; // 0: All, 1: Downloaded, 2: In Progress
   int _storageUsedBytes = 0;
+  String _downloadsPath = '';
 
   @override
   void initState() {
@@ -39,9 +42,11 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
   Future<void> _refreshStorage() async {
     final service = ref.read(downloadServiceProvider);
     final storage = await service.calculateTotalStorageUsed();
+    final dir = await service.getDownloadsDirectory();
     if (mounted) {
       setState(() {
         _storageUsedBytes = storage;
+        _downloadsPath = dir.path;
       });
     }
   }
@@ -62,7 +67,7 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -125,74 +130,119 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
                             padding: const EdgeInsets.all(16),
                             color: AppColors.darkSurfaceVariant.withOpacity(0.6),
                             borderRadius: BorderRadius.circular(16),
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.accentCyan.withOpacity(0.15),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    LucideIcons.hardDrive,
-                                    color: AppColors.accentCyan,
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Offline Storage',
-                                        style: AppTypography.titleSmall.copyWith(
-                                          fontWeight: FontWeight.w600,
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.accentCyan.withOpacity(0.15),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        LucideIcons.hardDrive,
+                                        color: AppColors.accentCyan,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Offline Storage',
+                                            style: AppTypography.titleSmall.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${completedDownloads.length} songs • ${Formatters.formatFileSize(_storageUsedBytes)}',
+                                            style: AppTypography.bodySmall.copyWith(
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (inProgressDownloads.isNotEmpty)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.accentYellow.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: AppColors.accentYellow.withOpacity(0.4),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const SizedBox(
+                                              width: 8,
+                                              height: 8,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 1.5,
+                                                valueColor: AlwaysStoppedAnimation<Color>(
+                                                    AppColors.accentYellow),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              '${inProgressDownloads.length} active',
+                                              style: AppTypography.caption.copyWith(
+                                                color: AppColors.accentYellow,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '${completedDownloads.length} songs • ${Formatters.formatFileSize(_storageUsedBytes)}',
-                                        style: AppTypography.bodySmall.copyWith(
-                                          color: AppColors.textSecondary,
+                                  ],
+                                ),
+                                if (_downloadsPath.isNotEmpty) ...[
+                                  const Divider(color: AppColors.glassBorder, height: 16),
+                                  Row(
+                                    children: [
+                                      const Icon(LucideIcons.folderDown, size: 14, color: AppColors.accentCyan),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          _downloadsPath,
+                                          style: AppTypography.caption.copyWith(
+                                            color: AppColors.textTertiary,
+                                            fontSize: 11,
+                                            fontFamily: 'monospace',
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(LucideIcons.copy, size: 14, color: AppColors.accentCyan),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        tooltip: 'Copy Path',
+                                        onPressed: () {
+                                          Clipboard.setData(ClipboardData(text: _downloadsPath));
+                                          HapticFeedback.lightImpact();
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: const Text('Download directory path copied!'),
+                                              backgroundColor: AppColors.accentGreen,
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(12)),
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ],
                                   ),
-                                ),
-                                if (inProgressDownloads.isNotEmpty)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.accentYellow.withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: AppColors.accentYellow.withOpacity(0.4),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const SizedBox(
-                                          width: 8,
-                                          height: 8,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 1.5,
-                                            valueColor: AlwaysStoppedAnimation<Color>(
-                                                AppColors.accentYellow),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          '${inProgressDownloads.length} active',
-                                          style: AppTypography.caption.copyWith(
-                                            color: AppColors.accentYellow,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -345,37 +395,19 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
     );
   }
 
-  void _showClearAllDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Delete All Downloads?', style: AppTypography.titleMedium),
-        content: Text(
-          'This will delete all offline music files from your device and clear download tasks.',
-          style: AppTypography.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentPink,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await ref.read(downloadServiceProvider).deleteAllDownloads();
-              await _refreshStorage();
-            },
-            child: const Text('Delete All'),
-          ),
-        ],
-      ),
+  void _showClearAllDialog() async {
+    final confirmed = await ExpressiveConfirmationSheet.show(
+      context,
+      title: 'Delete All Downloads?',
+      message: 'This will delete all offline music files from your device and clear download tasks.',
+      confirmLabel: 'Delete All',
+      icon: LucideIcons.trash2,
+      isDestructive: true,
     );
+
+    if (confirmed == true && mounted) {
+      await ref.read(downloadServiceProvider).deleteAllDownloads();
+      await _refreshStorage();
+    }
   }
 }

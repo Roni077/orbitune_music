@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_constants.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 
@@ -55,19 +54,22 @@ class CustomBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 10.0),
       height: 64.0,
       decoration: BoxDecoration(
-        color: AppColors.darkSurface.withValues(alpha: 0.85),
+        color: colorScheme.surface.withValues(alpha: 0.90),
         borderRadius: BorderRadius.circular(32.0),
         border: Border.all(
-          color: AppColors.glassBorder,
+          color: colorScheme.outline.withValues(alpha: 0.3),
           width: 1.0,
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x66000000),
+            color: Color(0x55000000),
             blurRadius: 16.0,
             offset: Offset(0, 6),
           ),
@@ -85,7 +87,7 @@ class CustomBottomNav extends StatelessWidget {
                 final item = items[index];
                 final isSelected = index == currentIndex;
 
-                return _buildNavItem(index, item, isSelected);
+                return _buildNavItem(context, index, item, isSelected);
               }),
             ),
           ),
@@ -94,7 +96,11 @@ class CustomBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(int index, CustomBottomNavItem item, bool isSelected) {
+  Widget _buildNavItem(BuildContext context, int index, CustomBottomNavItem item, bool isSelected) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
+
     return GestureDetector(
       onTap: () {
         if (!isSelected) {
@@ -112,12 +118,12 @@ class CustomBottomNav extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.accentGreen.withValues(alpha: 0.16)
+              ? primary.withValues(alpha: 0.16)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20.0),
           border: isSelected
               ? Border.all(
-                  color: AppColors.accentGreen.withValues(alpha: 0.35),
+                  color: primary.withValues(alpha: 0.35),
                   width: 1.0,
                 )
               : null,
@@ -128,14 +134,14 @@ class CustomBottomNav extends StatelessWidget {
             Icon(
               isSelected ? (item.activeIcon ?? item.icon) : item.icon,
               size: 21,
-              color: isSelected ? AppColors.accentGreen : AppColors.textMuted,
+              color: isSelected ? primary : onSurfaceVariant,
             ),
             if (isSelected) ...[
               const SizedBox(width: 8),
               Text(
                 item.label,
                 style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.accentGreen,
+                  color: primary,
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),

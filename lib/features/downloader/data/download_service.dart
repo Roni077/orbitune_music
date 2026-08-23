@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/downloader/data/download_repository.dart';
@@ -69,19 +69,59 @@ class DownloadService {
     });
   }
 
-  /// Gets the local downloads directory
-  Future<Directory> getDownloadsDirectory() async {
+  /// Resolves the storage directory for offline music downloads
+  static Future<Directory> resolveDownloadsDirectory() async {
+    if (kIsWeb) {
+      return Directory.systemTemp;
+    }
+
+    if (Platform.isAndroid) {
+      final publicDownloadDir = Directory('/storage/emulated/0/Download/Orbitune_Downloads');
+      try {
+        if (!await publicDownloadDir.exists()) {
+          await publicDownloadDir.create(recursive: true);
+        }
+        return publicDownloadDir;
+      } catch (e) {
+        debugPrint('[DownloadService] Fallback from Android public Download folder: $e');
+      }
+    } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      try {
+        final sysDownloads = await path_provider.getDownloadsDirectory();
+        if (sysDownloads != null) {
+          final dir = Directory('${sysDownloads.path}/Orbitune_Downloads');
+          if (!await dir.exists()) {
+            await dir.create(recursive: true);
+          }
+          return dir;
+        }
+      } catch (e) {
+        debugPrint('[DownloadService] Desktop getDownloadsDirectory fallback: $e');
+      }
+    }
+
+    // Default fallback (e.g. iOS or sandboxed environments)
     Directory baseDir;
     try {
-      baseDir = await getApplicationDocumentsDirectory();
+      baseDir = await path_provider.getApplicationDocumentsDirectory();
     } catch (_) {
       baseDir = Directory.systemTemp;
     }
-    final dir = Directory('${baseDir.path}/orbitune_downloads');
+    final dir = Directory('${baseDir.path}/Orbitune_Downloads');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
     return dir;
+  }
+
+  /// Ensures the downloads folder exists (used on startup/first launch)
+  static Future<Directory> ensureDownloadsDirectoryExists() async {
+    return resolveDownloadsDirectory();
+  }
+
+  /// Gets the local downloads directory
+  Future<Directory> getDownloadsDirectory() async {
+    return resolveDownloadsDirectory();
   }
 
   /// Calculates total offline storage used by downloads in bytes

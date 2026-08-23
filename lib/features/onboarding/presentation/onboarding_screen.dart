@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -21,15 +20,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   int _currentPage = 0;
   
   final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _countrySearchController = TextEditingController();
-  String _countrySearchQuery = '';
   String _selectedCountry = 'GLOBAL';
 
   @override
   void dispose() {
     _pageController.dispose();
     _usernameController.dispose();
-    _countrySearchController.dispose();
     super.dispose();
   }
 
@@ -237,297 +233,182 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildCountryPage() {
-    final query = _countrySearchQuery.toLowerCase();
-    final allCountries = CountryRegionSelectionSheet.allCountries;
-    final filteredCountries = allCountries.where((c) {
-      if (query.isEmpty) return true;
-      return c.name.toLowerCase().contains(query) ||
-          c.code.toLowerCase().contains(query) ||
-          c.chartDescription.toLowerCase().contains(query);
-    }).toList();
-
     final theme = Theme.of(context);
     final primaryColor = theme.colorScheme.primary;
+    final selectedCountryInfo = CountryRegionSelectionSheet.allCountries.firstWhere(
+      (c) => c.code.toUpperCase() == _selectedCountry.toUpperCase(),
+      orElse: () => CountryRegionSelectionSheet.allCountries.first,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppConstants.horizontalPadding * 1.5,
-        vertical: 8.0,
+        horizontal: AppConstants.horizontalPadding * 2,
+        vertical: 16.0,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 8),
-          // Compact Header
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: primaryColor.withValues(alpha: 0.35),
-                    width: 1.5,
-                  ),
-                ),
-                child: Icon(
-                  LucideIcons.globe,
-                  color: primaryColor,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Select your region',
-                      style: AppTypography.headlineSmall.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Tailors your top charts, viral tracks & discovery',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ).animate().fadeIn(duration: 300.ms).slideY(begin: -0.1, end: 0),
-          const SizedBox(height: 16),
-
-          // Clean Search Bar (No category chips)
           Container(
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
+              color: primaryColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.35),
+                color: primaryColor.withValues(alpha: 0.35),
+                width: 1.5,
               ),
             ),
-            child: TextField(
-              controller: _countrySearchController,
-              onChanged: (val) => setState(() => _countrySearchQuery = val.trim()),
-              style: AppTypography.bodyMedium.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Search country or music region...',
-                hintStyle: AppTypography.bodyMedium.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                ),
-                prefixIcon: Icon(
-                  LucideIcons.search,
-                  size: 18,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                suffixIcon: _countrySearchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: Icon(
-                          LucideIcons.x,
-                          size: 16,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        onPressed: () {
-                          _countrySearchController.clear();
-                          setState(() => _countrySearchQuery = '');
-                        },
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-              ),
+            child: Icon(
+              LucideIcons.globe,
+              color: primaryColor,
+              size: 40,
             ),
-          ).animate().fadeIn(delay: 100.ms),
+          ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
+          const SizedBox(height: 24),
+          Text(
+            'Choose Music Region',
+            style: AppTypography.headlineMedium,
+            textAlign: TextAlign.center,
+          ).animate().fadeIn(delay: 200.ms),
           const SizedBox(height: 12),
+          Text(
+            'Personalizes your top charts, trending releases, and regional discovery mixes.',
+            style: AppTypography.bodyMedium.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ).animate().fadeIn(delay: 300.ms),
+          const SizedBox(height: 32),
 
-          // Scrollable All Countries List
-          Expanded(
-            child: filteredCountries.isEmpty
-                ? Center(
+          // Selected Country Interactive Card
+          InkWell(
+            onTap: () {
+              CountryRegionSelectionSheet.show(
+                context,
+                currentCountryCode: _selectedCountry,
+                onCountrySelected: (code) {
+                  setState(() {
+                    _selectedCountry = code;
+                  });
+                },
+              );
+            },
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: primaryColor.withValues(alpha: 0.4),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withValues(alpha: 0.1),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: primaryColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Text(
+                        selectedCountryInfo.flag,
+                        style: const TextStyle(fontSize: 28),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          LucideIcons.searchX,
-                          size: 40,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                selectedCountryInfo.name,
+                                style: AppTypography.titleMedium.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                selectedCountryInfo.code,
+                                style: AppTypography.caption.copyWith(
+                                  color: primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 4),
                         Text(
-                          'No region found for "$_countrySearchQuery"',
-                          style: AppTypography.bodyMedium.copyWith(
+                          selectedCountryInfo.chartDescription,
+                          style: AppTypography.bodySmall.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
-                  )
-                : ListView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: filteredCountries.length,
-                    itemBuilder: (context, index) {
-                      final country = filteredCountries[index];
-                      final isSelected = country.code.toUpperCase() ==
-                          _selectedCountry.toUpperCase();
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: InkWell(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() {
-                              _selectedCountry = country.code;
-                            });
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          child: AnimatedContainer(
-                            duration: AppConstants.fastAnimation,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? primaryColor.withValues(alpha: 0.14)
-                                  : theme.colorScheme.surfaceContainerHighest
-                                      .withValues(alpha: 0.35),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isSelected
-                                    ? primaryColor
-                                    : theme.colorScheme.outlineVariant
-                                        .withValues(alpha: 0.25),
-                                width: isSelected ? 1.5 : 1.0,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                // Flag Circle
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? primaryColor
-                                        : theme.colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? primaryColor
-                                          : theme.colorScheme.outlineVariant
-                                              .withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      country.flag,
-                                      style: const TextStyle(fontSize: 20),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-
-                                // Country Details
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Flexible(
-                                            child: Text(
-                                              country.name,
-                                              style: AppTypography.titleSmall.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color: isSelected
-                                                    ? primaryColor
-                                                    : theme.colorScheme.onSurface,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: primaryColor.withValues(alpha: 0.15),
-                                              borderRadius: BorderRadius.circular(6),
-                                            ),
-                                            child: Text(
-                                              country.code,
-                                              style: AppTypography.caption.copyWith(
-                                                color: primaryColor,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 10,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        country.chartDescription,
-                                        style: AppTypography.bodySmall.copyWith(
-                                          color: theme.colorScheme.onSurfaceVariant,
-                                          fontSize: 11.5,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-
-                                // Radio / Checkmark
-                                AnimatedContainer(
-                                  duration: AppConstants.fastAnimation,
-                                  width: 22,
-                                  height: 22,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isSelected
-                                        ? primaryColor
-                                        : Colors.transparent,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? primaryColor
-                                          : theme.colorScheme.onSurfaceVariant
-                                              .withValues(alpha: 0.5),
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: isSelected
-                                      ? Icon(
-                                          LucideIcons.check,
-                                          size: 13,
-                                          color: theme.colorScheme.onPrimary,
-                                        )
-                                      : null,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
                   ),
-          ).animate().fadeIn(delay: 200.ms),
+                  const SizedBox(width: 8),
+                  Icon(
+                    LucideIcons.chevronRight,
+                    color: primaryColor,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1, end: 0),
+          const SizedBox(height: 20),
+
+          // Direct Bottom Sheet Button
+          FilledButton.tonalIcon(
+            onPressed: () {
+              CountryRegionSelectionSheet.show(
+                context,
+                currentCountryCode: _selectedCountry,
+                onCountrySelected: (code) {
+                  setState(() {
+                    _selectedCountry = code;
+                  });
+                },
+              );
+            },
+            icon: const Icon(LucideIcons.mapPin, size: 18),
+            label: const Text('Change Country / Region'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ).animate().fadeIn(delay: 500.ms),
         ],
       ),
     );

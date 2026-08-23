@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:orbitune/core/constants/app_colors.dart';
-import 'package:orbitune/core/constants/app_constants.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 
-/// Dialog to save custom frequency gain configurations as a named EQ preset
+/// Modal Bottom Sheet to save custom frequency gain configurations as a named EQ preset
 class SavePresetDialog extends StatefulWidget {
   final ValueChanged<String> onSave;
   final String? initialName;
@@ -16,15 +14,17 @@ class SavePresetDialog extends StatefulWidget {
     this.initialName,
   });
 
-  /// Shows the save preset dialog
+  /// Shows the save preset bottom sheet
   static Future<void> show(
     BuildContext context, {
     required ValueChanged<String> onSave,
     String? initialName,
   }) {
     HapticFeedback.lightImpact();
-    return showDialog(
+    return showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => SavePresetDialog(
         onSave: onSave,
         initialName: initialName,
@@ -70,80 +70,152 @@ class _SavePresetDialogState extends State<SavePresetDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppColors.darkSurfaceElevated,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppConstants.roundedLarge,
-        side: const BorderSide(color: AppColors.glassBorder),
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      title: Row(
-        children: [
-          const Icon(LucideIcons.save, color: AppColors.accentGreen, size: 22),
-          const SizedBox(width: 10),
-          Text(
-            'Save EQ Preset',
-            style: AppTypography.titleMedium.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
+      child: Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(
+            top: BorderSide(
+              color: theme.colorScheme.outline.withValues(alpha: 0.25),
+              width: 1.5,
             ),
-          ),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Save your current frequency band gains and DSP settings as a reusable preset.',
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _controller,
-            autofocus: true,
-            style: const TextStyle(color: AppColors.textPrimary),
-            decoration: InputDecoration(
-              labelText: 'Preset Name',
-              labelStyle: const TextStyle(color: AppColors.textSecondary),
-              errorText: _errorText,
-              enabledBorder: OutlineInputBorder(
-                borderRadius: AppConstants.roundedMedium,
-                borderSide: const BorderSide(color: AppColors.glassBorder),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: AppConstants.roundedMedium,
-                borderSide: const BorderSide(color: AppColors.accentGreen),
-              ),
-            ),
-            onSubmitted: (_) => _submit(),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(
-            'Cancel',
-            style: TextStyle(color: AppColors.textMuted),
           ),
         ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accentGreen,
-            foregroundColor: Colors.black,
-            shape: RoundedRectangleBorder(
-              borderRadius: AppConstants.roundedSmall,
-            ),
-          ),
-          onPressed: _submit,
-          child: const Text(
-            'Save',
-            style: TextStyle(fontWeight: FontWeight.bold),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  margin: const EdgeInsets.only(top: 4, bottom: 16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              // Header
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: primary.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Icon(
+                      LucideIcons.slidersHorizontal,
+                      color: primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Save EQ Preset',
+                      style: AppTypography.titleMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Save your current frequency band gains and DSP settings as a reusable preset.',
+                style: AppTypography.bodySmall.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Text Field
+              TextField(
+                controller: _controller,
+                autofocus: true,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: 'Preset Name',
+                  labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  errorText: _errorText,
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: primary, width: 1.5),
+                  ),
+                ),
+                onSubmitted: (_) => _submit(),
+              ),
+              const SizedBox(height: 24),
+
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.colorScheme.onSurface,
+                        side: BorderSide(
+                          color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: primary,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: _submit,
+                      child: const Text(
+                        'Save Preset',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }

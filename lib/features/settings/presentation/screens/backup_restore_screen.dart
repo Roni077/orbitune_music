@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
-import 'package:orbitune/core/utils/share_helper.dart';
 import 'package:orbitune/core/widgets/expressive_card.dart';
+import 'package:orbitune/core/widgets/expressive_confirmation_sheet.dart';
 import 'package:orbitune/features/library/data/library_repository.dart';
 import 'package:orbitune/features/library/domain/models/favorite_song.dart';
 import 'package:orbitune/features/library/domain/models/user_playlist.dart';
@@ -14,7 +14,7 @@ import 'package:orbitune/features/library/presentation/providers/favorites_provi
 import 'package:orbitune/features/library/presentation/providers/user_playlists_provider.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
 
-/// Screen for exporting and restoring user playlists, favorites, and settings via JSON
+/// Screen for exporting and restoring user playlists, favorites, and settings via direct JSON actions
 class BackupRestoreScreen extends ConsumerStatefulWidget {
   const BackupRestoreScreen({super.key});
 
@@ -29,14 +29,8 @@ class BackupRestoreScreen extends ConsumerStatefulWidget {
 }
 
 class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
-  final TextEditingController _importController = TextEditingController();
-  bool _isImporting = false;
-
-  @override
-  void dispose() {
-    _importController.dispose();
-    super.dispose();
-  }
+  bool _isExporting = false;
+  bool _isRestoring = false;
 
   Map<String, dynamic> _generateBackupData() {
     final libraryRepo = ref.read(libraryRepositoryProvider);
@@ -55,24 +49,80 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     };
   }
 
-  Future<void> _handleImport() async {
-    final text = _importController.text.trim();
+  Future<void> _handleDirectBackup() async {
+    setState(() => _isExporting = true);
+    HapticFeedback.lightImpact();
+
+    try {
+      final backup = _generateBackupData();
+      final jsonStr = const JsonEncoder.withIndent('  ').convert(backup);
+      await Clipboard.setData(ClipboardData(text: jsonStr));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(LucideIcons.checkCheck, color: Colors.black, size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Backup JSON copied to clipboard successfully!',
+                    style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.accentGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Backup creation failed: $e'),
+            backgroundColor: AppColors.accentPink,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  Future<void> _handleDirectRestore() async {
+    HapticFeedback.lightImpact();
+
+    // Read directly from clipboard
+    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = clipboardData?.text?.trim() ?? '';
+
     if (text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please paste a valid JSON backup string'),
-          backgroundColor: AppColors.accentPink,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'No backup JSON found in clipboard. Please copy your backup data first.',
+            ),
+            backgroundColor: AppColors.accentPink,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        );
+      }
       return;
     }
 
-    setState(() => _isImporting = true);
+    setState(() => _isRestoring = true);
 
     try {
       final decoded = jsonDecode(text);
       if (decoded is! Map<String, dynamic>) {
-        throw Exception('Invalid JSON structure: expected object.');
+        throw Exception('Invalid JSON format: expected Orbitune backup object.');
       }
 
       final libraryRepo = ref.read(libraryRepositoryProvider);
@@ -109,15 +159,18 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
       ref.read(favoritesProvider.notifier).refresh();
       ref.read(userPlaylistsProvider.notifier).refresh();
 
-      _importController.clear();
-
       if (mounted) {
+        HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Successfully restored $importedFavs favorites and $importedPlaylists playlists!',
+              'Restored $importedFavs favorites and $importedPlaylists playlists from JSON!',
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
             ),
             backgroundColor: AppColors.accentGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -127,11 +180,39 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
           SnackBar(
             content: Text('Restore failed: $e'),
             backgroundColor: AppColors.accentPink,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
         );
       }
     } finally {
-      if (mounted) setState(() => _isImporting = false);
+      if (mounted) setState(() => _isRestoring = false);
+    }
+  }
+
+  Future<void> _confirmResetSettings(BuildContext context) async {
+    final confirmed = await ExpressiveConfirmationSheet.show(
+      context,
+      title: 'Reset All Settings?',
+      message:
+          'This will reset themes, audio bitrates, equalizer presets, and playback preferences back to factory defaults. Your custom playlists and favorites will remain untouched.',
+      confirmLabel: 'Reset Settings',
+      icon: LucideIcons.refreshCw,
+      isDestructive: true,
+    );
+
+    if (confirmed == true && mounted) {
+      await ref.read(settingsProvider.notifier).resetAllSettings();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Settings have been reset to factory defaults!'),
+            backgroundColor: AppColors.accentGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        );
+      }
     }
   }
 
@@ -139,14 +220,16 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
   Widget build(BuildContext context) {
     final favorites = ref.watch(favoritesProvider);
     final playlists = ref.watch(userPlaylistsProvider);
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
+          icon: Icon(LucideIcons.arrowLeft, color: theme.colorScheme.onSurface),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text('Backup & Restore', style: AppTypography.titleLarge),
@@ -156,179 +239,84 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Export Section Card
+            // 1. Direct Backup Section Card
             ExpressiveCard(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(20),
               borderRadius: BorderRadius.circular(20),
-              color: AppColors.darkSurfaceVariant.withOpacity(0.55),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.accentGreen.withOpacity(0.15),
+                          color: primary.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           LucideIcons.download,
-                          size: 18,
-                          color: AppColors.accentGreen,
+                          size: 20,
+                          color: primary,
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        'Export Data Backup',
-                        style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Export your ${favorites.length} liked songs, ${playlists.length} custom playlists, and settings into portable JSON format.',
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
                       Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary,
-                            side: BorderSide(color: AppColors.white.withOpacity(0.15)),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          onPressed: () {
-                            final backup = _generateBackupData();
-                            final jsonStr = const JsonEncoder.withIndent('  ').convert(backup);
-                            Clipboard.setData(ClipboardData(text: jsonStr));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Backup JSON copied to clipboard!'),
-                                backgroundColor: AppColors.accentGreen,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Export Backup (JSON)',
+                              style: AppTypography.titleMedium.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
                               ),
-                            );
-                          },
-                          icon: const Icon(LucideIcons.copy, size: 16),
-                          label: const Text('Copy JSON'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.accentGreen,
-                            foregroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
                             ),
-                          ),
-                          onPressed: () {
-                            final backup = _generateBackupData();
-                            final jsonStr = jsonEncode(backup);
-                            ShareHelper.shareText(
-                              jsonStr,
-                              subject: 'Orbitune Data Backup',
-                            );
-                          },
-                          icon: const Icon(LucideIcons.share2, size: 16),
-                          label: const Text(
-                            'Share File',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${favorites.length} favorites • ${playlists.length} playlists • Settings',
+                              style: AppTypography.caption.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // 2. Import / Restore Section Card
-            ExpressiveCard(
-              padding: const EdgeInsets.all(18),
-              borderRadius: BorderRadius.circular(20),
-              color: AppColors.darkSurfaceVariant.withOpacity(0.55),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.accentCyan.withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          LucideIcons.upload,
-                          size: 18,
-                          color: AppColors.accentCyan,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Restore from Backup',
-                        style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 14),
                   Text(
-                    'Paste a previously exported Orbitune JSON backup string below to restore playlists and favorites.',
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _importController,
-                    maxLines: 4,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 12.5,
-                      fontFamily: 'monospace',
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Paste Orbitune JSON backup here...',
-                      hintStyle: const TextStyle(color: AppColors.textTertiary),
-                      filled: true,
-                      fillColor: AppColors.darkSurface,
-                      contentPadding: const EdgeInsets.all(14),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
-                      ),
+                    'Directly generate and copy your complete Orbitune data into JSON format for safe backup.',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      height: 1.4,
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 18),
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.accentCyan,
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: primary,
                         foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      onPressed: _isImporting ? null : _handleImport,
-                      icon: _isImporting
+                      onPressed: _isExporting ? null : _handleDirectBackup,
+                      icon: _isExporting
                           ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.black,
+                              ),
                             )
-                          : const Icon(LucideIcons.rotateCcw, size: 18),
+                          : const Icon(LucideIcons.copy, size: 18),
                       label: Text(
-                        _isImporting ? 'Restoring...' : 'Restore Data',
+                        _isExporting ? 'Exporting...' : 'Backup to JSON',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -337,58 +325,146 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // 3. Reset All Settings
+            // 2. Direct Restore Section Card
             ExpressiveCard(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(20),
               borderRadius: BorderRadius.circular(20),
-              color: AppColors.darkSurfaceVariant.withOpacity(0.55),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.accentPink.withOpacity(0.15),
+                          color: AppColors.accentCyan.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
-                          LucideIcons.refreshCw,
-                          size: 18,
-                          color: AppColors.accentPink,
+                          LucideIcons.upload,
+                          size: 20,
+                          color: AppColors.accentCyan,
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        'Factory Reset Settings',
-                        style: AppTypography.titleMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.accentPink,
+                      Expanded(
+                        child: Text(
+                          'Restore from JSON',
+                          style: AppTypography.titleMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Reset themes, streaming bitrates, audio crossfade, and equalizer settings back to original defaults.',
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-                  ),
                   const SizedBox(height: 14),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.accentPink,
-                      side: const BorderSide(color: AppColors.accentPink),
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                  Text(
+                    'Directly reads and restores playlists, liked tracks, and preferences from your clipboard JSON.',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonalIcon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.accentCyan.withValues(alpha: 0.18),
+                        foregroundColor: AppColors.accentCyan,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(
+                            color: AppColors.accentCyan.withValues(alpha: 0.35),
+                          ),
+                        ),
+                      ),
+                      onPressed: _isRestoring ? null : _handleDirectRestore,
+                      icon: _isRestoring
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(LucideIcons.rotateCcw, size: 18),
+                      label: Text(
+                        _isRestoring ? 'Restoring...' : 'Restore from JSON (Clipboard)',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
-                    onPressed: () => _confirmResetSettings(context),
-                    icon: const Icon(LucideIcons.alertTriangle, size: 16),
-                    label: const Text('Reset All Settings'),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 3. Reset All Settings Card
+            ExpressiveCard(
+              padding: const EdgeInsets.all(20),
+              borderRadius: BorderRadius.circular(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentPink.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          LucideIcons.refreshCw,
+                          size: 20,
+                          color: AppColors.accentPink,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Factory Reset Settings',
+                          style: AppTypography.titleMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.accentPink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Reset themes, streaming bitrates, audio crossfade, and equalizer settings back to original defaults.',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.accentPink,
+                        side: BorderSide(
+                          color: AppColors.accentPink.withValues(alpha: 0.5),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: () => _confirmResetSettings(context),
+                      icon: const Icon(LucideIcons.alertTriangle, size: 18),
+                      label: const Text(
+                        'Reset All Settings',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -397,42 +473,6 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
             const SizedBox(height: 80),
           ],
         ),
-      ),
-    );
-  }
-
-  void _confirmResetSettings(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.darkSurface,
-        title: Text('Reset All Settings?', style: AppTypography.titleMedium),
-        content: Text(
-          'This will reset your theme, audio bitrates, equalizer presets, and preferences to default. Your playlists and favorites will remain safe.',
-          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentPink),
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              await ref.read(settingsProvider.notifier).resetAllSettings();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Settings have been reset to factory defaults!'),
-                    backgroundColor: AppColors.accentGreen,
-                  ),
-                );
-              }
-            },
-            child: const Text('Reset', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }

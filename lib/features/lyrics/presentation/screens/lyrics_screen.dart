@@ -69,8 +69,10 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
       fallback: AppColors.darkSurface,
     );
 
+    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
+
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: scaffoldBg,
       body: Stack(
         children: [
           // Dynamic ambient gradient background
@@ -82,8 +84,8 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                 end: Alignment.bottomCenter,
                 colors: [
                   dominantColor.withValues(alpha: 0.45),
-                  AppColors.darkSurface.withValues(alpha: 0.85),
-                  AppColors.darkBackground,
+                  Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
+                  scaffoldBg,
                 ],
               ),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
@@ -23,7 +24,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
     final notifier = ref.read(settingsProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -47,7 +48,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
           const SizedBox(height: 24),
 
           // 2. PLAYER & DYNAMIC VISUALS
-          _buildSectionHeader('Player & Visual Effects'),
+          _buildSectionHeader(context, 'Player & Visual Effects'),
           _buildCard(
             child: Column(
               children: [
@@ -113,7 +114,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // 3. UI SHAPES & CORNERS
-          _buildSectionHeader('Shapes & Glassmorphism'),
+          _buildSectionHeader(context, 'Shapes & Glassmorphism'),
           _buildCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,25 +128,25 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                           width: 38,
                           height: 38,
                           decoration: BoxDecoration(
-                            color: AppColors.accentPurple.withValues(alpha: 0.15),
+                            color: AppColors.accentGreen.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(LucideIcons.box, size: 20, color: AppColors.accentPurple),
+                          child: const Icon(LucideIcons.box, size: 20, color: AppColors.accentGreen),
                         ),
                         const SizedBox(width: 12),
-                        Text('Card Corner Roundness', style: AppTypography.titleSmall),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Corner Roundness', style: AppTypography.titleSmall),
+                            Text('${settings.cornerRadius.toInt()}px radius',
+                                style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+                          ],
+                        ),
                       ],
-                    ),
-                    Text(
-                      '${settings.cornerRadius.toInt()}px',
-                      style: AppTypography.labelMedium.copyWith(
-                        color: AppColors.accentGreen,
-                        fontWeight: FontWeight.bold,
-                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Slider(
                   value: settings.cornerRadius.clamp(4.0, 28.0),
                   min: 4.0,
@@ -180,11 +181,21 @@ class AppearanceSettingsScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // 4. TYPOGRAPHY & FONT PAIRINGS
-          _buildSectionHeader('Typography'),
+          _buildSectionHeader(context, 'Typography'),
           _buildCard(
             child: Column(
               children: [
                 _buildFontOption(
+                  context: context,
+                  title: 'System Default Font',
+                  subtitle: 'Native device system font for peak familiarity and performance',
+                  fontKey: 'system',
+                  currentFont: settings.fontFamily,
+                  onSelect: () => notifier.setFontFamily('system'),
+                ),
+                const Divider(color: AppColors.glassBorder, height: 16),
+                _buildFontOption(
+                  context: context,
                   title: 'Righteous & Poppins (Default)',
                   subtitle: 'Bold expressive headlines with ultra-readable body text',
                   fontKey: 'righteous_poppins',
@@ -193,6 +204,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                 ),
                 const Divider(color: AppColors.glassBorder, height: 16),
                 _buildFontOption(
+                  context: context,
                   title: 'Inter System Clean',
                   subtitle: 'Modern neo-grotesque geometric font for maximum precision',
                   fontKey: 'inter',
@@ -201,6 +213,7 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                 ),
                 const Divider(color: AppColors.glassBorder, height: 16),
                 _buildFontOption(
+                  context: context,
                   title: 'Outfit & Plus Jakarta',
                   subtitle: 'Futuristic warm curves designed for high-density music feeds',
                   fontKey: 'outfit',
@@ -217,15 +230,21 @@ class AppearanceSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildFontOption({
+    required BuildContext context,
     required String title,
     required String subtitle,
     required String fontKey,
     required String currentFont,
     required VoidCallback onSelect,
   }) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
     final isSelected = fontKey == currentFont;
     return InkWell(
-      onTap: onSelect,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onSelect();
+      },
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -239,32 +258,33 @@ class AppearanceSettingsScreen extends ConsumerWidget {
                     title,
                     style: AppTypography.titleSmall.copyWith(
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      color: isSelected ? AppColors.accentGreen : AppColors.textPrimary,
+                      color: isSelected ? primary : theme.colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                    style: AppTypography.bodySmall.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
             ),
             if (isSelected)
-              const Icon(LucideIcons.check, color: AppColors.accentGreen, size: 20),
+              Icon(LucideIcons.check, color: primary, size: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.only(left: 4.0, bottom: 8.0),
       child: Text(
         title.toUpperCase(),
         style: AppTypography.caption.copyWith(
-          color: AppColors.accentGreen,
+          color: primary,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
         ),
@@ -276,7 +296,6 @@ class AppearanceSettingsScreen extends ConsumerWidget {
     return ExpressiveCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       borderRadius: BorderRadius.circular(20),
-      color: AppColors.darkSurfaceVariant.withValues(alpha: 0.55),
       child: Material(
         color: Colors.transparent,
         child: child,

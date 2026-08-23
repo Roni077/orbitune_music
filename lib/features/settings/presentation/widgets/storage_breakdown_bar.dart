@@ -3,8 +3,11 @@ import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/widgets/expressive_card.dart';
 
+import 'package:orbitune/features/settings/data/storage_analyzer_service.dart';
+
 /// Segmented Storage Breakdown Visualizer Widget
 class StorageBreakdownBar extends StatelessWidget {
+  final StorageStats? stats;
   final double offlineSongsMb;
   final double audioCacheMb;
   final double lyricsSearchCacheMb;
@@ -14,23 +17,31 @@ class StorageBreakdownBar extends StatelessWidget {
 
   const StorageBreakdownBar({
     super.key,
-    this.offlineSongsMb = 142.5,
-    this.audioCacheMb = 230.0,
-    this.lyricsSearchCacheMb = 18.4,
-    this.imageCacheMb = 64.2,
+    this.stats,
+    this.offlineSongsMb = 0.0,
+    this.audioCacheMb = 0.0,
+    this.lyricsSearchCacheMb = 0.0,
+    this.imageCacheMb = 0.0,
     this.totalDeviceStorageGb = 128.0,
     this.freeDeviceStorageGb = 45.8,
   });
 
   @override
   Widget build(BuildContext context) {
-    final totalOrbituneMb =
-        offlineSongsMb + audioCacheMb + lyricsSearchCacheMb + imageCacheMb;
+    final effOffline = stats?.offlineSongsMb ?? offlineSongsMb;
+    final effAudio = stats?.audioCacheMb ?? audioCacheMb;
+    final effLyricsSearch = stats?.lyricsSearchCacheMb ?? lyricsSearchCacheMb;
+    final effImage = stats?.imageCacheMb ?? imageCacheMb;
+    final effFree = stats?.freeDeviceStorageGb ?? freeDeviceStorageGb;
+    final effTotal = stats?.totalDeviceStorageGb ?? totalDeviceStorageGb;
 
-    final offlineRatio = totalOrbituneMb > 0 ? offlineSongsMb / totalOrbituneMb : 0.0;
-    final audioRatio = totalOrbituneMb > 0 ? audioCacheMb / totalOrbituneMb : 0.0;
-    final imageRatio = totalOrbituneMb > 0 ? imageCacheMb / totalOrbituneMb : 0.0;
-    final cacheRatio = totalOrbituneMb > 0 ? lyricsSearchCacheMb / totalOrbituneMb : 0.0;
+    final totalOrbituneMb =
+        effOffline + effAudio + effLyricsSearch + effImage;
+
+    final offlineRatio = totalOrbituneMb > 0 ? effOffline / totalOrbituneMb : 0.0;
+    final audioRatio = totalOrbituneMb > 0 ? effAudio / totalOrbituneMb : 0.0;
+    final imageRatio = totalOrbituneMb > 0 ? effImage / totalOrbituneMb : 0.0;
+    final cacheRatio = totalOrbituneMb > 0 ? effLyricsSearch / totalOrbituneMb : 0.0;
 
     return ExpressiveCard(
       padding: const EdgeInsets.all(16),
@@ -84,6 +95,10 @@ class StorageBreakdownBar extends StatelessWidget {
                       flex: (cacheRatio * 1000).toInt().clamp(1, 1000),
                       child: Container(color: AppColors.accentYellow),
                     ),
+                  if (totalOrbituneMb <= 0)
+                    Expanded(
+                      child: Container(color: AppColors.glassBorder.withValues(alpha: 0.5)),
+                    ),
                 ],
               ),
             ),
@@ -98,22 +113,22 @@ class StorageBreakdownBar extends StatelessWidget {
               _buildLegendItem(
                 AppColors.accentPurple,
                 'Offline Songs',
-                '${offlineSongsMb.toStringAsFixed(1)} MB',
+                '${effOffline.toStringAsFixed(1)} MB',
               ),
               _buildLegendItem(
                 AppColors.accentCyan,
                 'Audio Cache',
-                '${audioCacheMb.toStringAsFixed(1)} MB',
+                '${effAudio.toStringAsFixed(1)} MB',
               ),
               _buildLegendItem(
                 AppColors.accentPink,
                 'Artwork Cache',
-                '${imageCacheMb.toStringAsFixed(1)} MB',
+                '${effImage.toStringAsFixed(1)} MB',
               ),
               _buildLegendItem(
                 AppColors.accentYellow,
                 'Search & Lyrics',
-                '${lyricsSearchCacheMb.toStringAsFixed(1)} MB',
+                '${effLyricsSearch.toStringAsFixed(1)} MB',
               ),
             ],
           ),
@@ -127,7 +142,7 @@ class StorageBreakdownBar extends StatelessWidget {
                 style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
               ),
               Text(
-                '${freeDeviceStorageGb.toStringAsFixed(1)} GB free of ${totalDeviceStorageGb.toStringAsFixed(0)} GB',
+                '${effFree.toStringAsFixed(1)} GB free of ${effTotal.toStringAsFixed(0)} GB',
                 style: AppTypography.labelSmall.copyWith(color: AppColors.textPrimary),
               ),
             ],

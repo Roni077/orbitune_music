@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/widgets/custom_bottom_nav.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/player_provider.dart';
 import 'package:orbitune/features/audio_player/presentation/widgets/mini_player.dart';
@@ -47,7 +46,7 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [

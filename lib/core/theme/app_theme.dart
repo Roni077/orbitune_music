@@ -171,54 +171,100 @@ class AppTheme {
     );
   }
 
-  // Dynamic Theme Builder based on theme mode string and accent color index
+  // Dynamic Theme Builder based on theme mode string, accent color index, and font family
   static ThemeData buildTheme({
     String mode = 'dark',
     int accentIndex = 0,
     double cornerRadius = 20.0,
+    String fontFamily = 'righteous_poppins',
   }) {
+    AppTypography.activeFontKey = fontFamily;
+
     final accent = (accentIndex >= 0 && accentIndex < AppColors.accentPalette.length)
         ? AppColors.accentPalette[accentIndex]
         : AppColors.accentGreen;
 
+    ColorScheme scheme;
+    Color scaffoldBg;
+    Color surfaceContainer;
+
     switch (mode) {
       case 'oled':
-        return oledTheme.copyWith(
-          colorScheme: AppColorSchemes.oledScheme.copyWith(primary: accent),
-          sliderTheme: oledTheme.sliderTheme.copyWith(
-            activeTrackColor: accent,
-            thumbColor: accent,
-          ),
-        );
+        scheme = AppColorSchemes.oledScheme.copyWith(primary: accent);
+        scaffoldBg = AppColors.oledBackground;
+        surfaceContainer = AppColors.oledSurfaceVariant;
+        break;
       case 'light':
-        return lightTheme.copyWith(
-          colorScheme: AppColorSchemes.lightScheme.copyWith(primary: accent),
-        );
+        scheme = AppColorSchemes.lightScheme.copyWith(primary: accent);
+        scaffoldBg = const Color(0xFFF8FAFC);
+        surfaceContainer = const Color(0xFFE2E8F0);
+        break;
       case 'solarized':
-        return solarizedTheme.copyWith(
-          colorScheme: AppColorSchemes.solarizedScheme.copyWith(primary: accent),
-          sliderTheme: solarizedTheme.sliderTheme.copyWith(
-            activeTrackColor: accent,
-            thumbColor: accent,
-          ),
-        );
+        scheme = AppColorSchemes.solarizedScheme.copyWith(primary: accent);
+        scaffoldBg = const Color(0xFF14120E);
+        surfaceContainer = const Color(0xFF2C251F);
+        break;
       case 'cyberpunk':
-        return cyberpunkTheme.copyWith(
-          colorScheme: AppColorSchemes.cyberpunkScheme.copyWith(primary: accent),
-          sliderTheme: cyberpunkTheme.sliderTheme.copyWith(
-            activeTrackColor: accent,
-            thumbColor: accent,
-          ),
+        scheme = AppColorSchemes.cyberpunkScheme.copyWith(primary: accent);
+        scaffoldBg = const Color(0xFF08090E);
+        surfaceContainer = const Color(0xFF1B1D2A);
+        break;
+      case 'dynamic':
+        scheme = AppColorSchemes.darkScheme.copyWith(
+          primary: accent,
+          secondary: AppColors.accentIndigo,
+          surface: const Color(0xFF131326),
+          surfaceContainerHighest: const Color(0xFF1E1B4B),
         );
+        scaffoldBg = const Color(0xFF0D0D1A);
+        surfaceContainer = const Color(0xFF1E1B4B);
+        break;
       case 'dark':
       default:
-        return darkTheme.copyWith(
-          colorScheme: AppColorSchemes.darkScheme.copyWith(primary: accent),
-          sliderTheme: darkTheme.sliderTheme.copyWith(
-            activeTrackColor: accent,
-            thumbColor: accent,
-          ),
-        );
+        scheme = AppColorSchemes.darkScheme.copyWith(primary: accent);
+        scaffoldBg = AppColors.darkBackground;
+        surfaceContainer = AppColors.darkSurfaceVariant;
+        break;
     }
+
+    final textTheme = AppTypography.buildTextTheme(scheme);
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: scheme.brightness,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: scaffoldBg,
+      canvasColor: scaffoldBg,
+      cardColor: scheme.surface,
+      dialogBackgroundColor: scheme.surface,
+      fontFamily: AppTypography.fontFamilyBody,
+      textTheme: textTheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: AppTypography.headlineMedium.copyWith(color: scheme.onSurface),
+        iconTheme: IconThemeData(color: scheme.onSurface),
+      ),
+      cardTheme: CardThemeData(
+        color: scheme.surface,
+        elevation: 0,
+        shape: ExpressiveShapes.cardShape,
+        margin: EdgeInsets.zero,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: scheme.surface,
+        modalBackgroundColor: scheme.surface,
+        shape: ExpressiveShapes.sheetShape,
+        showDragHandle: true,
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: accent,
+        inactiveTrackColor: surfaceContainer,
+        thumbColor: accent,
+        overlayColor: accent.withValues(alpha: 0.2),
+        trackHeight: 4.0,
+      ),
+    );
   }
 }

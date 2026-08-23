@@ -41,7 +41,7 @@ class HomeScreen extends ConsumerWidget {
     final isPlaying = ref.watch(isPlayingProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(

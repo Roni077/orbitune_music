@@ -35,7 +35,7 @@ class AlbumDetailScreen extends ConsumerWidget {
     final artworkUrl = album?.bestArtworkUrl;
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [

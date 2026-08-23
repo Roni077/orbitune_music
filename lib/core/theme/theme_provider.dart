@@ -34,6 +34,7 @@ class ThemeNotifier extends StateNotifier<AppThemeMode> {
         mode: settings.themeMode,
         accentIndex: settings.accentColorIndex,
         cornerRadius: settings.cornerRadius,
+        fontFamily: settings.fontFamily,
       );
     }
     switch (state) {
@@ -61,5 +62,7 @@ final currentThemeDataProvider = Provider<ThemeData>((ref) {
     mode: settings.themeMode,
     accentIndex: settings.accentColorIndex,
     cornerRadius: settings.cornerRadius,
+    fontFamily: settings.fontFamily,
   );
 });
+

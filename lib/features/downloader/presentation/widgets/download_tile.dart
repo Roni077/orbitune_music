@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
@@ -271,11 +272,23 @@ class DownloadTile extends ConsumerWidget {
       color: AppColors.darkSurfaceVariant,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       onSelected: (value) {
-        if (value == 'delete') {
+        if (value == 'info') {
+          _showTrackInfoSheet(context);
+        } else if (value == 'delete') {
           downloadService.deleteDownload(task.id);
         }
       },
       itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'info',
+          child: Row(
+            children: [
+              Icon(LucideIcons.info, size: 16, color: AppColors.accentCyan),
+              SizedBox(width: 8),
+              Text('File Info & Storage Path', style: TextStyle(color: AppColors.textPrimary)),
+            ],
+          ),
+        ),
         const PopupMenuItem(
           value: 'delete',
           child: Row(
@@ -286,6 +299,176 @@ class DownloadTile extends ConsumerWidget {
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  void _showTrackInfoSheet(BuildContext context) {
+    HapticFeedback.lightImpact();
+    final theme = Theme.of(context);
+    final filePath = task.localFilePath ?? 'Unknown path';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          border: Border(
+            top: BorderSide(color: AppColors.glassBorder.withValues(alpha: 0.6), width: 1.5),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.textMuted.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              // Title
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.accentCyan.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(LucideIcons.fileAudio, color: AppColors.accentCyan, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          task.track.title,
+                          style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          task.track.artist,
+                          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: AppColors.glassBorder),
+
+              // Metadata stats
+              _buildInfoRow(
+                'File Size',
+                Formatters.formatFileSize(task.downloadedBytes > 0
+                    ? task.downloadedBytes
+                    : task.totalBytes),
+                LucideIcons.hardDrive,
+              ),
+              const SizedBox(height: 10),
+              _buildInfoRow(
+                'Audio Quality',
+                task.quality.label,
+                LucideIcons.sparkles,
+              ),
+              const SizedBox(height: 10),
+              _buildInfoRow(
+                'Source Format',
+                'MP3 320k Audio',
+                LucideIcons.music,
+              ),
+              const SizedBox(height: 16),
+
+              // File Path Box
+              Text(
+                'DISK STORAGE LOCATION',
+                style: AppTypography.caption.copyWith(
+                  color: AppColors.accentCyan,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.darkSurfaceVariant.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.glassBorder),
+                ),
+                child: SelectableText(
+                  filePath,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Copy Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accentCyan,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  icon: const Icon(LucideIcons.copy, size: 18),
+                  label: const Text('Copy Absolute File Path', style: TextStyle(fontWeight: FontWeight.bold)),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: filePath));
+                    HapticFeedback.lightImpact();
+                    Navigator.of(ctx).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Track file path copied!'),
+                        backgroundColor: AppColors.accentGreen,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.textTertiary),
+        const SizedBox(width: 8),
+        Text('$label: ', style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary)),
+        Text(value, style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
       ],
     );
   }

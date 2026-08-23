@@ -37,7 +37,7 @@ class ArtistDetailScreen extends ConsumerWidget {
     final bannerImage = artist?.bannerUrl ?? artist?.avatarUrl;
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:orbitune/core/widgets/expressive_card.dart';
 import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
 import 'package:orbitune/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:orbitune/features/settings/data/settings_repository.dart';
@@ -108,24 +109,30 @@ void main() {
     // 3 -> Country Selection
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
-    expect(find.text('Select your region'), findsOneWidget);
-    expect(find.text('Search country or music region...'), findsOneWidget);
+    expect(find.text('Choose Music Region'), findsOneWidget);
+    expect(find.text('Change Country / Region'), findsOneWidget);
 
-    // Verify countries are listed directly by default without popup
-    expect(find.text('Global Worldwide'), findsOneWidget);
+    // Open Bottom Sheet
+    await tester.tap(find.text('Change Country / Region'));
+    await tester.pumpAndSettle();
+
+    // Verify countries are listed in bottom sheet
+    expect(find.text('Music Country & Region'), findsOneWidget);
+    expect(find.text('Search country or region...'), findsOneWidget);
+    expect(find.text('Global Worldwide'), findsWidgets);
     expect(find.text('United States'), findsOneWidget);
     expect(find.text('India'), findsOneWidget);
 
-    // Test Search Filter
+    // Test Search Filter inside Bottom Sheet
     await tester.enterText(find.byType(TextField).last, 'Japan');
     await tester.pumpAndSettle();
 
-    final japanTile = find.widgetWithText(InkWell, 'Japan');
-    expect(japanTile, findsOneWidget);
+    final japanCard = find.widgetWithText(ExpressiveCard, 'Japan');
+    expect(japanCard, findsOneWidget);
     expect(find.text('United States'), findsNothing);
 
-    // Select Japan
-    await tester.tap(japanTile);
+    // Select Japan from bottom sheet
+    await tester.tap(japanCard);
     await tester.pumpAndSettle();
 
     // 4 -> Ready Page

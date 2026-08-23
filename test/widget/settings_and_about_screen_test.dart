@@ -363,8 +363,9 @@ void main() {
       expect(find.text('Dynamic Artwork Colors'), findsOneWidget);
       expect(find.text('Animated Visualizer'), findsOneWidget);
       expect(find.text('Audio Quality Badges'), findsOneWidget);
-      expect(find.text('Card Corner Roundness'), findsOneWidget);
+      expect(find.text('Corner Roundness'), findsOneWidget);
       expect(find.text('Glassmorphic Blur Container'), findsOneWidget);
+      expect(find.text('System Default Font'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
@@ -549,11 +550,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Backup & Restore'), findsOneWidget);
-      expect(find.text('Export Data Backup'), findsOneWidget);
-      expect(find.text('Restore from Backup'), findsOneWidget);
-      expect(find.text('Copy JSON'), findsOneWidget);
-      expect(find.text('Restore Data'), findsOneWidget);
+      expect(find.text('Export Backup (JSON)'), findsOneWidget);
+      expect(find.text('Restore from JSON'), findsOneWidget);
+      expect(find.text('Backup to JSON'), findsOneWidget);
+      expect(find.text('Restore from JSON (Clipboard)'), findsOneWidget);
       expect(find.text('Factory Reset Settings'), findsOneWidget);
+      expect(find.text('Reset All Settings'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();

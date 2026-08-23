@@ -10,6 +10,7 @@ import 'package:orbitune/core/constants/app_constants.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/widgets/expressive_card.dart';
 import 'package:orbitune/core/widgets/user_avatar.dart';
+import 'package:orbitune/features/settings/presentation/dialogs/country_region_dialog.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
 
 /// Available avatar icon presets for profile personalization
@@ -91,11 +92,6 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
     'Jazz & Blues',
     'R&B & Soul',
     'Classical & Ambient',
-  ];
-
-  static const List<String> countryList = [
-    'US', 'IN', 'GB', 'CA', 'AU', 'DE', 'JP', 'BR', 'FR', 'IT',
-    'ES', 'MX', 'KR', 'ZA', 'NG', 'AR', 'ID', 'TR', 'SA', 'Global',
   ];
 
   @override
@@ -352,91 +348,14 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
   }
 
   void _showCountryPicker() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.darkSurfaceVariant,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.55,
-          minChildSize: 0.4,
-          maxChildSize: 0.85,
-          expand: false,
-          builder: (_, scrollController) {
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14.0),
-                  child: Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.glassBorder,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
-                  child: Row(
-                    children: [
-                      const Icon(LucideIcons.globe, color: AppColors.accentCyan),
-                      const SizedBox(width: 12),
-                      Text('Select Discovery Region', style: AppTypography.titleMedium),
-                    ],
-                  ),
-                ),
-                const Divider(color: AppColors.glassBorder),
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    itemCount: countryList.length,
-                    itemBuilder: (context, index) {
-                      final country = countryList[index];
-                      final isSelected = country == _selectedCountry;
-                      return ListTile(
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.accentCyan.withValues(alpha: 0.2)
-                                : Colors.transparent,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            LucideIcons.mapPin,
-                            size: 18,
-                            color: isSelected ? AppColors.accentCyan : AppColors.textSecondary,
-                          ),
-                        ),
-                        title: Text(
-                          country,
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: isSelected ? AppColors.accentCyan : AppColors.textPrimary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                        trailing: isSelected
-                            ? const Icon(LucideIcons.check, color: AppColors.accentCyan, size: 20)
-                            : null,
-                        onTap: () {
-                          setState(() {
-                            _selectedCountry = country;
-                            _hasUnsavedChanges = true;
-                          });
-                          Navigator.pop(ctx);
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            );
-          },
-        );
+    CountryRegionSelectionSheet.show(
+      context,
+      currentCountryCode: _selectedCountry,
+      onCountrySelected: (countryCode) {
+        setState(() {
+          _selectedCountry = countryCode;
+          _hasUnsavedChanges = true;
+        });
       },
     );
   }
@@ -448,7 +367,7 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
         : AppColors.accentGreen;
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -682,53 +601,77 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
 
           // 7. REGION & DISCOVERY LOCATION
           _buildSectionHeader('Region & Discovery Preferences'),
-          _buildCard(
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.accentCyan.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(LucideIcons.globe, color: AppColors.accentCyan, size: 20),
-              ),
-              title: Text('Discovery Country / Region', style: AppTypography.titleSmall),
-              subtitle: Text(
-                'Current: $_selectedCountry • Affects top charts and trending tracks',
-                style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-              ),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: activeAccent.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: activeAccent.withValues(alpha: 0.4)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _selectedCountry,
-                      style: AppTypography.labelMedium.copyWith(
-                        color: activeAccent,
-                        fontWeight: FontWeight.bold,
+          Builder(
+            builder: (context) {
+              final countryInfo = CountryRegionSelectionSheet.allCountries.firstWhere(
+                (c) => c.code.toUpperCase() == _selectedCountry.toUpperCase(),
+                orElse: () => CountryRegionSelectionSheet.allCountries.first,
+              );
+
+              return _buildCard(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: activeAccent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: activeAccent.withValues(alpha: 0.3)),
+                    ),
+                    child: Center(
+                      child: Text(
+                        countryInfo.flag,
+                        style: const TextStyle(fontSize: 22),
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    const Icon(LucideIcons.chevronRight, size: 14, color: AppColors.textSecondary),
-                  ],
+                  ),
+                  title: Text(
+                    countryInfo.name,
+                    style: AppTypography.titleSmall.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  subtitle: Text(
+                    countryInfo.chartDescription,
+                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: activeAccent.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: activeAccent.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          countryInfo.code,
+                          style: AppTypography.labelMedium.copyWith(
+                            color: activeAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(LucideIcons.chevronRight, size: 14, color: AppColors.textSecondary),
+                      ],
+                    ),
+                  ),
+                  onTap: _showCountryPicker,
                 ),
-              ),
-              onTap: _showCountryPicker,
-            ),
+              );
+            },
           ),
           const SizedBox(height: 28),
 
-          // 8. SAVE & RESET BUTTONS
+          // 8. SAVE & RESET BUTTONS (Equal Size)
           Row(
             children: [
               Expanded(
+                flex: 1,
                 child: OutlinedButton.icon(
                   onPressed: _resetToDefaults,
                   icon: const Icon(LucideIcons.rotateCcw, size: 16),
@@ -745,7 +688,7 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
               ),
               const SizedBox(width: 14),
               Expanded(
-                flex: 2,
+                flex: 1,
                 child: FilledButton.icon(
                   onPressed: _saveProfile,
                   icon: const Icon(LucideIcons.check, size: 18),

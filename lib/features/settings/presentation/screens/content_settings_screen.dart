@@ -30,7 +30,7 @@ class ContentSettingsScreen extends ConsumerWidget {
     final lyricsInfo = LyricsProviderSelectionSheet.getInfo(settings.lyricsSource);
 
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,

@@ -104,6 +104,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
       hasCompletedOnboarding: hasCompletedOnboarding,
       username: username,
       country: country,
+      contentCountry: country,
     );
     await _repository.saveSettings(state);
   }
@@ -223,7 +224,10 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   }
 
   Future<void> setContentCountry(String country) async {
-    state = state.copyWith(contentCountry: country);
+    state = state.copyWith(
+      contentCountry: country,
+      country: country,
+    );
     await _repository.saveSettings(state);
   }
 
