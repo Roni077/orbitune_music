@@ -18,7 +18,7 @@ class OrbituneAudioHandler {
         androidNotificationChannelName: 'Orbitune Music Playback',
         androidNotificationChannelDescription: 'Active background audio stream & media controls',
         androidNotificationOngoing: false,
-        androidNotificationIcon: 'drawable/ic_stat_music',
+        androidNotificationIcon: 'mipmap/ic_launcher',
         androidShowNotificationBadge: true,
         androidStopForegroundOnPause: false,
         notificationColor: const Color(0xFF14142B),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:orbitune/core/widgets/expressive_card.dart';
 import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
 import 'package:orbitune/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:orbitune/features/settings/data/settings_repository.dart';
@@ -106,33 +105,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('What should we call you?'), findsOneWidget);
 
-    // 3 -> Country Selection
+    // 3 -> Country Selection (Direct inline searchable list)
     await tester.tap(find.text('Next'));
     await tester.pumpAndSettle();
     expect(find.text('Choose Music Region'), findsOneWidget);
-    expect(find.text('Change Country / Region'), findsOneWidget);
-
-    // Open Bottom Sheet
-    await tester.tap(find.text('Change Country / Region'));
-    await tester.pumpAndSettle();
-
-    // Verify countries are listed in bottom sheet
-    expect(find.text('Music Country & Region'), findsOneWidget);
     expect(find.text('Search country or region...'), findsOneWidget);
-    expect(find.text('Global Worldwide'), findsWidgets);
+    expect(find.text('Global Worldwide'), findsOneWidget);
     expect(find.text('United States'), findsOneWidget);
-    expect(find.text('India'), findsOneWidget);
 
-    // Test Search Filter inside Bottom Sheet
+    // Test Search Filter directly on onboarding page
     await tester.enterText(find.byType(TextField).last, 'Japan');
     await tester.pumpAndSettle();
 
-    final japanCard = find.widgetWithText(ExpressiveCard, 'Japan');
-    expect(japanCard, findsOneWidget);
+    final japanTile = find.widgetWithText(InkWell, 'Japan');
+    expect(japanTile, findsOneWidget);
     expect(find.text('United States'), findsNothing);
 
-    // Select Japan from bottom sheet
-    await tester.tap(japanCard);
+    // Select Japan directly from inline list
+    await tester.tap(japanTile);
     await tester.pumpAndSettle();
 
     // 4 -> Ready Page
