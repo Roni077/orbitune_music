@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:orbitune/core/theme/app_theme.dart';
 import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
 import 'package:orbitune/features/library/domain/models/favorite_song.dart';
+import 'package:orbitune/features/library/domain/models/history_item.dart';
 import 'package:orbitune/features/library/domain/models/user_playlist.dart';
 import 'package:orbitune/features/library/presentation/providers/favorites_provider.dart';
+import 'package:orbitune/features/library/presentation/providers/history_provider.dart';
 import 'package:orbitune/features/library/presentation/providers/user_playlists_provider.dart';
 import 'package:orbitune/features/settings/domain/models/app_settings.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
@@ -304,6 +306,20 @@ class _MockPlayNotifier extends StateNotifier<List<UserPlaylist>>
   void refresh() {}
 }
 
+class _MockHistoryNotifier extends StateNotifier<List<HistoryItem>>
+    implements HistoryNotifier {
+  _MockHistoryNotifier(super.state);
+
+  @override
+  Future<void> recordPlay(dynamic track, {Duration durationPlayed = Duration.zero, bool completed = false}) async {}
+  @override
+  Future<void> removeHistoryItem(String trackId) async {}
+  @override
+  Future<void> clearHistory() async {}
+  @override
+  void refresh() {}
+}
+
 void main() {
   setUpAll(() {
     registerMockJustAudioPlatform();
@@ -538,6 +554,7 @@ void main() {
           overrides: [
             favoritesProvider.overrideWith((ref) => _MockFavNotifier([])),
             userPlaylistsProvider.overrideWith((ref) => _MockPlayNotifier([])),
+            historyProvider.overrideWith((ref) => _MockHistoryNotifier([])),
             settingsProvider.overrideWith((ref) => _MockSettingsNotifier(const AppSettings())),
           ],
           child: MaterialApp(
@@ -550,10 +567,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Backup & Restore'), findsOneWidget);
-      expect(find.text('Export Backup (JSON)'), findsOneWidget);
-      expect(find.text('Restore from JSON'), findsOneWidget);
-      expect(find.text('Backup to JSON'), findsOneWidget);
-      expect(find.text('Restore from JSON (Clipboard)'), findsOneWidget);
+      expect(find.text('Create Backup (orbitune.orb)'), findsOneWidget);
+      expect(find.text('Restore Backup File'), findsOneWidget);
+      expect(find.text('Create Backup'), findsOneWidget);
+      expect(find.text('Select .orb Backup File'), findsOneWidget);
       expect(find.text('Factory Reset Settings'), findsOneWidget);
       expect(find.text('Reset All Settings'), findsOneWidget);
 

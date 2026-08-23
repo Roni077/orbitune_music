@@ -75,11 +75,13 @@ class PlayerNotifier extends StateNotifier<PlayerStateSnapshot> {
     });
   }
 
-  /// Plays a single [track]
+  /// Plays a single [track] (with optional [queueContext])
   Future<void> playTrack(
     Track track, {
     AudioQuality? quality,
     Duration? initialPosition,
+    List<Track>? queueContext,
+    int queueIndex = 0,
   }) async {
     state = state.copyWith(
       status: PlaybackStatus.loading,
@@ -92,6 +94,8 @@ class PlayerNotifier extends StateNotifier<PlayerStateSnapshot> {
         track,
         quality: quality,
         initialPosition: initialPosition,
+        queueContext: queueContext,
+        queueIndex: queueIndex,
       );
     } catch (e) {
       state = state.copyWith(

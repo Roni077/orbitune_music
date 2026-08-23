@@ -165,16 +165,20 @@ class AudioPlayerService {
     _snapshotController.add(_snapshot);
   }
 
-  /// Plays a single [Track] from its resolved stream URL or local path
+  /// Plays a single [Track] or a track within a [queueContext]
   Future<void> playTrack(
     Track track,
     String streamOrFilePath, {
     Map<String, String>? headers,
     Duration? initialPosition,
+    List<Track>? queueContext,
+    int queueIndex = 0,
   }) async {
     try {
       _setCurrentTrack(track);
-      _currentPlaylist = [track];
+      _currentPlaylist = (queueContext != null && queueContext.isNotEmpty)
+          ? List.from(queueContext)
+          : [track];
 
       _snapshot = _snapshot.copyWith(
         status: PlaybackStatus.loading,
@@ -185,15 +189,48 @@ class AudioPlayerService {
       );
       _snapshotController.add(_snapshot);
 
-      final audioSource = OrbituneAudioHandler.createAudioSource(
-        track,
-        streamOrFilePath,
-        headers: headers,
-      );
+      final AudioSource audioSource;
+      final safeIndex = (queueContext != null && queueContext.isNotEmpty)
+          ? queueIndex.clamp(0, queueContext.length - 1)
+          : 0;
+
+      if (queueContext != null && queueContext.length > 1) {
+        final sources = <AudioSource>[];
+        for (int i = 0; i < queueContext.length; i++) {
+          final t = queueContext[i];
+          if (i == safeIndex) {
+            sources.add(OrbituneAudioHandler.createAudioSource(
+              t,
+              streamOrFilePath,
+              headers: headers,
+            ));
+          } else {
+            final fallbackUrl = (t.streamUrl != null && t.streamUrl!.isNotEmpty)
+                ? t.streamUrl!
+                : (t.localFilePath ?? 'https://music.youtube.com/watch?v=${t.id}');
+            sources.add(OrbituneAudioHandler.createAudioSource(
+              t,
+              fallbackUrl,
+              headers: headers,
+            ));
+          }
+        }
+        audioSource = ConcatenatingAudioSource(
+          useLazyPreparation: true,
+          children: sources,
+        );
+      } else {
+        audioSource = OrbituneAudioHandler.createAudioSource(
+          track,
+          streamOrFilePath,
+          headers: headers,
+        );
+      }
 
       await _player
           .setAudioSource(
             audioSource,
+            initialIndex: safeIndex,
             initialPosition: initialPosition,
           )
           .timeout(

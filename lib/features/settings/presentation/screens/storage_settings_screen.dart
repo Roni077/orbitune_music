@@ -31,7 +31,7 @@ class StorageSettingsScreen extends ConsumerWidget {
 
     final downloadsPath = storageStats.downloadsDirectoryPath.isNotEmpty
         ? storageStats.downloadsDirectoryPath
-        : '/storage/emulated/0/Download/Orbitune_Downloads';
+        : '/storage/emulated/0/Download/Orbitune/Music';
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,

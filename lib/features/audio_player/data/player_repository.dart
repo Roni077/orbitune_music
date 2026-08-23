@@ -240,11 +240,13 @@ class PlayerRepository {
     });
   }
 
-  /// Resolves the audio stream and starts playback for [track]
+  /// Resolves the audio stream and starts playback for [track] (with optional [queueContext])
   Future<void> playTrack(
     Track track, {
     AudioQuality? quality,
     Duration? initialPosition,
+    List<Track>? queueContext,
+    int queueIndex = 0,
   }) async {
     // Request audio focus
     await sessionService.setActive(true);
@@ -271,6 +273,8 @@ class PlayerRepository {
           trackToPlay,
           url,
           initialPosition: initialPosition,
+          queueContext: queueContext,
+          queueIndex: queueIndex,
         );
         return; // Successfully started playback
       } catch (e) {

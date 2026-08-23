@@ -269,7 +269,11 @@ class QueueNotifier extends StateNotifier<QueueState> {
     _persistQueue();
 
     final activeTrack = queueItems[safeInitialIndex].track;
-    await _ref.read(playerProvider.notifier).playTrack(activeTrack);
+    await _ref.read(playerProvider.notifier).playTrack(
+      activeTrack,
+      queueContext: queueItems.map((i) => i.track).toList(),
+      queueIndex: safeInitialIndex,
+    );
 
     // Predictive preloading for upcoming tracks (Lookahead = 3)
     _ref.read(playerRepositoryProvider).preloadUpcomingTracks(
@@ -312,7 +316,11 @@ class QueueNotifier extends StateNotifier<QueueState> {
         currentIndex: 0,
         queueTitle: sourceContext ?? 'Queue',
       );
-      _ref.read(playerProvider.notifier).playTrack(newItem.track);
+      _ref.read(playerProvider.notifier).playTrack(
+        newItem.track,
+        queueContext: [newItem.track],
+        queueIndex: 0,
+      );
     } else {
       state = state.copyWith(
         items: [...state.items, newItem],
@@ -340,7 +348,11 @@ class QueueNotifier extends StateNotifier<QueueState> {
         currentIndex: 0,
         queueTitle: sourceContext ?? 'Queue',
       );
-      _ref.read(playerProvider.notifier).playTrack(newItems[0].track);
+      _ref.read(playerProvider.notifier).playTrack(
+        newItems[0].track,
+        queueContext: newItems.map((i) => i.track).toList(),
+        queueIndex: 0,
+      );
     } else {
       state = state.copyWith(
         items: [...state.items, ...newItems],
@@ -364,7 +376,11 @@ class QueueNotifier extends StateNotifier<QueueState> {
         currentIndex: 0,
         queueTitle: sourceContext ?? 'Queue',
       );
-      _ref.read(playerProvider.notifier).playTrack(newItem.track);
+      _ref.read(playerProvider.notifier).playTrack(
+        newItem.track,
+        queueContext: [newItem.track],
+        queueIndex: 0,
+      );
     } else {
       final list = List<QueueItem>.from(state.items);
       final insertIndex = (state.currentIndex + 1).clamp(0, list.length);
@@ -393,7 +409,11 @@ class QueueNotifier extends StateNotifier<QueueState> {
         currentIndex: 0,
         queueTitle: sourceContext ?? 'Queue',
       );
-      _ref.read(playerProvider.notifier).playTrack(newItems[0].track);
+      _ref.read(playerProvider.notifier).playTrack(
+        newItems[0].track,
+        queueContext: newItems.map((i) => i.track).toList(),
+        queueIndex: 0,
+      );
     } else {
       final list = List<QueueItem>.from(state.items);
       final insertIndex = (state.currentIndex + 1).clamp(0, list.length);
@@ -421,7 +441,11 @@ class QueueNotifier extends StateNotifier<QueueState> {
           items: list,
           currentIndex: index, // Since next slid into current position
         );
-        await _ref.read(playerProvider.notifier).playTrack(nextTrack);
+        await _ref.read(playerProvider.notifier).playTrack(
+          nextTrack,
+          queueContext: list.map((i) => i.track).toList(),
+          queueIndex: index,
+        );
       } else if (state.hasPrevious) {
         // Skip to previous
         final prevIndex = index - 1;
@@ -431,7 +455,11 @@ class QueueNotifier extends StateNotifier<QueueState> {
           items: list,
           currentIndex: prevIndex,
         );
-        await _ref.read(playerProvider.notifier).playTrack(prevTrack);
+        await _ref.read(playerProvider.notifier).playTrack(
+          prevTrack,
+          queueContext: list.map((i) => i.track).toList(),
+          queueIndex: prevIndex,
+        );
       } else {
         // Queue is now empty
         list.clear();
@@ -582,7 +610,11 @@ class QueueNotifier extends StateNotifier<QueueState> {
     _persistQueue();
 
     final targetTrack = state.items[index].track;
-    await _ref.read(playerProvider.notifier).playTrack(targetTrack);
+    await _ref.read(playerProvider.notifier).playTrack(
+      targetTrack,
+      queueContext: state.items.map((i) => i.track).toList(),
+      queueIndex: index,
+    );
 
     // Predictive preloading for upcoming tracks (Lookahead = 3)
     _ref.read(playerRepositoryProvider).preloadUpcomingTracks(

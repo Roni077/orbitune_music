@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
+import 'package:orbitune/core/services/storage_permission_service.dart';
 import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/downloader/data/download_repository.dart';
@@ -74,27 +75,27 @@ class DownloadService {
     });
   }
 
-  /// Resolves the storage directory for offline music downloads
+  /// Resolves the storage directory for offline music downloads (/storage/emulated/0/Download/Orbitune/Music)
   static Future<Directory> resolveDownloadsDirectory() async {
     if (kIsWeb) {
       return Directory.systemTemp;
     }
 
     if (Platform.isAndroid) {
-      final publicDownloadDir = Directory('/storage/emulated/0/Download/Orbitune_Downloads');
+      final publicDownloadDir = Directory('/storage/emulated/0/Download/Orbitune/Music');
       try {
         if (!await publicDownloadDir.exists()) {
           await publicDownloadDir.create(recursive: true);
         }
         return publicDownloadDir;
       } catch (e) {
-        debugPrint('[DownloadService] Fallback from Android public Download folder: $e');
+        debugPrint('[DownloadService] Fallback from Android public Download/Orbitune/Music folder: $e');
       }
     } else if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
       try {
         final sysDownloads = await path_provider.getDownloadsDirectory();
         if (sysDownloads != null) {
-          final dir = Directory('${sysDownloads.path}/Orbitune_Downloads');
+          final dir = Directory('${sysDownloads.path}/Orbitune/Music');
           if (!await dir.exists()) {
             await dir.create(recursive: true);
           }
@@ -112,7 +113,7 @@ class DownloadService {
     } catch (_) {
       baseDir = Directory.systemTemp;
     }
-    final dir = Directory('${baseDir.path}/Orbitune_Downloads');
+    final dir = Directory('${baseDir.path}/Orbitune/Music');
     if (!await dir.exists()) {
       await dir.create(recursive: true);
     }
@@ -134,10 +135,12 @@ class DownloadService {
     try {
       final dir = await getDownloadsDirectory();
       if (!await dir.exists()) return 0;
+
       int total = 0;
-      await for (final file in dir.list(recursive: true, followLinks: false)) {
-        if (file is File) {
-          total += await file.length();
+      final entities = dir.listSync(recursive: false);
+      for (final entity in entities) {
+        if (entity is File) {
+          total += await entity.length();
         }
       }
       return total;
@@ -152,6 +155,8 @@ class DownloadService {
     Track track, {
     AudioQuality quality = AudioQuality.high320k,
   }) async {
+    // Request storage permission
+    await StoragePermissionService().requestStoragePermission();
     // Check if already completed or downloading
     final existing = _repository.getDownload(track.id);
     if (existing != null && existing.isCompleted && existing.localFilePath != null) {
