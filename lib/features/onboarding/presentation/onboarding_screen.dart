@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_constants.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
+import 'package:orbitune/core/services/storage_permission_service.dart';
 import 'package:orbitune/features/settings/presentation/dialogs/country_region_dialog.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
 
@@ -23,6 +25,78 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _countrySearchController = TextEditingController();
   String _selectedCountry = 'GLOBAL';
+
+  bool _isStorageGranted = false;
+  bool _isNotificationGranted = false;
+  bool _isBatteryGranted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialPermissions();
+  }
+
+  Future<void> _checkInitialPermissions() async {
+    final storageGranted = await StoragePermissionService().hasStoragePermission();
+    final notifStatus = await Permission.notification.status;
+    final batteryStatus = await Permission.ignoreBatteryOptimizations.status;
+    if (mounted) {
+      setState(() {
+        _isStorageGranted = storageGranted;
+        _isNotificationGranted = notifStatus.isGranted;
+        _isBatteryGranted = batteryStatus.isGranted;
+      });
+    }
+  }
+
+  Future<void> _requestStoragePermission() async {
+    HapticFeedback.selectionClick();
+    final granted = await StoragePermissionService().requestStoragePermission(context: context);
+    if (mounted) {
+      setState(() => _isStorageGranted = granted);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(granted ? 'Storage & Download Access Allowed!' : 'Storage Permission Denied'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    HapticFeedback.selectionClick();
+    final status = await Permission.notification.request();
+    if (mounted) {
+      setState(() => _isNotificationGranted = status.isGranted);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(status.isGranted ? 'Notifications Allowed!' : 'Notifications Denied'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _requestBatteryPermission() async {
+    HapticFeedback.selectionClick();
+    final status = await Permission.ignoreBatteryOptimizations.request();
+    if (mounted) {
+      setState(() => _isBatteryGranted = status.isGranted);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(status.isGranted ? 'Battery Restrictions Ignored!' : 'Battery Optimization unchanged'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _grantAllPermissions() async {
+    HapticFeedback.mediumImpact();
+    await _requestStoragePermission();
+    await _requestNotificationPermission();
+    await _requestBatteryPermission();
+  }
 
   @override
   void dispose() {
@@ -118,83 +192,230 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Widget _buildPermissionsPage() {
-    return Padding(
-      padding: const EdgeInsets.all(AppConstants.horizontalPadding * 2),
+    final theme = Theme.of(context);
+    final allGranted = _isStorageGranted && _isNotificationGranted && _isBatteryGranted;
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.horizontalPadding * 1.5,
+        vertical: 20,
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(
-            LucideIcons.shieldCheck,
-            size: 80,
-            color: Theme.of(context).colorScheme.secondary,
-          ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
-          const SizedBox(height: 32),
+          const SizedBox(height: 12),
+          Center(
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.35),
+                  width: 1.5,
+                ),
+              ),
+              child: Icon(
+                LucideIcons.shieldCheck,
+                size: 36,
+                color: theme.colorScheme.primary,
+              ),
+            ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
+          ),
+          const SizedBox(height: 20),
           Text(
             'Optimize Your Experience',
-            style: AppTypography.headlineMedium,
+            style: AppTypography.headlineMedium.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Text(
-            'To enjoy uninterrupted music playback in the background and control it from your lock screen, we highly recommend enabling these permissions.',
+            'Grant access to save downloaded music to your device and enable seamless background audio playback.',
             style: AppTypography.bodyMedium.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 48),
-          FilledButton.icon(
-            onPressed: () async {
-              final status = await Permission.notification.request();
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(status.isGranted ? 'Notifications Allowed!' : 'Notifications Denied'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            icon: const Icon(LucideIcons.bell),
-            label: const Text('Allow Notifications'),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.all(16),
-              shape: const RoundedRectangleBorder(
-                borderRadius: AppConstants.roundedLarge,
-              ),
-            ),
-          ).animate().fadeIn(delay: 200.ms),
-          const SizedBox(height: 16),
-          FilledButton.tonalIcon(
-            onPressed: () async {
-              final status = await Permission.ignoreBatteryOptimizations.request();
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(status.isGranted ? 'Battery Restrictions Ignored!' : 'Battery Optimization unchanged'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            icon: const Icon(LucideIcons.batteryCharging),
-            label: const Text('Ignore Battery Restrictions'),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.all(16),
-              shape: const RoundedRectangleBorder(
-                borderRadius: AppConstants.roundedLarge,
-              ),
-            ),
-          ).animate().fadeIn(delay: 300.ms),
+          const SizedBox(height: 28),
+
+          // 1. Storage & Download Music Permission Tile
+          _buildPermissionTile(
+            icon: LucideIcons.folderDown,
+            accentColor: AppColors.accentGreen,
+            title: 'Save Downloaded Music',
+            subtitle: 'Store offline songs in /Download/Orbitune/Music and export .orb backups',
+            isGranted: _isStorageGranted,
+            actionLabel: 'Grant Storage',
+            onTap: _requestStoragePermission,
+          ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.1, end: 0),
+          const SizedBox(height: 12),
+
+          // 2. Notifications & Lockscreen Tile
+          _buildPermissionTile(
+            icon: LucideIcons.bell,
+            accentColor: AppColors.accentCyan,
+            title: 'Notifications & Lockscreen',
+            subtitle: 'Media playback controls on lockscreen and active download notifications',
+            isGranted: _isNotificationGranted,
+            actionLabel: 'Allow Alerts',
+            onTap: _requestNotificationPermission,
+          ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.1, end: 0),
+          const SizedBox(height: 12),
+
+          // 3. Background Playback & Battery Tile
+          _buildPermissionTile(
+            icon: LucideIcons.batteryCharging,
+            accentColor: AppColors.accentAmber,
+            title: 'Unrestricted Background Play',
+            subtitle: 'Prevent system battery managers from pausing audio when screen is turned off',
+            isGranted: _isBatteryGranted,
+            actionLabel: 'Ignore Limits',
+            onTap: _requestBatteryPermission,
+          ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.1, end: 0),
           const SizedBox(height: 24),
+
+          // Grant All Quick Action Button (if not all granted)
+          if (!allGranted)
+            FilledButton.icon(
+              onPressed: _grantAllPermissions,
+              icon: const Icon(LucideIcons.sparkles, size: 20),
+              label: const Text(
+                'Grant All Permissions (Recommended)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ).animate().fadeIn(delay: 450.ms),
+
+          const SizedBox(height: 16),
           Text(
-            'You can also do this later in settings.',
-            style: AppTypography.bodySmall.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            'You can also customize permissions anytime later in Settings.',
+            style: AppTypography.caption.copyWith(
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
             ),
             textAlign: TextAlign.center,
-          ).animate().fadeIn(delay: 400.ms),
+          ).animate().fadeIn(delay: 500.ms),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPermissionTile({
+    required IconData icon,
+    required Color accentColor,
+    required String title,
+    required String subtitle,
+    required bool isGranted,
+    required String actionLabel,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isGranted
+              ? accentColor.withValues(alpha: 0.6)
+              : theme.colorScheme.outline.withValues(alpha: 0.2),
+          width: isGranted ? 1.5 : 1.0,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: accentColor.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Icon(icon, color: accentColor, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTypography.titleSmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: AppTypography.caption.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          if (isGranted)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.accentGreen.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: AppColors.accentGreen.withValues(alpha: 0.5),
+                  width: 1,
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(LucideIcons.check, size: 14, color: AppColors.accentGreen),
+                  SizedBox(width: 4),
+                  Text(
+                    'Granted',
+                    style: TextStyle(
+                      color: AppColors.accentGreen,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            OutlinedButton(
+              onPressed: onTap,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                side: BorderSide(color: accentColor.withValues(alpha: 0.8)),
+                visualDensity: VisualDensity.compact,
+              ),
+              child: Text(
+                actionLabel,
+                style: TextStyle(
+                  color: accentColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
         ],
       ),
     );
