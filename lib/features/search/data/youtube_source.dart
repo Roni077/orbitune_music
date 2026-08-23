@@ -199,6 +199,26 @@ class YouTubeSource {
     }).toList();
   }
 
+  /// Platform-aware audio stream sorting:
+  /// - Windows Media Foundation natively plays AAC/MP4 (itag 140 ~128k) out-of-the-box without WebM/Opus codec stalls.
+  /// - Android/iOS/macOS natively support Opus in WebM (itag 251 ~160k).
+  List<AudioStreamInfo> _sortAudioStreamsForPlatform(List<AudioStreamInfo> streams) {
+    final isWindows = !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
+    if (isWindows) {
+      final mp4Aac = streams
+          .where((s) => s.container.name.toLowerCase().contains('mp4') || s.tag == 140 || s.tag == 139)
+          .toList()
+        ..sort((a, b) => b.bitrate.compareTo(a.bitrate));
+      final others = streams
+          .where((s) => !s.container.name.toLowerCase().contains('mp4') && s.tag != 140 && s.tag != 139)
+          .toList()
+        ..sort((a, b) => b.bitrate.compareTo(a.bitrate));
+      return [...mp4Aac, ...others];
+    } else {
+      return streams.sortByBitrate().toList();
+    }
+  }
+
   /// Fetches the direct high-bitrate audio stream URL for a given YouTube [videoId]
   Future<String?> getAudioStreamUrl(
     String videoId, {
@@ -213,18 +233,17 @@ class YouTubeSource {
     try {
       final manifest = await _getResilientManifest(videoId);
 
-      // 1. Prioritize pure Audio-only streams (Opus/AAC - pure audio decoder, no video decoder allocation)
+      // 1. Prioritize pure Audio-only streams with platform-aware codec ordering
       final stableAudio = _filterStableAudioStreams(manifest.audioOnly);
       if (stableAudio.isNotEmpty) {
-        // manifest.audioOnly.sortByBitrate() returns descending order (highest first)
-        final sorted = stableAudio.sortByBitrate().toList();
+        final sorted = _sortAudioStreamsForPlatform(stableAudio);
         final AudioStreamInfo selectedAudio;
 
         if (quality == AudioQuality.low96k) {
           // Select standard low-data stable stream (e.g. 48-64k AAC/Opus) without using broken 32k OTF streams
           selectedAudio = sorted.last;
         } else {
-          // Default: highest bitrate stable audio stream (itag 251 Opus ~160k or itag 140 AAC ~128k)
+          // Default: highest bitrate stable audio stream matching platform
           selectedAudio = sorted.first;
         }
 
@@ -257,15 +276,15 @@ class YouTubeSource {
       final manifest = await _getResilientManifest(videoId);
       final List<String> candidates = [];
 
-      // 1. Filter out broken OTF streams (599, 600) and sort descending (highest to lowest bitrate)
+      // 1. Filter out broken OTF streams and apply platform-aware sorting (MP4/AAC first on Windows)
       final stableAudio = _filterStableAudioStreams(manifest.audioOnly);
-      final sortedAudio = stableAudio.sortByBitrate().toList();
+      final sortedAudio = _sortAudioStreamsForPlatform(stableAudio);
 
       if (sortedAudio.isNotEmpty) {
-        // Candidate 0: Highest bitrate audio (e.g. itag 251 Opus ~160k or itag 140 AAC ~128k)
+        // Candidate 0: Primary platform-optimized audio stream
         candidates.add(sortedAudio.first.url.toString());
 
-        // Candidate 1: Next best audio-only stream (e.g. itag 140 / itag 250 / itag 139)
+        // Candidate 1: Next best audio-only stream
         if (sortedAudio.length > 1) {
           candidates.add(sortedAudio[1].url.toString());
         }
@@ -276,7 +295,7 @@ class YouTubeSource {
         }
       }
 
-      // 2. Unthrottled Muxed streams as secondary fallback if pure audio fails
+      // 2. Unthrottled Muxed MP4 streams as secondary fallback if pure audio fails
       final sortedMuxed = manifest.muxed.sortByBitrate().toList();
       if (sortedMuxed.isNotEmpty) {
         candidates.add(sortedMuxed.first.url.toString());

@@ -191,10 +191,15 @@ class AudioPlayerService {
         headers: headers,
       );
 
-      await _player.setAudioSource(
-        audioSource,
-        initialPosition: initialPosition,
-      );
+      await _player
+          .setAudioSource(
+            audioSource,
+            initialPosition: initialPosition,
+          )
+          .timeout(
+            const Duration(seconds: 8),
+            onTimeout: () => throw TimeoutException('Audio stream buffering timed out after 8s'),
+          );
       await _player.play();
     } catch (e, stack) {
       debugPrint('[AudioPlayerService] playTrack error: $e\n$stack');

@@ -29,6 +29,7 @@ dependencies:
   # Audio Playback & Media Session
   just_audio: ^0.10.6
   just_audio_background: ^0.0.1-beta.17
+  just_audio_windows: ^0.2.3
   audio_session: ^0.2.4
 
   # Media Extraction & Streaming
