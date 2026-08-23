@@ -54,9 +54,14 @@ class _BarVisualizerState extends ConsumerState<BarVisualizer>
     final visualizerState = ref.read(visualizerProvider);
 
     if (!isPlaying || !visualizerState.isEnabled) {
+      bool hasActive = false;
       for (int i = 0; i < widget.barCount; i++) {
-        _currentHeights[i] = _currentHeights[i] * 0.85;
-        _peakHeights[i] = _peakHeights[i] * 0.85;
+        _currentHeights[i] *= 0.85;
+        _peakHeights[i] *= 0.85;
+        if (_currentHeights[i] > 0.01) hasActive = true;
+      }
+      if (!hasActive && _animController.isAnimating) {
+        _animController.stop();
       }
       setState(() {});
       return;
@@ -98,6 +103,13 @@ class _BarVisualizerState extends ConsumerState<BarVisualizer>
 
   @override
   Widget build(BuildContext context) {
+    final isPlaying = ref.watch(isPlayingProvider);
+    final visualizerState = ref.watch(visualizerProvider);
+
+    if (isPlaying && visualizerState.isEnabled && !_animController.isAnimating) {
+      _animController.repeat();
+    }
+
     final primary = widget.primaryColor ?? AppColors.accentGreen;
     final secondary = widget.secondaryColor ?? AppColors.accentNeonBlue;
 
@@ -121,6 +133,9 @@ class _BarVisualizerPainter extends CustomPainter {
   final Color primaryColor;
   final Color secondaryColor;
 
+  static final Paint _barPaint = Paint()..style = PaintingStyle.fill;
+  static final Paint _peakPaint = Paint()..style = PaintingStyle.fill;
+
   _BarVisualizerPainter({
     required this.heights,
     required this.peaks,
@@ -142,13 +157,8 @@ class _BarVisualizerPainter extends CustomPainter {
       colors: [primaryColor, secondaryColor],
     ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
-    final barPaint = Paint()
-      ..shader = gradientShader
-      ..style = PaintingStyle.fill;
-
-    final peakPaint = Paint()
-      ..color = primaryColor
-      ..style = PaintingStyle.fill;
+    _barPaint.shader = gradientShader;
+    _peakPaint.color = primaryColor;
 
     for (int i = 0; i < count; i++) {
       final x = i * (barWidth + 3.0);
@@ -160,7 +170,7 @@ class _BarVisualizerPainter extends CustomPainter {
         Rect.fromLTWH(x, y, barWidth, barHeight),
         const Radius.circular(3.0),
       );
-      canvas.drawRRect(barRect, barPaint);
+      canvas.drawRRect(barRect, _barPaint);
 
       // Draw peak dot / cap
       final peakY = (size.height - (peaks[i] * size.height) - 4.0).clamp(0.0, size.height - 4.0);
@@ -169,7 +179,7 @@ class _BarVisualizerPainter extends CustomPainter {
           Rect.fromLTWH(x, peakY, barWidth, 2.5),
           const Radius.circular(1.5),
         ),
-        peakPaint,
+        _peakPaint,
       );
     }
   }

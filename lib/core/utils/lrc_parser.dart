@@ -6,6 +6,7 @@ class LrcParser {
 
   static final RegExp _timestampRegex = RegExp(r'\[(\d{1,2}):(\d{2})(?:\.(\d{2,3}))?\]');
   static final RegExp _metadataRegex = RegExp(r'^\[(ti|ar|al|au|by|offset|length):([^\]]*)\]', caseSensitive: false);
+  static final RegExp _lineSplitRegex = RegExp(r'\r?\n');
 
   /// Parses raw LRC string into a sorted list of [LyricLine]
   static List<LyricLine> parse(String? lrcContent) {
@@ -13,33 +14,26 @@ class LrcParser {
       return const [];
     }
 
-    final lines = lrcContent.split(RegExp(r'\r?\n'));
+    final lines = lrcContent.split(_lineSplitRegex);
     final List<LyricLine> result = [];
     int offsetMs = 0;
 
-    // First pass: extract offset and metadata
     for (final rawLine in lines) {
-      final match = _metadataRegex.firstMatch(rawLine.trim());
-      if (match != null) {
-        final tag = match.group(1)?.toLowerCase();
-        final value = match.group(2)?.trim() ?? '';
+      final trimmed = rawLine.trim();
+      if (trimmed.isEmpty) continue;
+
+      final metaMatch = _metadataRegex.firstMatch(trimmed);
+      if (metaMatch != null) {
+        final tag = metaMatch.group(1)?.toLowerCase();
+        final value = metaMatch.group(2)?.trim() ?? '';
         if (tag == 'offset') {
           offsetMs = int.tryParse(value) ?? 0;
         }
-      }
-    }
-
-    // Second pass: extract lyric lines and timestamps
-    for (final rawLine in lines) {
-      final trimmed = rawLine.trim();
-      if (trimmed.isEmpty || _metadataRegex.hasMatch(trimmed)) {
         continue;
       }
 
       final matches = _timestampRegex.allMatches(trimmed).toList();
-      if (matches.isEmpty) {
-        continue;
-      }
+      if (matches.isEmpty) continue;
 
       // The text is whatever comes after the last timestamp tag
       final text = trimmed.substring(matches.last.end).trim();
@@ -118,7 +112,7 @@ class LrcParser {
   /// Strips LRC tags from content and returns clean plain text
   static String extractPlainLyrics(String lrcContent) {
     if (lrcContent.isEmpty) return '';
-    final lines = lrcContent.split(RegExp(r'\r?\n'));
+    final lines = lrcContent.split(_lineSplitRegex);
     final buffer = StringBuffer();
 
     for (final line in lines) {

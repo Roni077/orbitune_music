@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,20 +22,20 @@ void main() async {
     ),
   );
 
-  // Initialize Hive Local Database
-  await HiveService.instance.init();
+  // Parallelize critical database & audio service initializations
+  await Future.wait([
+    HiveService.instance.init(),
+    OrbituneAudioHandler.initBackgroundService(),
+  ]);
 
-  // Ensure offline downloads folder exists (/storage/emulated/0/Download/Orbitune_Downloads)
-  try {
-    await DownloadService.ensureDownloadsDirectoryExists();
-  } catch (e) {
-    debugPrint('[main] ensureDownloadsDirectoryExists error: $e');
-  }
+  // Non-blocking background filesystem & extractor engine initialization
+  unawaited(
+    DownloadService.ensureDownloadsDirectoryExists().catchError((e) {
+      debugPrint('[main] ensureDownloadsDirectoryExists error: $e');
+      return Directory.systemTemp;
+    }),
+  );
 
-  // Initialize Background Audio & Media Notification Service
-  await OrbituneAudioHandler.initBackgroundService();
-
-  // Asynchronously initialize Extractor engine in background (non-blocking for app launch)
   unawaited(
     ExtractorService.instance.initialize().then((ready) {
       debugPrint('[main] ExtractorService available: $ready');

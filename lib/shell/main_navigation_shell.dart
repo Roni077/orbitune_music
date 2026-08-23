@@ -18,42 +18,49 @@ class MainNavigationShell extends ConsumerStatefulWidget {
 
 class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
   int _currentIndex = 0;
+  final Set<int> _activatedTabs = {0};
 
   void _onTabSelected(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+    if (!_activatedTabs.contains(index)) {
+      setState(() {
+        _activatedTabs.add(index);
+        _currentIndex = index;
+      });
+    } else {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
   }
 
   void _navigateToSettings() {
-    setState(() {
-      _currentIndex = 3;
-    });
+    _onTabSelected(3);
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentTrack = ref.watch(currentTrackProvider);
-    final hasTrack = currentTrack != null;
-
-    final screens = [
-      HomeScreen(
-        onSettingsTap: _navigateToSettings,
-      ),
-      const SearchScreen(),
-      const LibraryScreen(),
-      const SettingsScreen(),
-    ];
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
-          // Screen contents with IndexedStack to preserve scroll positions
+          // Screen contents with Lazy IndexedStack to preserve memory and scroll positions
           IndexedStack(
             index: _currentIndex,
-            children: screens,
+            children: [
+              _activatedTabs.contains(0)
+                  ? HomeScreen(onSettingsTap: _navigateToSettings)
+                  : const SizedBox.shrink(),
+              _activatedTabs.contains(1)
+                  ? const SearchScreen()
+                  : const SizedBox.shrink(),
+              _activatedTabs.contains(2)
+                  ? const LibraryScreen()
+                  : const SizedBox.shrink(),
+              _activatedTabs.contains(3)
+                  ? const SettingsScreen()
+                  : const SizedBox.shrink(),
+            ],
           ),
 
           // Floating MiniPlayer and Custom Bottom Navigation Bar
@@ -66,22 +73,8 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Docked / Floating Mini Player
-                  AnimatedSlide(
-                    offset: hasTrack ? Offset.zero : const Offset(0, 1.5),
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOutCubic,
-                    child: AnimatedOpacity(
-                      opacity: hasTrack ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 250),
-                      child: hasTrack
-                          ? const Padding(
-                              padding: EdgeInsets.only(bottom: 6.0),
-                              child: MiniPlayer(),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                  ),
+                  // Docked / Floating Mini Player (isolated from shell rebuilds)
+                  const _DockedMiniPlayerWrapper(),
 
                   // Floating Navigation Bar
                   CustomBottomNav(
@@ -93,6 +86,32 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Isolated wrapper for Docked MiniPlayer animation and visibility
+class _DockedMiniPlayerWrapper extends ConsumerWidget {
+  const _DockedMiniPlayerWrapper();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasTrack = ref.watch(currentTrackProvider.select((t) => t != null));
+
+    return AnimatedSlide(
+      offset: hasTrack ? Offset.zero : const Offset(0, 1.5),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(
+        opacity: hasTrack ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 250),
+        child: hasTrack
+            ? const Padding(
+                padding: EdgeInsets.only(bottom: 6.0),
+                child: MiniPlayer(),
+              )
+            : const SizedBox.shrink(),
       ),
     );
   }

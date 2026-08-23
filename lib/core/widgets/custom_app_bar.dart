@@ -35,13 +35,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     if (!showBlur) return appBar;
 
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: AppConstants.glassBlurSigma,
-          sigmaY: AppConstants.glassBlurSigma,
+    return RepaintBoundary(
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: AppConstants.glassBlurSigma,
+            sigmaY: AppConstants.glassBlurSigma,
+          ),
+          child: appBar,
         ),
-        child: appBar,
       ),
     );
   }

@@ -27,11 +27,9 @@ class VolumeSpeedSlider extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(playerProvider);
+    final currentVolume = ref.watch(playerVolumeProvider);
+    final currentSpeed = ref.watch(playerSpeedProvider);
     final playerNotifier = ref.read(playerProvider.notifier);
-
-    final currentVolume = playerState.volume;
-    final currentSpeed = playerState.speed;
 
     return Container(
       decoration: const BoxDecoration(

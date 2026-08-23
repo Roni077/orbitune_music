@@ -29,13 +29,10 @@ class LibraryRepository {
 
   List<FavoriteSong> getFavorites() {
     final list = <FavoriteSong>[];
-    for (final key in _favoritesBox.keys) {
-      final raw = _favoritesBox.get(key);
-      if (raw != null) {
+    for (final raw in _favoritesBox.values) {
+      if (raw != null && raw is Map) {
         try {
-          if (raw is Map) {
-            list.add(FavoriteSong.fromMap(raw));
-          }
+          list.add(FavoriteSong.fromMap(raw));
         } catch (_) {}
       }
     }
@@ -75,8 +72,7 @@ class LibraryRepository {
 
   List<UserPlaylist> getUserPlaylists() {
     final list = <UserPlaylist>[];
-    for (final key in _playlistsBox.keys) {
-      final raw = _playlistsBox.get(key);
+    for (final raw in _playlistsBox.values) {
       if (raw != null && raw is Map) {
         try {
           list.add(UserPlaylist.fromMap(raw));
@@ -142,8 +138,7 @@ class LibraryRepository {
 
   List<HistoryItem> getHistory() {
     final list = <HistoryItem>[];
-    for (final key in _historyBox.keys) {
-      final raw = _historyBox.get(key);
+    for (final raw in _historyBox.values) {
       if (raw != null && raw is Map) {
         try {
           list.add(HistoryItem.fromMap(raw));

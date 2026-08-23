@@ -115,6 +115,8 @@ class UserAvatar extends StatelessWidget {
             width: size,
             height: size,
             fit: BoxFit.cover,
+            cacheWidth: (size * (MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0)).toInt(),
+            cacheHeight: (size * (MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0)).toInt(),
             errorBuilder: (_, __, ___) => _buildPresetIcon(accent),
           ),
         ),

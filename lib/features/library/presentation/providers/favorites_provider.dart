@@ -51,8 +51,14 @@ final favoritesProvider =
   return FavoritesNotifier(repo);
 });
 
-/// Family provider to check if a specific track is favorited
-final isFavoriteProvider = Provider.family<bool, String>((ref, trackId) {
+/// Derived Set of favorite track IDs for instant O(1) lookups
+final favoriteIdsProvider = Provider<Set<String>>((ref) {
   final favorites = ref.watch(favoritesProvider);
-  return favorites.any((item) => item.track.id == trackId);
+  return favorites.map((item) => item.track.id).toSet();
+});
+
+/// Family provider to check if a specific track is favorited in O(1) time
+final isFavoriteProvider = Provider.family<bool, String>((ref, trackId) {
+  final favoriteIds = ref.watch(favoriteIdsProvider);
+  return favoriteIds.contains(trackId);
 });

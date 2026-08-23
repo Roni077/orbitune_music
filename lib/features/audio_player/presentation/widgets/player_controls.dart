@@ -18,12 +18,10 @@ class PlayerControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(playerProvider);
+    final isPlaying = ref.watch(isPlayingProvider);
+    final isBuffering = ref.watch(isBufferingProvider);
     final playbackMode = ref.watch(playbackModeProvider);
     final playerNotifier = ref.read(playerProvider.notifier);
-
-    final isPlaying = playerState.isPlaying;
-    final isBuffering = playerState.isBuffering;
     final primary = primaryColor ?? AppColors.accentGreen;
 
     return Row(

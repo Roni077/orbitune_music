@@ -40,9 +40,8 @@ class TrackTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentTrack = ref.watch(currentTrackProvider);
-    final isPlaying = ref.watch(isPlayingProvider);
-    final isCurrent = currentTrack?.id == track.id;
+    final isCurrent = ref.watch(currentTrackProvider.select((t) => t?.id == track.id));
+    final isPlaying = isCurrent ? ref.watch(isPlayingProvider) : false;
     final isFavorite = ref.watch(isFavoriteProvider(track.id));
 
     return Material(

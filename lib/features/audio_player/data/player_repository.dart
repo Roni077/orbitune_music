@@ -282,7 +282,7 @@ class PlayerRepository {
     throw lastError ?? Exception('All stream candidates failed for "${track.title}"');
   }
 
-  /// Resolves streams for a playlist sequence and starts gapless playback from [initialIndex]
+  /// Resolves streams for a playlist sequence and starts immediate playback from [initialIndex]
   Future<void> playPlaylist(
     List<Track> tracks, {
     int initialIndex = 0,
@@ -293,38 +293,31 @@ class PlayerRepository {
 
     await sessionService.setActive(true);
     final preferredQuality = quality ?? settingsRepository.getSettings().streamingQuality;
+    final safeIndex = initialIndex.clamp(0, tracks.length - 1);
 
-    final resolvedUrls = <String>[];
-    final preparedTracks = <Track>[];
-
-    for (final track in tracks) {
-      final isFav = libraryRepository.isFavorite(track.id);
-      final candidateUrls = await resolveCandidateUrls(track, quality: preferredQuality);
-      final url = candidateUrls.isNotEmpty ? candidateUrls.first : null;
-      if (url != null && url.isNotEmpty) {
-        resolvedUrls.add(url);
-        preparedTracks.add(track.copyWith(
-          streamUrl: url,
-          audioQuality: preferredQuality,
-          isFavorite: isFav,
-        ));
-      }
+    // 1. Resolve starting track immediately for instant 0ms playback start
+    final initialTrack = tracks[safeIndex];
+    final initialCandidates = await resolveCandidateUrls(initialTrack, quality: preferredQuality);
+    final initialUrl = initialCandidates.isNotEmpty ? initialCandidates.first : null;
+    if (initialUrl == null || initialUrl.isEmpty) {
+      throw Exception('Failed to resolve initial audio stream for playlist');
     }
 
-    if (preparedTracks.isEmpty) {
-      throw Exception('Failed to resolve any stream URLs for playlist');
-    }
+    final preparedInitial = initialTrack.copyWith(
+      streamUrl: initialUrl,
+      audioQuality: preferredQuality,
+      isFavorite: libraryRepository.isFavorite(initialTrack.id),
+    );
 
-    final safeIndex = initialIndex.clamp(0, preparedTracks.length - 1);
-    await playerService.playPlaylist(
-      preparedTracks,
-      resolvedUrls,
-      initialIndex: safeIndex,
+    // 2. Play initial track immediately
+    await playerService.playTrack(
+      preparedInitial,
+      initialUrl,
       initialPosition: initialPosition,
     );
 
-    // Silently preload upcoming tracks from the playlist
-    preloadUpcomingTracks(preparedTracks, safeIndex);
+    // 3. Silently preload upcoming lookahead tracks in the background
+    preloadUpcomingTracks(tracks, safeIndex, lookahead: 3);
   }
 
   /// Toggles favorite status for the given track or current track

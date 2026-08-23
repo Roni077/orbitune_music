@@ -42,6 +42,10 @@ class ImageShimmer extends StatelessWidget {
       );
     }
 
+    final dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
+    final memW = width != null ? (width! * dpr).clamp(32.0, 800.0).toInt() : null;
+    final memH = height != null ? (height! * dpr).clamp(32.0, 800.0).toInt() : null;
+
     return ClipRRect(
       borderRadius: effectiveRadius,
       child: CachedNetworkImage(
@@ -49,6 +53,10 @@ class ImageShimmer extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
+        memCacheWidth: memW,
+        memCacheHeight: memH,
+        maxWidthDiskCache: 1000,
+        maxHeightDiskCache: 1000,
         placeholder: (context, url) => Shimmer.fromColors(
           baseColor: AppColors.darkSurface,
           highlightColor: AppColors.darkSurfaceElevated,

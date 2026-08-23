@@ -13,8 +13,18 @@ class YouTubeSource {
 
   YoutubeExplode get _client => _yt ??= YoutubeExplode();
 
-  /// Cache for resolved audio stream URLs to reduce redundant manifest fetches
   final Map<String, ({String url, DateTime expiresAt})> _streamUrlCache = {};
+  static const int _maxStreamCacheSize = 200;
+
+  void _cacheStreamUrl(String videoId, String url) {
+    if (_streamUrlCache.length >= _maxStreamCacheSize) {
+      _streamUrlCache.remove(_streamUrlCache.keys.first);
+    }
+    _streamUrlCache[videoId] = (
+      url: url,
+      expiresAt: DateTime.now().add(const Duration(hours: 4)),
+    );
+  }
 
   /// Searches YouTube for songs matching [query]
   Future<List<Track>> search(String query, {int limit = 25}) async {
@@ -219,10 +229,7 @@ class YouTubeSource {
         }
 
         final streamUrl = selectedAudio.url.toString();
-        _streamUrlCache[videoId] = (
-          url: streamUrl,
-          expiresAt: DateTime.now().add(const Duration(hours: 4)),
-        );
+        _cacheStreamUrl(videoId, streamUrl);
         return streamUrl;
       }
 
@@ -230,10 +237,7 @@ class YouTubeSource {
       if (manifest.muxed.isNotEmpty) {
         final muxed = manifest.muxed.sortByBitrate().toList();
         final streamUrl = muxed.first.url.toString();
-        _streamUrlCache[videoId] = (
-          url: streamUrl,
-          expiresAt: DateTime.now().add(const Duration(hours: 4)),
-        );
+        _cacheStreamUrl(videoId, streamUrl);
         return streamUrl;
       }
 
@@ -296,13 +300,13 @@ class YouTubeSource {
     }
   }
 
-  /// Fetches playlist details along with all its tracks
-  Future<PlaylistModel?> getPlaylistDetails(String playlistId) async {
+  /// Fetches playlist details along with all its tracks (capped to first 100 tracks for responsive UI)
+  Future<PlaylistModel?> getPlaylistDetails(String playlistId, {int limit = 100}) async {
     try {
       final playlist = await _client.playlists.get(PlaylistId(playlistId));
       final List<Track> tracks = [];
 
-      await for (final video in _client.playlists.getVideos(PlaylistId(playlistId))) {
+      await for (final video in _client.playlists.getVideos(PlaylistId(playlistId)).take(limit)) {
         tracks.add(_convertVideoToTrack(video));
       }
 

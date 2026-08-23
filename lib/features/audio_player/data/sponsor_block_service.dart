@@ -72,6 +72,15 @@ class SponsorBlockService {
   SponsorBlockService({http.Client? httpClient})
       : _httpClient = httpClient ?? http.Client();
 
+  static const int _maxCacheSize = 100;
+
+  void _putInCache(String cleanId, List<SponsorBlockSegment> segments) {
+    if (_cache.length >= _maxCacheSize) {
+      _cache.remove(_cache.keys.first);
+    }
+    _cache[cleanId] = segments;
+  }
+
   /// Fetches skip segments for a given YouTube [videoId]
   Future<List<SponsorBlockSegment>> getSkipSegments(
     String videoId, {
@@ -107,8 +116,9 @@ class SponsorBlockService {
 
           // Sort segments chronologically
           segments.sort((a, b) => a.start.compareTo(b.start));
-          _cache[cleanId] = List.unmodifiable(segments);
-          return _cache[cleanId]!;
+          final immutableList = List<SponsorBlockSegment>.unmodifiable(segments);
+          _putInCache(cleanId, immutableList);
+          return immutableList;
         }
       }
     } catch (e) {
@@ -116,7 +126,7 @@ class SponsorBlockService {
     }
 
     // Cache empty list to avoid redundant rapid failed lookups
-    _cache[cleanId] = const [];
+    _putInCache(cleanId, const []);
     return const [];
   }
 
@@ -140,5 +150,6 @@ class SponsorBlockService {
 
   void dispose() {
     _cache.clear();
+    _httpClient.close();
   }
 }

@@ -2,6 +2,21 @@
 class AudioDecryptor {
   AudioDecryptor._();
 
+  static final RegExp _thumbnailResRegex = RegExp(r'(50x50|150x150|250x250|350x350)');
+  static final RegExp _ytQualityRegex = RegExp(r'(hqdefault|mqdefault|sddefault)\.jpg');
+  static final RegExp _whitespaceRegex = RegExp(r'\s+');
+  static final RegExp _bracketsRegex = RegExp(r'\[(.*?)\]');
+  static final RegExp _promoNoiseRegex = RegExp(r'\((Official|Audio|HD|4K|Lyric|Video|Visualizer).*?\)', caseSensitive: false);
+  static final RegExp _featuredArtistRegex = RegExp(r'\((feat\.|ft\.|with).*?\)', caseSensitive: false);
+  static final RegExp _brRegex = RegExp(r'<br\s*/?>', caseSensitive: false);
+  static final RegExp _pCloseRegex = RegExp(r'</p\s*>', caseSensitive: false);
+  static final RegExp _pOpenRegex = RegExp(r'<p\s*>', caseSensitive: false);
+  static final RegExp _htmlTagsRegex = RegExp(r'<[^>]*>');
+  static final RegExp _hexEntityRegex = RegExp(r'&#x([0-9a-fA-F]+);');
+  static final RegExp _decEntityRegex = RegExp(r'&#([0-9]+);');
+  static final RegExp _multiNewlineRegex = RegExp(r'\n{3,}');
+  static final RegExp _multiSpaceTabRegex = RegExp(r'[ \t]+');
+
   /// Upgrades external/YouTube artwork URLs to high resolution
   static String? formatHighResArtwork(String? artworkUrl) {
     if (artworkUrl == null || artworkUrl.trim().isEmpty) return null;
@@ -13,8 +28,8 @@ class AudioDecryptor {
 
     // Replace low-res thumbnail dimensions with high-res
     formatted = formatted
-        .replaceAll(RegExp(r'(50x50|150x150|250x250|350x350)'), '500x500')
-        .replaceAll(RegExp(r'(hqdefault|mqdefault|sddefault)\.jpg'), 'maxresdefault.jpg');
+        .replaceAll(_thumbnailResRegex, '500x500')
+        .replaceAll(_ytQualityRegex, 'maxresdefault.jpg');
     return formatted;
   }
 
@@ -32,7 +47,7 @@ class AudioDecryptor {
         .replaceAll('&nbsp;', ' ')
         .replaceAll('&copy;', '©')
         .replaceAll('&reg;', '®')
-        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(_whitespaceRegex, ' ')
         .trim();
   }
 
@@ -42,10 +57,10 @@ class AudioDecryptor {
     
     // Remove brackets with video/audio promotional noise and featured artists
     cleaned = cleaned
-        .replaceAll(RegExp(r'\[(.*?)\]'), '') // Removes anything in []
-        .replaceAll(RegExp(r'\((Official|Audio|HD|4K|Lyric|Video|Visualizer).*?\)', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\((feat\.|ft\.|with).*?\)', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(_bracketsRegex, '') // Removes anything in []
+        .replaceAll(_promoNoiseRegex, '')
+        .replaceAll(_featuredArtistRegex, '')
+        .replaceAll(_whitespaceRegex, ' ')
         .trim();
 
     return cleaned;
@@ -68,12 +83,12 @@ class AudioDecryptor {
 
     // 2. Replace HTML break/paragraph tags with newlines
     text = text
-        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
-        .replaceAll(RegExp(r'</p\s*>', caseSensitive: false), '\n\n')
-        .replaceAll(RegExp(r'<p\s*>', caseSensitive: false), '');
+        .replaceAll(_brRegex, '\n')
+        .replaceAll(_pCloseRegex, '\n\n')
+        .replaceAll(_pOpenRegex, '');
 
     // 3. Strip all remaining HTML tags (e.g. <b>, <i>, <a>, <span>)
-    text = text.replaceAll(RegExp(r'<[^>]*>'), '');
+    text = text.replaceAll(_htmlTagsRegex, '');
 
     // 4. Decode all standard and numeric HTML entities
     text = text
@@ -93,7 +108,7 @@ class AudioDecryptor {
         .replaceAll('&trade;', '™');
 
     // Decode hex numeric entities (e.g. &#x27; -> ')
-    text = text.replaceAllMapped(RegExp(r'&#x([0-9a-fA-F]+);'), (match) {
+    text = text.replaceAllMapped(_hexEntityRegex, (match) {
       final hex = match.group(1);
       if (hex != null) {
         final code = int.tryParse(hex, radix: 16);
@@ -103,7 +118,7 @@ class AudioDecryptor {
     });
 
     // Decode decimal numeric entities (e.g. &#39; -> ')
-    text = text.replaceAllMapped(RegExp(r'&#([0-9]+);'), (match) {
+    text = text.replaceAllMapped(_decEntityRegex, (match) {
       final dec = match.group(1);
       if (dec != null) {
         final code = int.tryParse(dec);
@@ -113,8 +128,8 @@ class AudioDecryptor {
     });
 
     // 5. Normalize consecutive line breaks and whitespace
-    text = text.replaceAll(RegExp(r'\n{3,}'), '\n\n');
-    text = text.replaceAll(RegExp(r'[ \t]+'), ' ');
+    text = text.replaceAll(_multiNewlineRegex, '\n\n');
+    text = text.replaceAll(_multiSpaceTabRegex, ' ');
 
     return text.trim();
   }

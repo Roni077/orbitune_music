@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:palette_generator_plus/palette_generator_plus.dart';
 import '../constants/app_colors.dart';
@@ -6,6 +7,7 @@ import '../constants/app_colors.dart';
 class PaletteHelper {
   PaletteHelper._();
 
+  static const int _maxCacheSize = 40;
   static final Map<String, PaletteGenerator> _cache = {};
 
   static Future<PaletteGenerator> extractPalette(String imageUrl) async {
@@ -23,11 +25,19 @@ class PaletteHelper {
     }
 
     try {
+      final ImageProvider imageProvider = imageUrl.startsWith('http')
+          ? CachedNetworkImageProvider(imageUrl)
+          : NetworkImage(imageUrl);
+
       final generator = await PaletteGenerator.fromImageProvider(
-        NetworkImage(imageUrl),
-        size: const Size(128, 128),
-        maximumColorCount: 16,
+        imageProvider,
+        size: const Size(96, 96),
+        maximumColorCount: 12,
       ).timeout(const Duration(seconds: 3));
+
+      if (_cache.length >= _maxCacheSize) {
+        _cache.remove(_cache.keys.first);
+      }
       _cache[imageUrl] = generator;
       return generator;
     } catch (_) {

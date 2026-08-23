@@ -57,8 +57,9 @@ class CustomBottomNav extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 10.0),
+    return RepaintBoundary(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 10.0),
       height: 64.0,
       decoration: BoxDecoration(
         color: colorScheme.surface.withValues(alpha: 0.90),
@@ -93,7 +94,7 @@ class CustomBottomNav extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildNavItem(BuildContext context, int index, CustomBottomNavItem item, bool isSelected) {

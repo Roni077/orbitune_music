@@ -196,7 +196,11 @@ class SearchNotifier extends StateNotifier<SearchState> {
     }
   }
 
+  int _searchGeneration = 0;
+
   Future<void> _executeSearch(String query, SearchSourceFilter source) async {
+    final currentGen = ++_searchGeneration;
+
     state = state.copyWith(
       isLoading: true,
       isDebouncing: false,
@@ -209,7 +213,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
         source: source.key,
       );
 
-      if (state.query != query) return;
+      if (currentGen != _searchGeneration || state.query != query) return;
 
       // Refresh recent searches since new search was saved
       final recents = _cacheRepository.getRecentSearches();
@@ -222,7 +226,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
         errorMessage: null,
       );
     } catch (e, st) {
-      if (state.query != query) return;
+      if (currentGen != _searchGeneration || state.query != query) return;
       debugPrint('[SearchNotifier] search error: $e\n$st');
       state = state.copyWith(
         isLoading: false,

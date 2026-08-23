@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:orbitune/features/audio_player/domain/models/playback_state.dart';
+import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/player_provider.dart';
 
 /// State representation for active sleep timer
@@ -58,7 +58,6 @@ final sleepTimerProvider =
 class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
   final Ref _ref;
   Timer? _timer;
-  ProviderSubscription<PlayerStateSnapshot>? _playerSubscription;
 
   SleepTimerNotifier(this._ref) : super(const SleepTimerState());
 
@@ -86,11 +85,13 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
     });
   }
 
+  ProviderSubscription<Track?>? _trackSubscription;
+
   /// Sets timer to pause playback at the end of the current song
   void setStopAfterCurrentTrack() {
     cancelTimer();
 
-    final currentTrackId = _ref.read(playerProvider).currentTrack?.id;
+    final currentTrackId = _ref.read(currentTrackProvider)?.id;
     if (currentTrackId == null) return;
 
     state = const SleepTimerState(
@@ -99,12 +100,9 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
       activeLabel: 'End of Song',
     );
 
-    // Listen to track changes
-    _playerSubscription = _ref.listen<PlayerStateSnapshot>(playerProvider,
-        (previous, next) {
-      if (previous?.currentTrack?.id != null &&
-          next.currentTrack?.id != null &&
-          previous!.currentTrack!.id != next.currentTrack!.id) {
+    // Listen to track changes only
+    _trackSubscription = _ref.listen<Track?>(currentTrackProvider, (previous, next) {
+      if (previous?.id != null && next?.id != null && previous!.id != next!.id) {
         _triggerSleepAction();
       }
     });
@@ -114,8 +112,8 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
   void cancelTimer() {
     _timer?.cancel();
     _timer = null;
-    _playerSubscription?.close();
-    _playerSubscription = null;
+    _trackSubscription?.close();
+    _trackSubscription = null;
     state = const SleepTimerState();
   }
 
@@ -133,7 +131,7 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
   @override
   void dispose() {
     _timer?.cancel();
-    _playerSubscription?.close();
+    _trackSubscription?.close();
     super.dispose();
   }
 }

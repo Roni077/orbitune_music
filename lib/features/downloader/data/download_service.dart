@@ -57,7 +57,12 @@ class DownloadService {
                 },
               ),
             ) {
+    int lastExtractorUpdate = 0;
     _extractorService.onProgress.listen((progressEvent) {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      if (now - lastExtractorUpdate < 500 && progressEvent.progressFraction < 1.0) return;
+      lastExtractorUpdate = now;
+
       final trackId = progressEvent.processId;
       var task = _repository.getDownload(trackId);
       if (task != null && task.status == DownloadStatus.downloading) {

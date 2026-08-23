@@ -57,12 +57,17 @@ final themeProvider = StateNotifierProvider<ThemeNotifier, AppThemeMode>((ref) {
 });
 
 final currentThemeDataProvider = Provider<ThemeData>((ref) {
-  final settings = ref.watch(settingsProvider);
+  final themeConfig = ref.watch(settingsProvider.select((s) => (
+    mode: s.themeMode,
+    accentIndex: s.accentColorIndex,
+    cornerRadius: s.cornerRadius,
+    fontFamily: s.fontFamily,
+  )));
   return AppTheme.buildTheme(
-    mode: settings.themeMode,
-    accentIndex: settings.accentColorIndex,
-    cornerRadius: settings.cornerRadius,
-    fontFamily: settings.fontFamily,
+    mode: themeConfig.mode,
+    accentIndex: themeConfig.accentIndex,
+    cornerRadius: themeConfig.cornerRadius,
+    fontFamily: themeConfig.fontFamily,
   );
 });
 

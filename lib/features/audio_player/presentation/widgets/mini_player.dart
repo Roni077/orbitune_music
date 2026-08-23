@@ -21,19 +21,14 @@ class MiniPlayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(playerProvider);
-    final track = playerState.currentTrack;
+    final track = ref.watch(currentTrackProvider);
 
     if (track == null) {
       return const SizedBox.shrink();
     }
 
-    final isPlaying = playerState.isPlaying;
-    final isBuffering = playerState.isBuffering;
-
-    final progressRatio = (playerState.duration.inMilliseconds > 0)
-        ? (playerState.position.inMilliseconds / playerState.duration.inMilliseconds).clamp(0.0, 1.0)
-        : 0.0;
+    final isPlaying = ref.watch(isPlayingProvider);
+    final isBuffering = ref.watch(isBufferingProvider);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 14.0),
@@ -183,17 +178,34 @@ class MiniPlayer extends ConsumerWidget {
                 ),
               ),
 
-              // Progress Bar Indicator at bottom edge
-              LinearProgressIndicator(
-                value: progressRatio,
-                minHeight: 2.5,
-                backgroundColor: AppColors.darkSurfaceVariant,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accentGreen),
-              ),
+              // Isolated Progress Bar Indicator at bottom edge
+              const _MiniPlayerProgressBar(),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Isolated progress bar widget that subscribes to position stream without rebuilding MiniPlayer body
+class _MiniPlayerProgressBar extends ConsumerWidget {
+  const _MiniPlayerProgressBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final position = ref.watch(playerPositionProvider);
+    final duration = ref.watch(playerDurationProvider);
+
+    final progressRatio = (duration.inMilliseconds > 0)
+        ? (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
+        : 0.0;
+
+    return LinearProgressIndicator(
+      value: progressRatio,
+      minHeight: 2.5,
+      backgroundColor: AppColors.darkSurfaceVariant,
+      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accentGreen),
     );
   }
 }

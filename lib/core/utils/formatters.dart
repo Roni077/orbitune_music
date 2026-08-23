@@ -2,6 +2,8 @@
 class Formatters {
   Formatters._();
 
+  static String _twoDigits(int n) => n >= 10 ? '$n' : '0$n';
+
   /// Format seconds/duration into 'mm:ss' or 'hh:mm:ss'
   static String formatDuration(Duration? duration) {
     if (duration == null) return '00:00';
@@ -9,12 +11,11 @@ class Formatters {
     final minutes = duration.inMinutes.remainder(60);
     final seconds = duration.inSeconds.remainder(60);
 
-    final minStr = minutes.toString().padLeft(2, '0');
-    final secStr = seconds.toString().padLeft(2, '0');
+    final minStr = _twoDigits(minutes);
+    final secStr = _twoDigits(seconds);
 
     if (hours > 0) {
-      final hourStr = hours.toString().padLeft(2, '0');
-      return '$hourStr:$minStr:$secStr';
+      return '${_twoDigits(hours)}:$minStr:$secStr';
     }
     return '$minStr:$secStr';
   }

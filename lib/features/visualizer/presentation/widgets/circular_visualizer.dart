@@ -52,8 +52,13 @@ class _CircularVisualizerState extends ConsumerState<CircularVisualizer>
     final visualizerState = ref.read(visualizerProvider);
 
     if (!isPlaying || !visualizerState.isEnabled) {
+      bool hasActive = false;
       for (int i = 0; i < widget.rayCount; i++) {
         _rayHeights[i] *= 0.88;
+        if (_rayHeights[i] > 0.01) hasActive = true;
+      }
+      if (!hasActive && _animController.isAnimating) {
+        _animController.stop();
       }
       setState(() {});
       return;
@@ -80,6 +85,13 @@ class _CircularVisualizerState extends ConsumerState<CircularVisualizer>
 
   @override
   Widget build(BuildContext context) {
+    final isPlaying = ref.watch(isPlayingProvider);
+    final visualizerState = ref.watch(visualizerProvider);
+
+    if (isPlaying && visualizerState.isEnabled && !_animController.isAnimating) {
+      _animController.repeat();
+    }
+
     final primary = widget.primaryColor ?? AppColors.accentGreen;
     final secondary = widget.secondaryColor ?? AppColors.accentNeonBlue;
 
@@ -103,6 +115,11 @@ class _CircularVisualizerPainter extends CustomPainter {
   final Color primaryColor;
   final Color secondaryColor;
 
+  static final Paint _rayPaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeCap = StrokeCap.round
+    ..strokeWidth = 3.0;
+
   _CircularVisualizerPainter({
     required this.rayHeights,
     required this.innerRadius,
@@ -117,12 +134,7 @@ class _CircularVisualizerPainter extends CustomPainter {
     if (count == 0) return;
 
     final angleStep = (2 * math.pi) / count;
-    final maxRayLength = 28.0;
-
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = 3.0;
+    const maxRayLength = 28.0;
 
     for (int i = 0; i < count; i++) {
       final angle = i * angleStep;
@@ -135,9 +147,9 @@ class _CircularVisualizerPainter extends CustomPainter {
       final endY = center.dy + math.sin(angle) * (innerRadius + 4 + rayLength);
 
       final t = i / count;
-      paint.color = Color.lerp(primaryColor, secondaryColor, t) ?? primaryColor;
+      _rayPaint.color = Color.lerp(primaryColor, secondaryColor, t) ?? primaryColor;
 
-      canvas.drawLine(Offset(startX, startY), Offset(endX, endY), paint);
+      canvas.drawLine(Offset(startX, startY), Offset(endX, endY), _rayPaint);
     }
   }
 

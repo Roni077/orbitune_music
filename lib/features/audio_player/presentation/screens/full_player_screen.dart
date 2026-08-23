@@ -69,8 +69,7 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final playerState = ref.watch(playerProvider);
-    final track = playerState.currentTrack;
+    final track = ref.watch(currentTrackProvider);
     final lyricsState = ref.watch(lyricsProvider);
     final visualizerState = ref.watch(visualizerProvider);
     final timerState = ref.watch(sleepTimerProvider);
@@ -177,15 +176,21 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Waveform Progress Bar & Scrubber
-                    WaveformSeekBar(
-                      position: playerState.position,
-                      duration: playerState.duration,
-                      activeColor: dominantColor == AppColors.darkSurface
-                          ? AppColors.accentGreen
-                          : dominantColor,
-                      onSeek: (position) {
-                        ref.read(playerProvider.notifier).seek(position);
+                    // Isolated Waveform Progress Bar & Scrubber
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final position = ref.watch(playerPositionProvider);
+                        final duration = ref.watch(playerDurationProvider);
+                        return WaveformSeekBar(
+                          position: position,
+                          duration: duration,
+                          activeColor: dominantColor == AppColors.darkSurface
+                              ? AppColors.accentGreen
+                              : dominantColor,
+                          onSeek: (pos) {
+                            ref.read(playerProvider.notifier).seek(pos);
+                          },
+                        );
                       },
                     ),
 

@@ -195,10 +195,13 @@ class QueueNotifier extends StateNotifier<QueueState> {
     );
   }
 
+  Timer? _saveDebounceTimer;
+
   void _listenToPlayback() {
     _playerStateSub = _ref
         .read(playerProvider.notifier)
         .stream
+        .distinct((prev, curr) => prev.status == curr.status)
         .listen((playerState) {
       if (playerState.status == PlaybackStatus.completed) {
         _handleTrackCompleted();
@@ -729,15 +732,18 @@ class QueueNotifier extends StateNotifier<QueueState> {
     return playlist;
   }
 
-  /// Persists the active queue to local Hive storage for session restore
+  /// Persists the active queue to local Hive storage for session restore (debounced by 500ms)
   void _persistQueue() {
-    try {
-      if (!HiveService.instance.isInitialized) return;
-      final box = HiveService.instance.sessionBox;
-      box.put(_queuePersistenceKey, state.toMap());
-    } catch (e) {
-      debugPrint('[QueueNotifier] Failed to persist queue: $e');
-    }
+    _saveDebounceTimer?.cancel();
+    _saveDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      try {
+        if (!HiveService.instance.isInitialized) return;
+        final box = HiveService.instance.sessionBox;
+        box.put(_queuePersistenceKey, state.toMap());
+      } catch (e) {
+        debugPrint('[QueueNotifier] Failed to persist queue: $e');
+      }
+    });
   }
 
   /// Restores queue state from local storage upon app startup
@@ -766,6 +772,7 @@ class QueueNotifier extends StateNotifier<QueueState> {
 
   @override
   void dispose() {
+    _saveDebounceTimer?.cancel();
     _playerRepository.setControlHooks(
       onSkipToNext: null,
       onSkipToPrevious: null,

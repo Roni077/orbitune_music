@@ -42,15 +42,27 @@ class HiveService {
         await Hive.initFlutter();
       }
 
-      _settingsBox = await Hive.openBox(HiveBoxes.settings);
-      _favoritesBox = await Hive.openBox(HiveBoxes.favorites);
-      _playlistsBox = await Hive.openBox(HiveBoxes.playlists);
-      _historyBox = await Hive.openBox(HiveBoxes.history);
-      _statsBox = await Hive.openBox(HiveBoxes.stats);
-      _downloadsBox = await Hive.openBox(HiveBoxes.downloads);
-      _lyricsCacheBox = await Hive.openBox(HiveBoxes.lyricsCache);
-      _searchCacheBox = await Hive.openBox(HiveBoxes.searchHistory);
-      _sessionBox = await Hive.openBox(HiveBoxes.session);
+      final boxes = await Future.wait([
+        Hive.openBox(HiveBoxes.settings),
+        Hive.openBox(HiveBoxes.favorites),
+        Hive.openBox(HiveBoxes.playlists),
+        Hive.openBox(HiveBoxes.history),
+        Hive.openBox(HiveBoxes.stats),
+        Hive.openBox(HiveBoxes.downloads),
+        Hive.openBox(HiveBoxes.lyricsCache),
+        Hive.openBox(HiveBoxes.searchHistory),
+        Hive.openBox(HiveBoxes.session),
+      ]);
+
+      _settingsBox = boxes[0];
+      _favoritesBox = boxes[1];
+      _playlistsBox = boxes[2];
+      _historyBox = boxes[3];
+      _statsBox = boxes[4];
+      _downloadsBox = boxes[5];
+      _lyricsCacheBox = boxes[6];
+      _searchCacheBox = boxes[7];
+      _sessionBox = boxes[8];
 
       _isInitialized = true;
     } catch (e, stack) {

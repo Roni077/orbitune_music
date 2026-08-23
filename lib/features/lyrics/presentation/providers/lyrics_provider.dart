@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:orbitune/features/audio_player/domain/models/playback_state.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/player_provider.dart';
+import 'package:orbitune/core/utils/lrc_parser.dart';
 import 'package:orbitune/features/lyrics/data/lyrics_repository.dart';
 import 'package:orbitune/features/lyrics/domain/models/lyric_line.dart';
 
@@ -70,7 +70,7 @@ class LyricsNotifier extends StateNotifier<LyricsState> {
   final Ref _ref;
   final LyricsRepository _lyricsRepository;
   ProviderSubscription<Track?>? _trackSub;
-  ProviderSubscription<PlayerStateSnapshot>? _positionSub;
+  ProviderSubscription<Duration>? _positionSub;
 
   LyricsNotifier(this._ref, this._lyricsRepository)
       : super(const LyricsState()) {
@@ -85,10 +85,10 @@ class LyricsNotifier extends StateNotifier<LyricsState> {
       }
     });
 
-    // Listen to player position ticks to update activeLineIndex
-    _positionSub = _ref.listen<PlayerStateSnapshot>(playerProvider, (previous, next) {
+    // Listen directly to position ticks to update activeLineIndex
+    _positionSub = _ref.listen<Duration>(playerPositionProvider, (previous, next) {
       if (state.lines.isEmpty || !state.isSynced) return;
-      _updateActiveLine(next.position);
+      _updateActiveLine(next);
     });
 
     // Load initial track if already playing
@@ -124,7 +124,7 @@ class LyricsNotifier extends StateNotifier<LyricsState> {
           isSynced: hasTimestamps,
           plainLyrics: syncedLines.map((l) => l.text).join('\n'),
         );
-        _updateActiveLine(_ref.read(playerProvider).position);
+        _updateActiveLine(_ref.read(playerPositionProvider));
         return;
       }
 
@@ -144,21 +144,29 @@ class LyricsNotifier extends StateNotifier<LyricsState> {
     }
   }
 
-  /// Calculates which lyric line corresponds to the active [position]
+  /// Calculates which lyric line corresponds to the active [position] (O(1) fast path + O(log N) binary search)
   void _updateActiveLine(Duration position) {
     if (state.lines.isEmpty) return;
 
-    int newIndex = 0;
-    for (int i = 0; i < state.lines.length; i++) {
-      if (state.lines[i].timestamp <= position) {
-        newIndex = i;
-      } else {
-        break;
+    // O(1) Fast Path: check if playback is still inside active line's interval
+    final currentIndex = state.activeLineIndex;
+    if (currentIndex >= 0 && currentIndex < state.lines.length) {
+      final currentStart = state.lines[currentIndex].timestamp;
+      final nextStart = (currentIndex + 1 < state.lines.length)
+          ? state.lines[currentIndex + 1].timestamp
+          : const Duration(hours: 99);
+
+      if (position >= currentStart && position < nextStart) {
+        return; // Fast path: unchanged line, 0ms execution
       }
     }
 
-    if (newIndex != state.activeLineIndex) {
-      state = state.copyWith(activeLineIndex: newIndex);
+    // O(log N) Binary Search Fallback on song seek or skip
+    final newIndex = LrcParser.getActiveLineIndex(state.lines, position);
+    final safeIndex = newIndex >= 0 ? newIndex : 0;
+
+    if (safeIndex != state.activeLineIndex) {
+      state = state.copyWith(activeLineIndex: safeIndex);
     }
   }
 

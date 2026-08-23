@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:orbitune/features/audio_player/domain/models/audio_quality.dart';
 import 'package:orbitune/features/settings/data/settings_repository.dart';
@@ -6,6 +7,7 @@ import 'package:orbitune/features/settings/domain/models/app_settings.dart';
 /// StateNotifier managing global AppSettings state
 class SettingsNotifier extends StateNotifier<AppSettings> {
   final SettingsRepository _repository;
+  Timer? _saveDebounceTimer;
 
   SettingsNotifier(this._repository) : super(const AppSettings()) {
     _loadSettings();
@@ -13,6 +15,13 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
 
   void _loadSettings() {
     state = _repository.getSettings();
+  }
+
+  void _debouncedSave() {
+    _saveDebounceTimer?.cancel();
+    _saveDebounceTimer = Timer(const Duration(milliseconds: 350), () {
+      _repository.saveSettings(state);
+    });
   }
 
   Future<void> setThemeMode(String themeMode) async {
@@ -42,7 +51,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
 
   Future<void> setCrossfadeDuration(int seconds) async {
     state = state.copyWith(crossfadeDurationSeconds: seconds);
-    await _repository.saveSettings(state);
+    _debouncedSave();
   }
 
   Future<void> setStopOnAppClose(bool stop) async {
@@ -185,7 +194,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
 
   Future<void> setCornerRadius(double radius) async {
     state = state.copyWith(cornerRadius: radius);
-    await _repository.saveSettings(state);
+    _debouncedSave();
   }
 
   Future<void> setGlassmorphism(bool enabled) async {

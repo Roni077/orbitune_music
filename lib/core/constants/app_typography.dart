@@ -98,100 +98,112 @@ class AppTypography {
     }
   }
 
+  static final Map<String, TextStyle> _styleCache = {};
+
+  static TextStyle _getCachedStyle(String key, TextStyle Function() factory) {
+    final cacheKey = '$activeFontKey:$key';
+    return _styleCache.putIfAbsent(cacheKey, factory);
+  }
+
+  /// Clears the cached text styles (invoked when active font family changes)
+  static void clearCache() {
+    _styleCache.clear();
+  }
+
   // Headings & Brand Titles
-  static TextStyle get brandTitle => _getBrandStyle(
+  static TextStyle get brandTitle => _getCachedStyle('brandTitle', () => _getBrandStyle(
         fontSize: 26,
         fontWeight: FontWeight.bold,
         letterSpacing: 1.2,
-      );
+      ));
 
-  static TextStyle get headlineLarge => _getBrandStyle(
+  static TextStyle get headlineLarge => _getCachedStyle('headlineLarge', () => _getBrandStyle(
         fontSize: 24,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
-      );
+      ));
 
-  static TextStyle get headlineMedium => _getBrandStyle(
+  static TextStyle get headlineMedium => _getCachedStyle('headlineMedium', () => _getBrandStyle(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
-      );
+      ));
 
-  static TextStyle get headlineSmall => _getBrandStyle(
+  static TextStyle get headlineSmall => _getCachedStyle('headlineSmall', () => _getBrandStyle(
         fontSize: 18,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.25,
-      );
+      ));
 
   // Body & Track Details
-  static TextStyle get titleLarge => _getBodyStyle(
+  static TextStyle get titleLarge => _getCachedStyle('titleLarge', () => _getBodyStyle(
         fontSize: 18,
         fontWeight: FontWeight.w600,
-      );
+      ));
 
-  static TextStyle get titleMedium => _getBodyStyle(
+  static TextStyle get titleMedium => _getCachedStyle('titleMedium', () => _getBodyStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-      );
+      ));
 
-  static TextStyle get titleSmall => _getBodyStyle(
+  static TextStyle get titleSmall => _getCachedStyle('titleSmall', () => _getBodyStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
-      );
+      ));
 
-  static TextStyle get bodyLarge => _getBodyStyle(
+  static TextStyle get bodyLarge => _getCachedStyle('bodyLarge', () => _getBodyStyle(
         fontSize: 15,
         fontWeight: FontWeight.normal,
-      );
+      ));
 
-  static TextStyle get bodyMedium => _getBodyStyle(
+  static TextStyle get bodyMedium => _getCachedStyle('bodyMedium', () => _getBodyStyle(
         fontSize: 13,
         fontWeight: FontWeight.normal,
         color: AppColors.textSecondary,
-      );
+      ));
 
-  static TextStyle get bodySmall => _getBodyStyle(
+  static TextStyle get bodySmall => _getCachedStyle('bodySmall', () => _getBodyStyle(
         fontSize: 11,
         fontWeight: FontWeight.normal,
         color: AppColors.textMuted,
-      );
+      ));
 
   // Labels & Badges
-  static TextStyle get labelLarge => _getBodyStyle(
+  static TextStyle get labelLarge => _getCachedStyle('labelLarge', () => _getBodyStyle(
         fontSize: 14,
         fontWeight: FontWeight.w600,
-      );
+      ));
 
-  static TextStyle get labelMedium => _getBodyStyle(
+  static TextStyle get labelMedium => _getCachedStyle('labelMedium', () => _getBodyStyle(
         fontSize: 12,
         fontWeight: FontWeight.w500,
-      );
+      ));
 
-  static TextStyle get labelSmall => _getBodyStyle(
+  static TextStyle get labelSmall => _getCachedStyle('labelSmall', () => _getBodyStyle(
         fontSize: 10,
         fontWeight: FontWeight.w500,
         color: AppColors.textMuted,
-      );
+      ));
 
-  static TextStyle get caption => _getBodyStyle(
+  static TextStyle get caption => _getCachedStyle('caption', () => _getBodyStyle(
         fontSize: 11,
         fontWeight: FontWeight.normal,
         color: AppColors.textMuted,
-      );
+      ));
 
-  static TextStyle get lyricActive => _getBodyStyle(
+  static TextStyle get lyricActive => _getCachedStyle('lyricActive', () => _getBodyStyle(
         fontSize: 22,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
         height: 1.5,
-      );
+      ));
 
-  static TextStyle get lyricInactive => _getBodyStyle(
+  static TextStyle get lyricInactive => _getCachedStyle('lyricInactive', () => _getBodyStyle(
         fontSize: 18,
         fontWeight: FontWeight.w500,
         color: AppColors.textMuted,
         height: 1.5,
-      );
+      ));
 
   static String? get fontFamilyBody {
     switch (activeFontKey) {

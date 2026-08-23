@@ -31,6 +31,26 @@ final isBufferingProvider = Provider<bool>((ref) {
   return ref.watch(playerProvider.select((s) => s.isBuffering));
 });
 
+final playerPositionProvider = Provider<Duration>((ref) {
+  return ref.watch(playerProvider.select((s) => s.position));
+});
+
+final playerDurationProvider = Provider<Duration>((ref) {
+  return ref.watch(playerProvider.select((s) => s.duration));
+});
+
+final playerStatusProvider = Provider<PlaybackStatus>((ref) {
+  return ref.watch(playerProvider.select((s) => s.status));
+});
+
+final playerVolumeProvider = Provider<double>((ref) {
+  return ref.watch(playerProvider.select((s) => s.volume));
+});
+
+final playerSpeedProvider = Provider<double>((ref) {
+  return ref.watch(playerProvider.select((s) => s.speed));
+});
+
 /// StateNotifier managing reactive audio player actions and updates
 class PlayerNotifier extends StateNotifier<PlayerStateSnapshot> {
   final Ref _ref;

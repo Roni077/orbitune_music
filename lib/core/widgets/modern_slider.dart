@@ -35,35 +35,31 @@ class ModernSlider extends StatelessWidget {
     final safeValue = value.clamp(0.0, safeMax);
     final safeBuffered = bufferedValue.clamp(0.0, safeMax);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            trackHeight: 4.0,
-            activeTrackColor: effectiveActive,
-            inactiveTrackColor: effectiveInactive,
-            secondaryActiveTrackColor: effectiveBuffered,
-            thumbColor: effectiveActive,
-            overlayColor: effectiveActive.withValues(alpha: 0.2),
-            thumbShape: const RoundSliderThumbShape(
-              enabledThumbRadius: 6.0,
-              elevation: 2.0,
-            ),
-            overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
-          ),
-          child: Slider(
-            value: safeValue,
-            secondaryTrackValue: safeBuffered,
-            min: 0.0,
-            max: safeMax,
-            onChanged: (val) {
-              onChanged(val);
-              HapticFeedback.selectionClick();
-            },
-            onChangeEnd: onChangeEnd,
-          ),
-        );
-      },
+    return SliderTheme(
+      data: SliderTheme.of(context).copyWith(
+        trackHeight: 4.0,
+        activeTrackColor: effectiveActive,
+        inactiveTrackColor: effectiveInactive,
+        secondaryActiveTrackColor: effectiveBuffered,
+        thumbColor: effectiveActive,
+        overlayColor: effectiveActive.withValues(alpha: 0.2),
+        thumbShape: const RoundSliderThumbShape(
+          enabledThumbRadius: 6.0,
+          elevation: 2.0,
+        ),
+        overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
+      ),
+      child: Slider(
+        value: safeValue,
+        secondaryTrackValue: safeBuffered,
+        min: 0.0,
+        max: safeMax,
+        onChanged: onChanged,
+        onChangeEnd: (val) {
+          HapticFeedback.selectionClick();
+          onChangeEnd?.call(val);
+        },
+      ),
     );
   }
 }

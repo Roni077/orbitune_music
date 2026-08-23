@@ -67,8 +67,8 @@ class _ArtworkDiscViewState extends ConsumerState<ArtworkDiscView>
     final visualizerState = ref.watch(visualizerProvider);
     final glowColor = widget.glowColor ?? AppColors.accentGreen;
 
-    // Control rotation based on playback state
-    if (isPlaying) {
+    // Control rotation based on playback state and vinyl mode
+    if (isPlaying && _isVinylMode) {
       if (!_rotationController.isAnimating) {
         _rotationController.repeat();
       }

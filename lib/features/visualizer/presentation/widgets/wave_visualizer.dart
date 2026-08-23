@@ -45,6 +45,9 @@ class _WaveVisualizerState extends ConsumerState<WaveVisualizer>
 
     if (!isPlaying || !visualizerState.isEnabled) {
       _currentAmplitude *= 0.9;
+      if (_currentAmplitude < 0.01 && _animController.isAnimating) {
+        _animController.stop();
+      }
     } else {
       final target = 0.55 * visualizerState.sensitivity;
       _currentAmplitude += (target - _currentAmplitude) * 0.1;
@@ -62,6 +65,13 @@ class _WaveVisualizerState extends ConsumerState<WaveVisualizer>
 
   @override
   Widget build(BuildContext context) {
+    final isPlaying = ref.watch(isPlayingProvider);
+    final visualizerState = ref.watch(visualizerProvider);
+
+    if (isPlaying && visualizerState.isEnabled && !_animController.isAnimating) {
+      _animController.repeat();
+    }
+
     final primary = widget.primaryColor ?? AppColors.accentNeonBlue;
     final secondary = widget.secondaryColor ?? AppColors.accentPink;
 
@@ -84,6 +94,21 @@ class _WaveVisualizerPainter extends CustomPainter {
   final double amplitude;
   final Color primaryColor;
   final Color secondaryColor;
+
+  static final Path _singlePath = Path();
+  static final Path _strokePath = Path();
+  static final Path _fillPath = Path();
+
+  static final Paint _singlePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeCap = StrokeCap.round;
+
+  static final Paint _fillPaint = Paint()..style = PaintingStyle.fill;
+
+  static final Paint _primaryStrokePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 3.0
+    ..strokeCap = StrokeCap.round;
 
   _WaveVisualizerPainter({
     required this.phase,
@@ -142,8 +167,8 @@ class _WaveVisualizerPainter extends CustomPainter {
     Color color, {
     double strokeWidth = 2.0,
   }) {
-    final path = Path();
-    final step = 4.0;
+    _singlePath.reset();
+    const step = 4.0;
 
     for (double x = 0; x <= size.width; x += step) {
       final normalizedX = x / size.width;
@@ -155,19 +180,16 @@ class _WaveVisualizerPainter extends CustomPainter {
               edgeDamping;
 
       if (x == 0) {
-        path.moveTo(x, y);
+        _singlePath.moveTo(x, y);
       } else {
-        path.lineTo(x, y);
+        _singlePath.lineTo(x, y);
       }
     }
 
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
+    _singlePaint.color = color;
+    _singlePaint.strokeWidth = strokeWidth;
 
-    canvas.drawPath(path, paint);
+    canvas.drawPath(_singlePath, _singlePaint);
   }
 
   void _drawPrimaryFilledWave(
@@ -178,11 +200,11 @@ class _WaveVisualizerPainter extends CustomPainter {
     double wavePhase,
     double frequency,
   ) {
-    final strokePath = Path();
-    final fillPath = Path();
-    final step = 4.0;
+    _strokePath.reset();
+    _fillPath.reset();
+    const step = 4.0;
 
-    fillPath.moveTo(0, size.height);
+    _fillPath.moveTo(0, size.height);
 
     for (double x = 0; x <= size.width; x += step) {
       final normalizedX = x / size.width;
@@ -193,41 +215,35 @@ class _WaveVisualizerPainter extends CustomPainter {
               edgeDamping;
 
       if (x == 0) {
-        strokePath.moveTo(x, y);
-        fillPath.lineTo(x, y);
+        _strokePath.moveTo(x, y);
+        _fillPath.lineTo(x, y);
       } else {
-        strokePath.lineTo(x, y);
-        fillPath.lineTo(x, y);
+        _strokePath.lineTo(x, y);
+        _fillPath.lineTo(x, y);
       }
     }
 
-    fillPath.lineTo(size.width, size.height);
-    fillPath.close();
+    _fillPath.lineTo(size.width, size.height);
+    _fillPath.close();
 
     // Fill with fading gradient
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          primaryColor.withValues(alpha: 0.25),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.fill;
+    _fillPaint.shader = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        primaryColor.withValues(alpha: 0.25),
+        Colors.transparent,
+      ],
+    ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
-    canvas.drawPath(fillPath, fillPaint);
+    canvas.drawPath(_fillPath, _fillPaint);
 
     // Primary stroke
-    final strokePaint = Paint()
-      ..shader = LinearGradient(
-        colors: [primaryColor, secondaryColor],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
-      ..strokeCap = StrokeCap.round;
+    _primaryStrokePaint.shader = LinearGradient(
+      colors: [primaryColor, secondaryColor],
+    ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
-    canvas.drawPath(strokePath, strokePaint);
+    canvas.drawPath(_strokePath, _primaryStrokePaint);
   }
 
   @override

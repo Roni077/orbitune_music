@@ -198,8 +198,8 @@ class HomeNotifier extends StateNotifier<HomeState> {
 /// Global provider for Home discovery state
 final homeProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
   final repository = ref.watch(discoveryRepositoryProvider);
-  final settings = ref.watch(settingsProvider);
-  return HomeNotifier(ref, repository, settings.country ?? 'Global');
+  final country = ref.watch(settingsProvider.select((s) => s.country ?? 'Global'));
+  return HomeNotifier(ref, repository, country);
 });
 
 /// Convenience selectors

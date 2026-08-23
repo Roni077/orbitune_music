@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:orbitune/features/audio_player/domain/services/audio_player_service.dart';
 import 'package:orbitune/features/equalizer/data/equalizer_repository.dart';
@@ -76,6 +77,15 @@ class EqualizerNotifier extends StateNotifier<EQProfile> {
     } catch (_) {}
   }
 
+  Timer? _saveDebounceTimer;
+
+  void _debouncedSaveProfile() {
+    _saveDebounceTimer?.cancel();
+    _saveDebounceTimer = Timer(const Duration(milliseconds: 400), () {
+      _repository.saveProfile(state);
+    });
+  }
+
   /// Toggles equalizer state ON/OFF
   Future<void> toggleEnabled() async {
     await setEnabled(!state.isEnabled);
@@ -136,7 +146,7 @@ class EqualizerNotifier extends StateNotifier<EQProfile> {
       presetName: 'Custom',
       customBandGains: allCustomGains,
     );
-    await _repository.saveProfile(state);
+    _debouncedSaveProfile();
   }
 
   /// Resets all frequency bands to 0.0 dB (Flat preset)
@@ -148,28 +158,28 @@ class EqualizerNotifier extends StateNotifier<EQProfile> {
   Future<void> setBassBoost(double value) async {
     final clamped = value.clamp(0.0, 1.0);
     state = state.copyWith(bassBoost: clamped);
-    await _repository.saveProfile(state);
+    _debouncedSaveProfile();
   }
 
   /// Adjusts 3D Virtualizer Surround Sound (0.0 to 1.0)
   Future<void> setVirtualizer(double value) async {
     final clamped = value.clamp(0.0, 1.0);
     state = state.copyWith(virtualizer: clamped);
-    await _repository.saveProfile(state);
+    _debouncedSaveProfile();
   }
 
   /// Adjusts Loudness Enhancer gain (0.0 to 1.0)
   Future<void> setLoudnessGain(double value) async {
     final clamped = value.clamp(0.0, 1.0);
     state = state.copyWith(loudnessGain: clamped);
-    await _repository.saveProfile(state);
+    _debouncedSaveProfile();
   }
 
   /// Adjusts Stereo Pan Balance (-1.0 Left to +1.0 Right, 0.0 Center)
   Future<void> setBalance(double value) async {
     final clamped = value.clamp(-1.0, 1.0);
     state = state.copyWith(balance: clamped);
-    await _repository.saveProfile(state);
+    _debouncedSaveProfile();
     _applyHardwareSettings(state);
   }
 
@@ -183,7 +193,7 @@ class EqualizerNotifier extends StateNotifier<EQProfile> {
   Future<void> setStereoEnhancement(double value) async {
     final clamped = value.clamp(0.0, 1.0);
     state = state.copyWith(stereoEnhancement: clamped);
-    await _repository.saveProfile(state);
+    _debouncedSaveProfile();
   }
 
   /// Toggles Volume Normalization

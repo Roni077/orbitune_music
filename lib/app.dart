@@ -12,13 +12,15 @@ class OrbituneApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeData = ref.watch(currentThemeDataProvider);
-    final appSettings = ref.watch(settingsProvider);
+    final hasCompletedOnboarding = ref.watch(
+      settingsProvider.select((s) => s.hasCompletedOnboarding),
+    );
 
     return MaterialApp(
       title: 'Orbitune',
       debugShowCheckedModeBanner: false,
       theme: themeData,
-      home: appSettings.hasCompletedOnboarding 
+      home: hasCompletedOnboarding 
           ? const MainNavigationShell() 
           : const OnboardingScreen(),
     );

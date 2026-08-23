@@ -167,49 +167,44 @@ class DiscoveryRepository {
     
     final countrySuffix = (country != null && country != 'Global') ? ' in $country' : '';
 
-    // 1. Fetch live trending songs from YouTube
-    try {
-      final query = (filter != null && filter != 'All')
-          ? '$filter Trending Songs$countrySuffix'
-          : 'Top Trending Music Hits$countrySuffix';
-      trendingSongs = await youTubeSource.search(query, limit: 20);
-    } catch (e) {
-      debugPrint('[DiscoveryRepository] getHomeFeed trending songs error: $e');
-    }
+    final query = (filter != null && filter != 'All')
+        ? '$filter Trending Songs$countrySuffix'
+        : 'Top Trending Music Hits$countrySuffix';
+    final chartQuery = (filter != null && filter != 'All')
+        ? '$filter Hits Playlist$countrySuffix'
+        : 'Top 50 Hits$countrySuffix';
+    final mixQuery = 'Daily Mix$countrySuffix';
+    final albumQuery = (filter != null && filter != 'All')
+        ? '$filter Album$countrySuffix'
+        : 'Top Albums$countrySuffix';
 
-    // 2. Fallback to curated tracks if empty
+    // Parallel concurrent fetch of all discovery sections via Future.wait
+    final results = await Future.wait([
+      youTubeSource.search(query, limit: 20).catchError((e) {
+        debugPrint('[DiscoveryRepository] getHomeFeed trending songs error: $e');
+        return <Track>[];
+      }),
+      youTubeSource.searchPlaylists(chartQuery, limit: 8).catchError((_) => <PlaylistModel>[]),
+      getPopularArtists().catchError((_) => <ArtistModel>[]),
+      youTubeSource.searchPlaylists(mixQuery, limit: 6).catchError((_) => <PlaylistModel>[]),
+      youTubeSource.searchAlbums(albumQuery, limit: 8).catchError((_) => <AlbumModel>[]),
+    ]);
+
+    trendingSongs = results[0] as List<Track>;
+    chartsFromApi = results[1] as List<PlaylistModel>;
+    final popularArtists = (results[2] as List<ArtistModel>).isNotEmpty
+        ? results[2] as List<ArtistModel>
+        : _curatedPopularArtists;
+    List<PlaylistModel> dailyMixes = results[3] as List<PlaylistModel>;
+    albums = results[4] as List<AlbumModel>;
+
     if (trendingSongs.isEmpty) {
       trendingSongs = _curatedRealTrendingTracks;
     }
 
-    // 3. Fetch live charts / playlists
-    try {
-      final chartQuery = (filter != null && filter != 'All')
-          ? '$filter Hits Playlist$countrySuffix'
-          : 'Top 50 Hits$countrySuffix';
-      chartsFromApi = await youTubeSource.searchPlaylists(chartQuery, limit: 8);
-    } catch (_) {}
-
-    // 4. Fetch popular artists
-    final popularArtists = await getPopularArtists();
-
-    // 5. Fetch daily mixes
-    List<PlaylistModel> dailyMixes = [];
-    try {
-      final mixes = await youTubeSource.searchPlaylists('Daily Mix$countrySuffix', limit: 6);
-      if (mixes.isNotEmpty) {
-        dailyMixes = mixes;
-      }
-    } catch (_) {}
     if (dailyMixes.isEmpty) {
       dailyMixes = getDailyMixes();
     }
-
-    // 6. Fetch new albums
-    try {
-      final albumQuery = filter != null && filter != 'All' ? '$filter Album$countrySuffix' : 'Top Albums$countrySuffix';
-      albums = await youTubeSource.searchAlbums(albumQuery, limit: 8);
-    } catch (_) {}
 
     // Build Hero Banners from top trending items
     final List<TrendingItem> banners = [];

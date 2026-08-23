@@ -148,6 +148,14 @@ class _WaveformPainter extends CustomPainter {
   final Color inactiveColor;
   final bool isDragging;
 
+  static final Paint _activePaint = Paint()..style = PaintingStyle.fill;
+  static final Paint _inactivePaint = Paint()..style = PaintingStyle.fill;
+  static final Paint _thumbPaint = Paint()
+    ..color = Colors.white
+    ..style = PaintingStyle.fill;
+  static final Paint _glowPaint = Paint()
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+
   _WaveformPainter({
     required this.progress,
     required this.waveformHeights,
@@ -159,18 +167,14 @@ class _WaveformPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final barCount = waveformHeights.length;
-    final spacing = 2.5;
-    final totalSpacing = (barCount - 1) * spacing;
+    const spacing = 2.5;
+    const totalSpacing = (40 - 1) * spacing;
     final barWidth = ((size.width - totalSpacing) / barCount).clamp(2.0, 8.0);
     final midY = size.height / 2;
 
-    final activePaint = Paint()
-      ..color = activeColor
-      ..style = PaintingStyle.fill;
-
-    final inactivePaint = Paint()
-      ..color = inactiveColor
-      ..style = PaintingStyle.fill;
+    _activePaint.color = activeColor;
+    _inactivePaint.color = inactiveColor;
+    _glowPaint.color = activeColor.withValues(alpha: isDragging ? 0.6 : 0.3);
 
     for (int i = 0; i < barCount; i++) {
       final x = i * (barWidth + spacing);
@@ -186,21 +190,13 @@ class _WaveformPainter extends CustomPainter {
         const Radius.circular(2.0),
       );
 
-      canvas.drawRRect(rrect, isBarActive ? activePaint : inactivePaint);
+      canvas.drawRRect(rrect, isBarActive ? _activePaint : _inactivePaint);
     }
 
     // Draw active scrubber head thumb
     final thumbX = (progress * size.width).clamp(0.0, size.width);
-    final thumbPaint = Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.fill;
-
-    final glowPaint = Paint()
-      ..color = activeColor.withValues(alpha: isDragging ? 0.6 : 0.3)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
-
-    canvas.drawCircle(Offset(thumbX, midY), isDragging ? 8.0 : 5.0, glowPaint);
-    canvas.drawCircle(Offset(thumbX, midY), isDragging ? 6.0 : 4.0, thumbPaint);
+    canvas.drawCircle(Offset(thumbX, midY), isDragging ? 8.0 : 5.0, _glowPaint);
+    canvas.drawCircle(Offset(thumbX, midY), isDragging ? 6.0 : 4.0, _thumbPaint);
   }
 
   @override
