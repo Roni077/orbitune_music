@@ -165,7 +165,12 @@ class AudioPlayerService {
     _snapshotController.add(_snapshot);
   }
 
-  /// Plays a single [Track] or a track within a [queueContext]
+  /// Plays a single [Track] or a track within a [queueContext].
+  ///
+  /// Always uses a [ConcatenatingAudioSource] so the system notification
+  /// (lock screen / shade) can compute [hasPrevious] and [hasNext] from the
+  /// full queue, making the Previous and Next buttons appear in the
+  /// notification alongside Play/Pause.
   Future<void> playTrack(
     Track track,
     String streamOrFilePath, {
@@ -189,43 +194,37 @@ class AudioPlayerService {
       );
       _snapshotController.add(_snapshot);
 
-      final AudioSource audioSource;
-      final safeIndex = (queueContext != null && queueContext.isNotEmpty)
-          ? queueIndex.clamp(0, queueContext.length - 1)
-          : 0;
+      final effectiveQueue = _currentPlaylist;
+      final safeIndex = queueIndex.clamp(0, effectiveQueue.length - 1);
 
-      if (queueContext != null && queueContext.length > 1) {
-        final sources = <AudioSource>[];
-        for (int i = 0; i < queueContext.length; i++) {
-          final t = queueContext[i];
-          if (i == safeIndex) {
-            sources.add(OrbituneAudioHandler.createAudioSource(
-              t,
-              streamOrFilePath,
-              headers: headers,
-            ));
-          } else {
-            final fallbackUrl = (t.streamUrl != null && t.streamUrl!.isNotEmpty)
-                ? t.streamUrl!
-                : (t.localFilePath ?? 'https://music.youtube.com/watch?v=${t.id}');
-            sources.add(OrbituneAudioHandler.createAudioSource(
-              t,
-              fallbackUrl,
-              headers: headers,
-            ));
-          }
+      // Always use ConcatenatingAudioSource so just_audio_background sees the
+      // full queue. This ensures hasPrevious / hasNext are non-null when
+      // there are multiple tracks, causing Previous and Next to show in the
+      // Android notification and lock-screen controls.
+      final sources = <AudioSource>[];
+      for (int i = 0; i < effectiveQueue.length; i++) {
+        final t = effectiveQueue[i];
+        if (i == safeIndex) {
+          sources.add(OrbituneAudioHandler.createAudioSource(
+            t,
+            streamOrFilePath,
+            headers: headers,
+          ));
+        } else {
+          final fallbackUrl = (t.streamUrl != null && t.streamUrl!.isNotEmpty)
+              ? t.streamUrl!
+              : (t.localFilePath ?? 'https://music.youtube.com/watch?v=${t.id}');
+          sources.add(OrbituneAudioHandler.createAudioSource(
+            t,
+            fallbackUrl,
+            headers: headers,
+          ));
         }
-        audioSource = ConcatenatingAudioSource(
-          useLazyPreparation: true,
-          children: sources,
-        );
-      } else {
-        audioSource = OrbituneAudioHandler.createAudioSource(
-          track,
-          streamOrFilePath,
-          headers: headers,
-        );
       }
+      final audioSource = ConcatenatingAudioSource(
+        useLazyPreparation: true,
+        children: sources,
+      );
 
       await _player
           .setAudioSource(
