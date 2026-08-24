@@ -169,14 +169,7 @@ class LibraryScreen extends ConsumerWidget {
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.accentGreen,
-                            foregroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
+                        FilledButton.icon(
                           onPressed: () => CreatePlaylistDialog.show(context),
                           icon: const Icon(LucideIcons.plus, size: 18),
                           label: const Text(

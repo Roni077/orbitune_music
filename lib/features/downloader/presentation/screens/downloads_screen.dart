@@ -375,23 +375,37 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
 
   Widget _buildFilterChip(int index, String label) {
     final isSelected = _selectedFilterIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedFilterIndex = index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.accentGreen : AppColors.darkSurfaceVariant,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: AppTypography.labelMedium.copyWith(
-            color: isSelected ? Colors.black : AppColors.textSecondary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return FilterChip(
+      label: Text(
+        label,
+        style: AppTypography.bodySmall.copyWith(
+          color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
         ),
       ),
+      selected: isSelected,
+      showCheckmark: false,
+      onSelected: (_) {
+        HapticFeedback.selectionClick();
+        setState(() {
+          _selectedFilterIndex = index;
+        });
+      },
+      selectedColor: colorScheme.primary,
+      backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+      side: BorderSide(
+        color: isSelected ? colorScheme.primary : colorScheme.outline.withValues(alpha: 0.2),
+        width: 1.0,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 

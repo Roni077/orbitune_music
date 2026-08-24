@@ -5,7 +5,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_constants.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
-import 'package:orbitune/core/widgets/expressive_card.dart';
 import 'package:orbitune/features/equalizer/domain/models/eq_band_mode.dart';
 import 'package:orbitune/features/equalizer/domain/models/eq_preset.dart';
 import 'package:orbitune/features/equalizer/presentation/providers/equalizer_provider.dart';
@@ -195,61 +194,26 @@ class EqualizerScreen extends ConsumerWidget {
   ) {
     final currentMode = eqProfile.bandMode;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: AppColors.darkSurfaceElevated,
-            borderRadius: AppConstants.roundedLarge,
-            border: Border.all(color: AppColors.glassBorder),
+    return Center(
+      child: SegmentedButton<EQBandMode>(
+        segments: const [
+          ButtonSegment<EQBandMode>(
+            value: EQBandMode.band5,
+            label: Text('5-Band'),
+            icon: Icon(LucideIcons.sliders, size: 16),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: EQBandMode.values.map((mode) {
-              final isSelected = currentMode == mode;
-              return GestureDetector(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  eqNotifier.setBandMode(mode);
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? (eqProfile.isEnabled ? AppColors.accentGreen : AppColors.darkSurfaceVariant)
-                        : Colors.transparent,
-                    borderRadius: AppConstants.roundedMedium,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        mode == EQBandMode.band5 ? LucideIcons.sliders : LucideIcons.slidersHorizontal,
-                        size: 14,
-                        color: isSelected
-                            ? (eqProfile.isEnabled ? Colors.black : AppColors.textPrimary)
-                            : AppColors.textMuted,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        mode.label,
-                        style: AppTypography.labelMedium.copyWith(
-                          color: isSelected
-                              ? (eqProfile.isEnabled ? Colors.black : AppColors.textPrimary)
-                              : AppColors.textSecondary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
+          ButtonSegment<EQBandMode>(
+            value: EQBandMode.band10,
+            label: Text('10-Band'),
+            icon: Icon(LucideIcons.slidersHorizontal, size: 16),
           ),
-        ),
-      ],
+        ],
+        selected: {currentMode},
+        onSelectionChanged: (newSelection) {
+          HapticFeedback.selectionClick();
+          eqNotifier.setBandMode(newSelection.first);
+        },
+      ),
     );
   }
 
@@ -260,6 +224,8 @@ class EqualizerScreen extends ConsumerWidget {
   ) {
     final isEnabled = eqProfile.isEnabled;
     final activePreset = eqProfile.presetName;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     // Combine built-in presets and custom user presets
     final allPresets = <EQPreset>[
@@ -301,7 +267,7 @@ class EqualizerScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: 38,
+          height: 40,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -311,59 +277,38 @@ class EqualizerScreen extends ConsumerWidget {
               final preset = allPresets[index];
               final isSelected = activePreset.toLowerCase() == preset.name.toLowerCase();
 
-              return ExpressiveCard(
-                borderRadius: AppConstants.roundedPill,
-                onTap: isEnabled
-                    ? () {
+              return FilterChip(
+                label: Text(
+                  preset.name,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: isSelected && isEnabled
+                        ? colorScheme.onPrimary
+                        : colorScheme.onSurface,
+                    fontWeight: isSelected && isEnabled ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+                selected: isSelected && isEnabled,
+                showCheckmark: false,
+                onSelected: isEnabled
+                    ? (selected) {
                         HapticFeedback.selectionClick();
                         eqNotifier.selectPreset(preset.name);
                       }
                     : null,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected && isEnabled
-                        ? AppColors.accentGreen
-                        : AppColors.darkSurfaceElevated,
-                    borderRadius: AppConstants.roundedPill,
-                    border: Border.all(
-                      color: isSelected && isEnabled
-                          ? AppColors.accentGreen
-                          : AppColors.glassBorder,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        preset.name,
-                        style: AppTypography.labelMedium.copyWith(
-                          color: isSelected && isEnabled
-                              ? Colors.black
-                              : (isEnabled ? AppColors.textPrimary : AppColors.textMuted),
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                      if (preset.isCustom) ...[
-                        const SizedBox(width: 6),
-                        GestureDetector(
-                          onTap: isEnabled
-                              ? () {
-                                  HapticFeedback.mediumImpact();
-                                  eqNotifier.deleteCustomPreset(preset.name);
-                                }
-                              : null,
-                          child: Icon(
-                            LucideIcons.x,
-                            size: 14,
-                            color: isSelected && isEnabled ? Colors.black54 : AppColors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                selectedColor: colorScheme.primary,
+                backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                side: BorderSide(
+                  color: isSelected && isEnabled
+                      ? colorScheme.primary
+                      : colorScheme.outline.withValues(alpha: 0.2),
+                  width: 1.0,
                 ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               );
             },
           ),
