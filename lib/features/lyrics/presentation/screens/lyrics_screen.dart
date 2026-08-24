@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -89,12 +88,6 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                 ],
               ),
             ),
-          ),
-
-          // Blurred glass overlay
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-            child: const SizedBox.expand(),
           ),
 
           // Main SafeArea Content

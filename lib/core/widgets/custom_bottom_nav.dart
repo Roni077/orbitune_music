@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -18,7 +17,7 @@ class CustomBottomNavItem {
   });
 }
 
-/// Material 3 Expressive Floating Frosted Bottom Navigation Bar
+/// Material 3 Solid Floating Bottom Navigation Bar
 class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTabSelected;
@@ -62,104 +61,86 @@ class CustomBottomNav extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         height: 64.0,
         decoration: BoxDecoration(
-          color: colorScheme.surface.withValues(alpha: 0.88),
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(32.0),
           border: Border.all(
-            color: colorScheme.outline.withValues(alpha: 0.28),
+            color: colorScheme.outlineVariant,
             width: 1.0,
           ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.45),
-              blurRadius: 20.0,
-              offset: const Offset(0, 6),
+              blurRadius: 16.0,
+              offset: const Offset(0, 4),
             ),
-            if (colorScheme.brightness == Brightness.dark)
-              BoxShadow(
-                color: colorScheme.primary.withValues(alpha: 0.08),
-                blurRadius: 16.0,
-                spreadRadius: 1.0,
-              ),
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(32.0),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List.generate(items.length, (index) {
-                  final item = items[index];
-                  final isSelected = index == currentIndex;
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(items.length, (index) {
+                final item = items[index];
+                final isSelected = index == currentIndex;
 
-                  return Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        if (!isSelected) {
-                          HapticFeedback.selectionClick();
-                          onTabSelected(index);
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(26.0),
-                      child: Center(
-                        child: AnimatedContainer(
-                          duration: AppConstants.fastAnimation,
-                          curve: Curves.easeOutCubic,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isSelected ? 16.0 : 8.0,
-                            vertical: 8.0,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? colorScheme.primary.withValues(alpha: 0.18)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(24.0),
-                            border: isSelected
-                                ? Border.all(
-                                    color: colorScheme.primary.withValues(alpha: 0.40),
-                                    width: 1.0,
-                                  )
-                                : null,
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: colorScheme.primary.withValues(alpha: 0.20),
-                                      blurRadius: 10.0,
-                                      spreadRadius: 0.5,
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isSelected ? (item.activeIcon ?? item.icon) : item.icon,
-                                size: 20,
-                                color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                              ),
-                              if (isSelected) ...[
-                                const SizedBox(width: 7),
-                                Text(
-                                  item.label,
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                    letterSpacing: 0.2,
-                                  ),
+                return Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      if (!isSelected) {
+                        HapticFeedback.selectionClick();
+                        onTabSelected(index);
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(26.0),
+                    child: Center(
+                      child: AnimatedContainer(
+                        duration: AppConstants.fastAnimation,
+                        curve: Curves.easeOutCubic,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isSelected ? 16.0 : 8.0,
+                          vertical: 8.0,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? colorScheme.primary.withValues(alpha: 0.18)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(24.0),
+                          border: isSelected
+                              ? Border.all(
+                                  color: colorScheme.primary.withValues(alpha: 0.40),
+                                  width: 1.0,
+                                )
+                              : null,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isSelected ? (item.activeIcon ?? item.icon) : item.icon,
+                              size: 20,
+                              color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                            ),
+                            if (isSelected) ...[
+                              const SizedBox(width: 7),
+                              Text(
+                                item.label,
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  letterSpacing: 0.2,
                                 ),
-                              ],
+                              ),
                             ],
-                          ),
+                          ],
                         ),
                       ),
                     ),
-                  );
-                }),
-              ),
+                  ),
+                );
+              }),
             ),
           ),
         ),

@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -760,7 +759,7 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
               ),
               onTap: () => _showImageSourcePicker(accent),
             ),
-          ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack),
+          ),
           const SizedBox(height: 16),
 
           // User Name & Badge

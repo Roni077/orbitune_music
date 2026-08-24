@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,10 +32,10 @@ class MiniPlayer extends ConsumerWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 14.0),
       decoration: BoxDecoration(
-        color: AppColors.darkSurfaceElevated.withValues(alpha: 0.92),
+        color: AppColors.darkSurfaceElevated,
         borderRadius: AppConstants.roundedMedium,
         border: Border.all(
-          color: AppColors.glassBorder,
+          color: AppColors.solidBorder,
           width: 1.0,
         ),
         boxShadow: const [
@@ -49,11 +48,9 @@ class MiniPlayer extends ConsumerWidget {
       ),
       child: ClipRRect(
         borderRadius: AppConstants.roundedMedium,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
               // Main MiniPlayer Body with Gestures
               GestureDetector(
                 onTap: () {
@@ -183,7 +180,6 @@ class MiniPlayer extends ConsumerWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }

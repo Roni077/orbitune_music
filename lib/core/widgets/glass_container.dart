@@ -1,8 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 
-/// Frosted Glassmorphism Container with BackdropFilter and gradient border
+/// Clean Solid Container with crisp border (replaces previous frosted glass)
 class GlassContainer extends StatelessWidget {
   final Widget child;
   final double? width;
@@ -25,7 +24,7 @@ class GlassContainer extends StatelessWidget {
     this.borderRadius,
     this.color,
     this.borderColor,
-    this.blur = AppConstants.glassBlurSigma,
+    this.blur = 0.0,
     this.onTap,
   });
 
@@ -33,8 +32,8 @@ class GlassContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final effectiveRadius = borderRadius ?? AppConstants.roundedMedium;
-    final effectiveColor = color ?? theme.colorScheme.surface.withValues(alpha: 0.70);
-    final effectiveBorderColor = borderColor ?? theme.colorScheme.outline.withValues(alpha: 0.25);
+    final effectiveColor = color ?? theme.colorScheme.surfaceContainer;
+    final effectiveBorderColor = borderColor ?? theme.colorScheme.outlineVariant;
 
     Widget container = Container(
       width: width,
@@ -68,10 +67,7 @@ class GlassContainer extends StatelessWidget {
 
     return ClipRRect(
       borderRadius: effectiveRadius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: container,
-      ),
+      child: container,
     );
   }
 }

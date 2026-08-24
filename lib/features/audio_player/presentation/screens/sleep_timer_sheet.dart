@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,7 +28,7 @@ class SleepTimerSheet extends ConsumerStatefulWidget {
 }
 
 class _SleepTimerSheetState extends ConsumerState<SleepTimerSheet> {
-  double _customMinutes = 20.0;
+  double _customMinutes = 30.0;
 
   static const List<int> _presetMinutes = [5, 10, 15, 30, 45, 60];
 
@@ -37,17 +36,14 @@ class _SleepTimerSheetState extends ConsumerState<SleepTimerSheet> {
   Widget build(BuildContext context) {
     final timerState = ref.watch(sleepTimerProvider);
     final timerNotifier = ref.read(sleepTimerProvider.notifier);
-
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Color(0xF012121E),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          border: Border(
-            top: BorderSide(color: AppColors.glassBorder, width: 1.0),
-          ),
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.darkSurface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(
+          top: BorderSide(color: AppColors.solidBorder, width: 1.0),
         ),
+      ),
         padding: EdgeInsets.fromLTRB(
           20.0,
           12.0,
@@ -336,7 +332,6 @@ class _SleepTimerSheetState extends ConsumerState<SleepTimerSheet> {
             ],
           ],
         ),
-      ),
-    );
+      );
   }
 }

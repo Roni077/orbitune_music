@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
@@ -171,13 +170,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             LucideIcons.music,
             size: 100,
             color: Theme.of(context).colorScheme.primary,
-          ).animate().scale(delay: 200.ms, duration: 600.ms, curve: Curves.easeOutBack),
+          ),
           const SizedBox(height: 32),
           Text(
             'Welcome to Orbitune',
             style: AppTypography.headlineLarge,
             textAlign: TextAlign.center,
-          ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
+          ),
           const SizedBox(height: 16),
           Text(
             'Your modern, beautiful, and highly expressive music player. Let\'s get you set up.',
@@ -185,7 +184,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
-          ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
+          ),
         ],
       ),
     );
@@ -222,7 +221,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 size: 36,
                 color: theme.colorScheme.primary,
               ),
-            ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
+            ),
           ),
           const SizedBox(height: 20),
           Text(
@@ -251,7 +250,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             isGranted: _isStorageGranted,
             actionLabel: 'Grant Storage',
             onTap: _requestStoragePermission,
-          ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.1, end: 0),
+          ),
           const SizedBox(height: 12),
 
           // 2. Notifications & Lockscreen Tile
@@ -263,7 +262,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             isGranted: _isNotificationGranted,
             actionLabel: 'Allow Alerts',
             onTap: _requestNotificationPermission,
-          ).animate().fadeIn(delay: 250.ms).slideY(begin: 0.1, end: 0),
+          ),
           const SizedBox(height: 12),
 
           // 3. Background Playback & Battery Tile
@@ -275,7 +274,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             isGranted: _isBatteryGranted,
             actionLabel: 'Ignore Limits',
             onTap: _requestBatteryPermission,
-          ).animate().fadeIn(delay: 350.ms).slideY(begin: 0.1, end: 0),
+          ),
           const SizedBox(height: 24),
 
           // Grant All Quick Action Button (if not all granted)
@@ -293,7 +292,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-            ).animate().fadeIn(delay: 450.ms),
+            ),
 
           const SizedBox(height: 16),
           Text(
@@ -302,7 +301,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
             ),
             textAlign: TextAlign.center,
-          ).animate().fadeIn(delay: 500.ms),
+          ),
         ],
       ),
     );
@@ -431,7 +430,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             LucideIcons.userCircle,
             size: 80,
             color: Theme.of(context).colorScheme.tertiary,
-          ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
+          ),
           const SizedBox(height: 32),
           Text(
             'What should we call you?',
@@ -450,7 +449,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               filled: true,
             ),
             style: AppTypography.bodyLarge,
-          ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
+          ),
         ],
       ),
     );
@@ -518,7 +517,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
               ),
             ],
-          ).animate().fadeIn(duration: 300.ms),
+          ),
           const SizedBox(height: 12),
 
           // Search Field
@@ -548,7 +547,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               filled: true,
               fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
             ),
-          ).animate().fadeIn(delay: 100.ms),
+          ),
           const SizedBox(height: 12),
 
           // Country List
@@ -719,13 +718,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               LucideIcons.sparkles,
               size: 72,
               color: primary,
-            ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+            ),
             const SizedBox(height: 20),
             Text(
               'You\'re all set!',
               style: AppTypography.headlineLarge,
               textAlign: TextAlign.center,
-            ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
+            ),
             const SizedBox(height: 10),
             Text(
               'Select genres you enjoy to seed your discovery mix:',
@@ -733,7 +732,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
-            ).animate().fadeIn(delay: 300.ms),
+            ),
             const SizedBox(height: 20),
             Wrap(
               spacing: 8.0,
@@ -762,7 +761,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ),
                 );
               }).toList(),
-            ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.1, end: 0),
+            ),
           ],
         ),
       ),

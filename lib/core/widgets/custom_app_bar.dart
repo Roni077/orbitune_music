@@ -1,10 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_constants.dart';
 import '../constants/app_typography.dart';
 
-/// Translucent blurred Glassmorphic App Bar with action buttons
+/// Clean Solid App Bar with action buttons
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final Widget? leading;
@@ -16,7 +13,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.title,
     this.leading,
     this.actions,
-    this.showBlur = true,
+    this.showBlur = false,
   });
 
   @override
@@ -24,27 +21,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget appBar = AppBar(
+    return AppBar(
       title: Text(title, style: AppTypography.brandTitle.copyWith(fontSize: 22)),
       centerTitle: false,
-      backgroundColor: showBlur ? AppColors.darkBackground.withValues(alpha: 0.7) : Colors.transparent,
+      backgroundColor: Colors.transparent,
       elevation: 0,
+      scrolledUnderElevation: 0,
       leading: leading,
       actions: actions,
-    );
-
-    if (!showBlur) return appBar;
-
-    return RepaintBoundary(
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: AppConstants.glassBlurSigma,
-            sigmaY: AppConstants.glassBlurSigma,
-          ),
-          child: appBar,
-        ),
-      ),
     );
   }
 }

@@ -59,19 +59,21 @@ class AppColors {
   static const Color textTertiary = Color(0xFF64748B);
   static const Color white = Color(0xFFFFFFFF);
 
-  // Glassmorphic & Border Tokens
-  static const Color glassFill = Color(0x221E1E38);
-  static const Color glassBorder = Color(0x336366F1);
+  // Solid Surface & Border Tokens (Clean Material 3)
+  static const Color solidBorder = Color(0xFF282846);
+  static const Color solidBorderLight = Color(0xFF383860);
+  static const Color glassFill = Color(0xFF14142B);
+  static const Color glassBorder = Color(0xFF282846);
   static const Color divider = Color(0x1FFFFFFF);
 
   static const LinearGradient specularBorderGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0x55FFFFFF),
-      Color(0x15FFFFFF),
-      Color(0x05FFFFFF),
-      Color(0x256366F1),
+      Color(0xFF383860),
+      Color(0xFF282846),
+      Color(0xFF1E1E38),
+      Color(0xFF282846),
     ],
     stops: [0.0, 0.35, 0.70, 1.0],
   );

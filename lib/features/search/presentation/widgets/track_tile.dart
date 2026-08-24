@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_constants.dart';
@@ -80,11 +79,11 @@ class TrackTile extends ConsumerWidget {
                 SizedBox(
                   width: 28,
                   child: isCurrent && isPlaying
-                      ? const SpinKitWave(
-                          color: AppColors.accentGreen,
-                          size: 14,
-                          itemCount: 4,
-                          type: SpinKitWaveType.start,
+                      ? const Center(
+                          child: NativeEqualizerWave(
+                            color: AppColors.accentGreen,
+                            size: 14,
+                          ),
                         )
                       : Text(
                           '$index',
@@ -117,21 +116,21 @@ class TrackTile extends ConsumerWidget {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.5),
+                          color: Colors.black.withValues(alpha: 0.6),
                           borderRadius: AppConstants.roundedSmall,
                         ),
-                        child: isPlaying
-                            ? const SpinKitWave(
-                                color: AppColors.accentGreen,
-                                size: 16,
-                                itemCount: 4,
-                                type: SpinKitWaveType.start,
-                              )
-                            : const Icon(
-                                LucideIcons.pause,
-                                color: AppColors.accentGreen,
-                                size: 20,
-                              ),
+                        child: Center(
+                          child: isPlaying
+                              ? const NativeEqualizerWave(
+                                  color: AppColors.accentGreen,
+                                  size: 18,
+                                )
+                              : const Icon(
+                                  LucideIcons.pause,
+                                  color: AppColors.accentGreen,
+                                  size: 20,
+                                ),
+                        ),
                       ),
                   ],
                 ),
@@ -421,6 +420,80 @@ class TrackTile extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Pure Flutter native 3-bar animated equalizer wave for active playing tracks
+class NativeEqualizerWave extends StatefulWidget {
+  final Color color;
+  final double size;
+
+  const NativeEqualizerWave({
+    super.key,
+    this.color = AppColors.accentGreen,
+    this.size = 14.0,
+  });
+
+  @override
+  State<NativeEqualizerWave> createState() => _NativeEqualizerWaveState();
+}
+
+class _NativeEqualizerWaveState extends State<NativeEqualizerWave>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final t = _controller.value;
+        final h1 = (0.35 + 0.65 * t) * widget.size;
+        final h2 = (0.95 - 0.70 * t) * widget.size;
+        final h3 = (0.45 + 0.55 * ((t + 0.5) % 1.0)) * widget.size;
+        final barWidth = (widget.size / 5.0).clamp(1.5, 3.0);
+
+        return SizedBox(
+          width: widget.size,
+          height: widget.size,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _buildBar(h1, barWidth),
+              _buildBar(h2, barWidth),
+              _buildBar(h3, barWidth),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBar(double height, double width) {
+    return Container(
+      width: width,
+      height: height.clamp(2.0, widget.size),
+      decoration: BoxDecoration(
+        color: widget.color,
+        borderRadius: BorderRadius.circular(width / 2),
+      ),
     );
   }
 }

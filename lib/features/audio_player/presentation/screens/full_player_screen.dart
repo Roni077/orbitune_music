@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -124,7 +123,7 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen> {
         },
         child: Stack(
           children: [
-            // Layer 1: Ambient dynamic blurred gradient background
+            // Layer 1: Ambient dynamic gradient background (Solid, no blur shader overhead)
             AnimatedContainer(
               duration: const Duration(milliseconds: 700),
               decoration: BoxDecoration(
@@ -132,8 +131,8 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    dominantColor.withValues(alpha: 0.45),
-                    const Color(0xFF10101C).withValues(alpha: 0.85),
+                    dominantColor.withValues(alpha: 0.35),
+                    const Color(0xFF10101C),
                     AppColors.darkBackground,
                   ],
                   stops: const [0.0, 0.55, 1.0],
@@ -141,13 +140,7 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen> {
               ),
             ),
 
-            // Layer 2: Frosted Glass Filter
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 36, sigmaY: 36),
-              child: const SizedBox.expand(),
-            ),
-
-            // Layer 3: Main Player Content
+            // Layer 2: Main Player Content
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20.0),

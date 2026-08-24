@@ -15,10 +15,7 @@ dependencies:
   google_fonts: ^8.2.1
   palette_generator_plus: ^1.0.0
   cached_network_image: ^3.4.1
-  flutter_animate: ^4.5.0
   marquee: ^2.2.3
-  flutter_spinkit: ^5.2.1
-  shimmer: ^3.0.0
   fl_chart: ^1.2.0
   qr_flutter: ^4.1.0
   share_plus: ^10.1.4

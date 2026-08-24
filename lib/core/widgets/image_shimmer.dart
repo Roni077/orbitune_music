@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_constants.dart';
 
-/// Cached image loader with shimmer skeleton placeholder and error fallback
+/// Pure native Flutter cached image loader with built-in ShaderMask shimmer skeleton placeholder
 class ImageShimmer extends StatelessWidget {
   final String? imageUrl;
   final double? width;
@@ -30,14 +29,9 @@ class ImageShimmer extends StatelessWidget {
     if (imageUrl == null || imageUrl!.isEmpty) {
       return ClipRRect(
         borderRadius: effectiveRadius,
-        child: Shimmer.fromColors(
-          baseColor: AppColors.darkSurface,
-          highlightColor: AppColors.darkSurfaceElevated,
-          child: Container(
-            width: width,
-            height: height,
-            color: AppColors.darkSurface,
-          ),
+        child: NativeShimmerPlaceholder(
+          width: width,
+          height: height,
         ),
       );
     }
@@ -57,14 +51,9 @@ class ImageShimmer extends StatelessWidget {
         memCacheHeight: memH,
         maxWidthDiskCache: 1000,
         maxHeightDiskCache: 1000,
-        placeholder: (context, url) => Shimmer.fromColors(
-          baseColor: AppColors.darkSurface,
-          highlightColor: AppColors.darkSurfaceElevated,
-          child: Container(
-            width: width,
-            height: height,
-            color: AppColors.darkSurface,
-          ),
+        placeholder: (context, url) => NativeShimmerPlaceholder(
+          width: width,
+          height: height,
         ),
         errorWidget: (context, url, error) => errorWidget ?? _buildFallback(effectiveRadius),
       ),
@@ -87,5 +76,85 @@ class ImageShimmer extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Lightweight, GPU-accelerated pure Flutter native shimmer placeholder using AnimationController + ShaderMask
+class NativeShimmerPlaceholder extends StatefulWidget {
+  final double? width;
+  final double? height;
+  final Color baseColor;
+  final Color highlightColor;
+
+  const NativeShimmerPlaceholder({
+    super.key,
+    this.width,
+    this.height,
+    this.baseColor = AppColors.darkSurface,
+    this.highlightColor = AppColors.darkSurfaceElevated,
+  });
+
+  @override
+  State<NativeShimmerPlaceholder> createState() => _NativeShimmerPlaceholderState();
+}
+
+class _NativeShimmerPlaceholderState extends State<NativeShimmerPlaceholder>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return ShaderMask(
+          blendMode: BlendMode.srcATop,
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                widget.baseColor,
+                widget.highlightColor,
+                widget.baseColor,
+              ],
+              stops: const [0.0, 0.5, 1.0],
+              transform: _SlidingGradientTransform(slidePercent: _controller.value),
+            ).createShader(bounds);
+          },
+          child: child,
+        );
+      },
+      child: Container(
+        width: widget.width,
+        height: widget.height,
+        color: widget.baseColor,
+      ),
+    );
+  }
+}
+
+class _SlidingGradientTransform extends GradientTransform {
+  final double slidePercent;
+  const _SlidingGradientTransform({required this.slidePercent});
+
+  @override
+  Matrix4? transform(Rect bounds, {TextDirection? textDirection}) {
+    return Matrix4.translationValues(bounds.width * (slidePercent * 2 - 1), 0.0, 0.0);
   }
 }
