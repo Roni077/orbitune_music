@@ -85,7 +85,7 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen> {
               const SizedBox(height: 16),
               Text('No track selected', style: AppTypography.titleMedium),
               const SizedBox(height: 12),
-              ElevatedButton(
+              FilledButton.tonal(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Go Back'),
               ),
