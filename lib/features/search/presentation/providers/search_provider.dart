@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:orbitune/features/audio_player/data/player_repository.dart';
 import 'package:orbitune/features/search/data/search_cache_repository.dart';
 import 'package:orbitune/features/search/data/search_repository.dart';
 import 'package:orbitune/features/search/domain/models/search_result.dart';
@@ -87,11 +88,12 @@ class SearchState {
 class SearchNotifier extends StateNotifier<SearchState> {
   final SearchRepository _searchRepository;
   final SearchCacheRepository _cacheRepository;
+  final Ref? _ref;
   Timer? _debounceTimer;
 
   static const Duration _debounceDuration = Duration(milliseconds: 400);
 
-  SearchNotifier(this._searchRepository, this._cacheRepository)
+  SearchNotifier(this._searchRepository, this._cacheRepository, [this._ref])
       : super(const SearchState()) {
     loadRecentSearches();
   }
@@ -225,6 +227,11 @@ class SearchNotifier extends StateNotifier<SearchState> {
         hasSearched: true,
         errorMessage: null,
       );
+
+      // Silently pre-resolve candidate streams for top 3 results for instant 0ms play on tap
+      if (searchRes.songs.isNotEmpty && _ref != null) {
+        _ref.read(playerRepositoryProvider).preloadUpcomingTracks(searchRes.songs, -1, lookahead: 3);
+      }
     } catch (e, st) {
       if (currentGen != _searchGeneration || state.query != query) return;
       debugPrint('[SearchNotifier] search error: $e\n$st');
@@ -247,5 +254,5 @@ class SearchNotifier extends StateNotifier<SearchState> {
 final searchProvider = StateNotifierProvider<SearchNotifier, SearchState>((ref) {
   final searchRepo = ref.watch(searchRepositoryProvider);
   final cacheRepo = ref.watch(searchCacheRepositoryProvider);
-  return SearchNotifier(searchRepo, cacheRepo);
+  return SearchNotifier(searchRepo, cacheRepo, ref);
 });

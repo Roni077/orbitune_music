@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:orbitune/features/audio_player/data/player_repository.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/queue_provider.dart';
 import 'package:orbitune/features/search/data/search_repository.dart';
 import 'package:orbitune/features/search/domain/models/artist_model.dart';
@@ -78,6 +79,11 @@ class ArtistDetailNotifier extends StateNotifier<ArtistDetailState> {
           isFollowed: fetched.isFollowed,
           errorMessage: null,
         );
+
+        // Preload first 3 top tracks of the artist for instant 0ms playback on tap
+        if (fetched.topTracks.isNotEmpty) {
+          _ref.read(playerRepositoryProvider).preloadUpcomingTracks(fetched.topTracks, -1, lookahead: 3);
+        }
       } else {
         // If fetch returned null but we had initial partial artist
         if (state.artist != null) {

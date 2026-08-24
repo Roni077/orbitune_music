@@ -14,7 +14,7 @@ class YouTubeSource {
   YoutubeExplode get _client => _yt ??= YoutubeExplode();
 
   final Map<String, ({String url, DateTime expiresAt})> _streamUrlCache = {};
-  static const int _maxStreamCacheSize = 200;
+  static const int _maxStreamCacheSize = 300;
 
   void _cacheStreamUrl(String videoId, String url) {
     if (_streamUrlCache.length >= _maxStreamCacheSize) {
@@ -22,7 +22,7 @@ class YouTubeSource {
     }
     _streamUrlCache[videoId] = (
       url: url,
-      expiresAt: DateTime.now().add(const Duration(hours: 4)),
+      expiresAt: DateTime.now().add(const Duration(hours: 6)),
     );
   }
 
@@ -116,18 +116,20 @@ class YouTubeSource {
       for (final item in searchResults) {
         if (albums.length >= limit) break;
         if (item is SearchPlaylist) {
-          albums.add(AlbumModel(
-            id: item.id.value,
-            title: AudioDecryptor.cleanHtmlEntities(item.title),
-            artist: 'YouTube Music',
-            artworkUrl: item.thumbnails.isNotEmpty ? item.thumbnails.first.url.toString() : null,
-            highResArtworkUrl: item.thumbnails.isNotEmpty ? item.thumbnails.last.url.toString() : null,
-            totalTracks: item.videoCount,
-            source: 'youtube',
-          ));
+          albums.add(
+            AlbumModel(
+              id: item.id.value,
+              title: AudioDecryptor.cleanHtmlEntities(item.title),
+              artist: 'YouTube Music',
+              artworkUrl: 'https://img.youtube.com/vi/${item.id.value}/hqdefault.jpg',
+              highResArtworkUrl: 'https://img.youtube.com/vi/${item.id.value}/maxresdefault.jpg',
+              songs: const [],
+              totalTracks: item.videoCount,
+              source: 'youtube',
+            ),
+          );
         }
       }
-
       return albums;
     } catch (e) {
       debugPrint('[YouTubeSource] searchAlbums error: $e');
@@ -135,44 +137,58 @@ class YouTubeSource {
     }
   }
 
-  /// Searches for playlists matching [query]
+  /// Searches YouTube specifically for playlists matching [query]
   Future<List<PlaylistModel>> searchPlaylists(String query, {int limit = 10}) async {
     if (query.trim().isEmpty) return const [];
 
     try {
-      final searchResults = await _client.search.searchContent(
+      final playlists = await _client.search.searchContent(
         query.trim(),
         filter: TypeFilters.playlist,
       );
 
-      final List<PlaylistModel> playlists = [];
-
-      for (final item in searchResults) {
-        if (playlists.length >= limit) break;
+      final List<PlaylistModel> playlistResults = [];
+      for (final item in playlists) {
+        if (playlistResults.length >= limit) break;
         if (item is SearchPlaylist) {
-          playlists.add(PlaylistModel(
-            id: item.id.value,
-            title: AudioDecryptor.cleanHtmlEntities(item.title),
-            author: 'YouTube',
-            trackCount: item.videoCount,
-            artworkUrl: item.thumbnails.isNotEmpty ? item.thumbnails.first.url.toString() : null,
-            highResArtworkUrl: item.thumbnails.isNotEmpty ? item.thumbnails.last.url.toString() : null,
-            source: 'youtube',
-          ));
+          playlistResults.add(
+            PlaylistModel(
+              id: item.id.value,
+              title: AudioDecryptor.cleanHtmlEntities(item.title),
+              author: 'YouTube',
+              artworkUrl: 'https://img.youtube.com/vi/${item.id.value}/hqdefault.jpg',
+              highResArtworkUrl: 'https://img.youtube.com/vi/${item.id.value}/maxresdefault.jpg',
+              trackCount: item.videoCount,
+              songs: const [],
+              source: 'youtube',
+            ),
+          );
         }
       }
-
-      return playlists;
+      return playlistResults;
     } catch (e) {
       debugPrint('[YouTubeSource] searchPlaylists error: $e');
       return const [];
     }
   }
 
-  /// Fetches StreamManifest using resilient non-PoToken restricted clients (Android Sdkless, iOS)
-  /// as primary strategy to ensure fast and reliable extraction across mobile and desktop.
-  /// Uses a 15-second timeout to accommodate real-world network latency.
+  /// Ultra-fast stream manifest extraction:
+  /// 1. Fast-path: Directly queries Android Sdkless API without downloading HTML watch page (~250ms).
+  /// 2. Resilient fallback: Queries iOS & Android Sdkless with watch page if fast path fails.
+  /// 3. Ultimate fallback: Default client extraction.
   Future<StreamManifest> _getResilientManifest(String videoId) async {
+    // 1. Fast Path (~250ms latency)
+    try {
+      return await _client.videos.streamsClient.getManifest(
+        VideoId(videoId),
+        ytClients: [YoutubeApiClient.androidSdkless],
+        requireWatchPage: false,
+      ).timeout(const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint('[YouTubeSource] Fast-path getManifest failed for $videoId ($e). Trying secondary fallback...');
+    }
+
+    // 2. Secondary Resilient Fallback
     try {
       return await _client.videos.streamsClient.getManifest(
         VideoId(videoId),
@@ -180,12 +196,13 @@ class YouTubeSource {
           YoutubeApiClient.androidSdkless,
           YoutubeApiClient.ios,
         ],
-      ).timeout(const Duration(seconds: 15));
+        requireWatchPage: true,
+      ).timeout(const Duration(seconds: 8));
     } catch (e) {
-      debugPrint('[YouTubeSource] Multi-client getManifest failed for $videoId: $e. Retrying with default client...');
+      debugPrint('[YouTubeSource] Secondary fallback getManifest failed for $videoId ($e). Retrying with default client...');
       return await _client.videos.streamsClient
           .getManifest(VideoId(videoId))
-          .timeout(const Duration(seconds: 15));
+          .timeout(const Duration(seconds: 8));
     }
   }
 

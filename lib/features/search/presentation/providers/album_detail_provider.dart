@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:orbitune/features/audio_player/data/player_repository.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/queue_provider.dart';
 import 'package:orbitune/features/search/data/search_repository.dart';
 import 'package:orbitune/features/search/domain/models/album_model.dart';
@@ -87,6 +88,11 @@ class AlbumDetailNotifier extends StateNotifier<AlbumDetailState> {
           isFavorite: fetched.isFavorite,
           errorMessage: null,
         );
+
+        // Preload first 3 tracks of the album for instant 0ms playback on tap
+        if (fetched.songs.isNotEmpty) {
+          _ref.read(playerRepositoryProvider).preloadUpcomingTracks(fetched.songs, -1, lookahead: 3);
+        }
       } else {
         if (state.album != null) {
           state = state.copyWith(isLoading: false, isRefreshing: false);

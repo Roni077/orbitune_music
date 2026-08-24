@@ -48,8 +48,8 @@ class AudioPlayerService {
               audioLoadConfiguration: const AudioLoadConfiguration(
                 androidLoadControl: AndroidLoadControl(
                   maxBufferDuration: Duration(seconds: 60),
-                  bufferForPlaybackDuration: Duration(milliseconds: 500),
-                  bufferForPlaybackAfterRebufferDuration: Duration(seconds: 2),
+                  bufferForPlaybackDuration: Duration(milliseconds: 200),
+                  bufferForPlaybackAfterRebufferDuration: Duration(milliseconds: 1000),
                 ),
               ),
             ),
@@ -226,17 +226,19 @@ class AudioPlayerService {
         children: sources,
       );
 
-      await _player
-          .setAudioSource(
-            audioSource,
-            initialIndex: safeIndex,
-            initialPosition: initialPosition,
-          )
-          .timeout(
-            const Duration(seconds: 8),
-            onTimeout: () => throw TimeoutException('Audio stream buffering timed out after 8s'),
-          );
-      await _player.play();
+      final setSourceFuture = _player.setAudioSource(
+        audioSource,
+        initialIndex: safeIndex,
+        initialPosition: initialPosition,
+      );
+      // Eagerly initiate play so native ExoPlayer/AVPlayer decodes audio frames
+      // immediately upon receiving the initial stream packet
+      _player.play().catchError((e) => debugPrint('[AudioPlayerService] eager play error: $e'));
+
+      await setSourceFuture.timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw TimeoutException('Audio stream buffering timed out after 8s'),
+      );
     } catch (e, stack) {
       debugPrint('[AudioPlayerService] playTrack error: $e\n$stack');
       _snapshot = _snapshot.copyWith(

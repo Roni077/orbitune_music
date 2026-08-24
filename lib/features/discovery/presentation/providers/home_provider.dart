@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:orbitune/features/audio_player/data/player_repository.dart';
 import 'package:orbitune/features/audio_player/domain/models/track.dart';
 import 'package:orbitune/features/discovery/data/discovery_repository.dart';
 import 'package:orbitune/features/discovery/domain/models/chart_playlist.dart';
@@ -101,6 +102,12 @@ class HomeNotifier extends StateNotifier<HomeState> {
         quickPicks: quickPicks,
         continueListening: continueListening,
       );
+
+      // Pre-resolve candidate streams for top Quick Picks & Continue Listening for 0ms start
+      final preloadPool = [...quickPicks, ...continueListening];
+      if (preloadPool.isNotEmpty) {
+        _ref.read(playerRepositoryProvider).preloadUpcomingTracks(preloadPool, -1, lookahead: 3);
+      }
     } catch (e) {
       debugPrint('[HomeNotifier] loadHomeFeed error: $e');
       state = state.copyWith(
@@ -134,6 +141,12 @@ class HomeNotifier extends StateNotifier<HomeState> {
         quickPicks: quickPicks,
         continueListening: continueListening,
       );
+
+      // Pre-resolve candidate streams for top Quick Picks & Continue Listening
+      final preloadPool = [...quickPicks, ...continueListening];
+      if (preloadPool.isNotEmpty) {
+        _ref.read(playerRepositoryProvider).preloadUpcomingTracks(preloadPool, -1, lookahead: 3);
+      }
     } catch (e) {
       debugPrint('[HomeNotifier] refresh error: $e');
       state = state.copyWith(isRefreshing: false);

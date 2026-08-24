@@ -53,8 +53,8 @@ class PlayerRepository {
 
   // Multi-tier In-Memory Stream Cache for instant 0ms track starts
   final Map<String, ({List<String> candidates, DateTime resolvedAt})> _streamCandidateCache = {};
-  static const Duration _cacheTtl = Duration(hours: 2);
-  static const int _maxCacheEntries = 60;
+  static const Duration _cacheTtl = Duration(hours: 4);
+  static const int _maxCacheEntries = 150;
 
   PlayerRepository({
     required this.playerService,
@@ -214,15 +214,18 @@ class PlayerRepository {
     return candidateUrls;
   }
 
-  /// Silently preloads and caches stream URLs for upcoming queue tracks (Lookahead = 3)
+  /// Silently preloads and caches stream URLs for upcoming queue tracks in parallel (Lookahead = 3)
+  /// Supports [currentIndex] = -1 to preload from the start of any newly loaded track list.
   void preloadUpcomingTracks(List<Track> queue, int currentIndex, {int lookahead = 3}) {
-    if (queue.isEmpty || currentIndex < 0) return;
+    if (queue.isEmpty || currentIndex < -1) return;
 
     Future.microtask(() async {
       final preferredQuality = settingsRepository.getSettings().streamingQuality;
+      final futures = <Future<void>>[];
+
       for (var i = 1; i <= lookahead; i++) {
         final nextIndex = currentIndex + i;
-        if (nextIndex < queue.length) {
+        if (nextIndex >= 0 && nextIndex < queue.length) {
           final nextTrack = queue[nextIndex];
           if (nextTrack.isLocal) continue;
 
@@ -232,10 +235,16 @@ class PlayerRepository {
             continue;
           }
 
-          try {
-            await resolveCandidateUrls(nextTrack, quality: preferredQuality);
-          } catch (_) {}
+          futures.add(
+            resolveCandidateUrls(nextTrack, quality: preferredQuality)
+                .then((_) {})
+                .catchError((_) {}),
+          );
         }
+      }
+
+      if (futures.isNotEmpty) {
+        await Future.wait(futures);
       }
     });
   }
@@ -248,13 +257,13 @@ class PlayerRepository {
     List<Track>? queueContext,
     int queueIndex = 0,
   }) async {
-    // Request audio focus
-    await sessionService.setActive(true);
-
     final preferredQuality = quality ?? settingsRepository.getSettings().streamingQuality;
     final isFav = libraryRepository.isFavorite(track.id);
 
+    // Request audio focus and resolve stream candidates concurrently for 0ms wasted latency
+    final sessionFocusFuture = sessionService.setActive(true);
     final candidateUrls = await resolveCandidateUrls(track, quality: preferredQuality);
+    await sessionFocusFuture;
 
     if (candidateUrls.isEmpty) {
       throw Exception('Failed to resolve audio stream URL for "${track.title}"');
