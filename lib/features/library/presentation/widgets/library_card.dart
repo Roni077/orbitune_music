@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/widgets/expressive_card.dart';
@@ -68,8 +69,8 @@ class LibraryCard extends StatelessWidget {
           if (trailing != null)
             trailing!
           else
-            Icon(
-              Icons.chevron_right,
+            const Icon(
+              LucideIcons.chevronRight,
               color: AppColors.textTertiary,
               size: 20,
             ),
