@@ -285,15 +285,14 @@ class _SleepTimerSheetState extends ConsumerState<SleepTimerSheet> {
             const SizedBox(height: 12),
 
             // Start Custom Timer Button
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
+            FilledButton(
+              style: FilledButton.styleFrom(
                 backgroundColor: AppColors.accentNeonBlue,
                 foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: AppConstants.roundedSmall,
                 ),
-                elevation: 0,
               ),
               onPressed: () {
                 HapticFeedback.mediumImpact();

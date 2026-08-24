@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
-import 'package:orbitune/core/widgets/expressive_card.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
 import 'package:orbitune/features/settings/presentation/widgets/live_theme_preview.dart';
 
@@ -117,59 +116,71 @@ class ThemeSettingsScreen extends ConsumerWidget {
               final accent = opt['accent'] as Color;
               final icon = opt['icon'] as IconData;
 
-              return ExpressiveCard(
-                onTap: () => notifier.setThemeMode(key),
-                borderRadius: BorderRadius.circular(18),
+              return Card(
+                elevation: 0,
                 color: bg,
-                borderColor: isSelected ? accent : AppColors.glassBorder,
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: BorderSide(
+                    color: isSelected ? accent : AppColors.glassBorder,
+                    width: isSelected ? 1.5 : 1.0,
+                  ),
+                ),
+                margin: EdgeInsets.zero,
+                child: InkWell(
+                  onTap: () => notifier.setThemeMode(key),
+                  borderRadius: BorderRadius.circular(18),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: accent.withValues(alpha: 0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(icon, size: 16, color: accent),
-                        ),
-                        if (isSelected)
-                          Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: BoxDecoration(
-                              color: accent,
-                              shape: BoxShape.circle,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: accent.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(icon, size: 16, color: accent),
                             ),
-                            child: const Icon(Icons.check, size: 12, color: Colors.black),
-                          ),
+                            if (isSelected)
+                              Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  color: accent,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.check, size: 12, color: Colors.black),
+                              ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              opt['title'] as String,
+                              style: AppTypography.titleSmall.copyWith(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: key == 'light' ? const Color(0xFF0F172A) : Colors.white,
+                              ),
+                            ),
+                            Text(
+                              opt['subtitle'] as String,
+                              style: AppTypography.caption.copyWith(
+                                fontSize: 10.5,
+                                color: key == 'light' ? const Color(0xFF475569) : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          opt['title'] as String,
-                          style: AppTypography.titleSmall.copyWith(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: key == 'light' ? const Color(0xFF0F172A) : Colors.white,
-                          ),
-                        ),
-                        Text(
-                          opt['subtitle'] as String,
-                          style: AppTypography.caption.copyWith(
-                            fontSize: 10.5,
-                            color: key == 'light' ? const Color(0xFF475569) : AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               );
             },
@@ -272,14 +283,26 @@ class ThemeSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildCard({required Widget child}) {
-    return ExpressiveCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      borderRadius: BorderRadius.circular(20),
-      color: AppColors.darkSurfaceVariant.withValues(alpha: 0.55),
-      child: Material(
-        color: Colors.transparent,
-        child: child,
-      ),
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        return Card(
+          elevation: 0,
+          color: theme.colorScheme.surfaceContainer,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: theme.colorScheme.outline.withValues(alpha: 0.18),
+              width: 1.0,
+            ),
+          ),
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: child,
+          ),
+        );
+      },
     );
   }
 }

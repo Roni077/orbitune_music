@@ -5,7 +5,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/services/hive_service.dart';
-import 'package:orbitune/core/widgets/expressive_card.dart';
 import 'package:orbitune/features/downloader/presentation/screens/downloads_screen.dart';
 import 'package:orbitune/features/search/data/search_cache_repository.dart';
 import 'package:orbitune/features/settings/presentation/providers/settings_provider.dart';
@@ -240,14 +239,26 @@ class StorageSettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildCard({required Widget child}) {
-    return ExpressiveCard(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      borderRadius: BorderRadius.circular(20),
-      color: AppColors.darkSurfaceVariant.withValues(alpha: 0.55),
-      child: Material(
-        color: Colors.transparent,
-        child: child,
-      ),
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        return Card(
+          elevation: 0,
+          color: theme.colorScheme.surfaceContainer,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: theme.colorScheme.outline.withValues(alpha: 0.18),
+              width: 1.0,
+            ),
+          ),
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: child,
+          ),
+        );
+      },
     );
   }
 }

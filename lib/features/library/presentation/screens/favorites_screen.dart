@@ -143,16 +143,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.accentGreen,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              elevation: 0,
-                            ),
+                          child: FilledButton.icon(
                             onPressed: () {
                               ref.read(queueProvider.notifier).playPlaylist(
                                     allTracks,
@@ -168,17 +159,6 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                         ),
                         const SizedBox(width: 12),
                         OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary,
-                            side: BorderSide(
-                              color: AppColors.white.withOpacity(0.15),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
                           onPressed: () {
                             final shuffled = List<Track>.from(allTracks)..shuffle();
                             ref.read(queueProvider.notifier).playPlaylist(
@@ -194,31 +174,24 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
                     const SizedBox(height: 14),
 
                     // Filter Search Field
-                    TextField(
+                    SearchBar(
                       controller: _searchController,
                       onChanged: (val) => setState(() => _searchQuery = val.trim()),
-                      style: const TextStyle(color: AppColors.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Search in liked songs...',
-                        hintStyle: const TextStyle(color: AppColors.textTertiary, fontSize: 13.5),
-                        prefixIcon: const Icon(LucideIcons.search, size: 18, color: AppColors.textSecondary),
-                        suffixIcon: _searchQuery.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(LucideIcons.x, size: 16, color: AppColors.textSecondary),
+                      hintText: 'Search in liked songs...',
+                      leading: const Icon(LucideIcons.search, size: 18),
+                      elevation: const WidgetStatePropertyAll(0),
+                      padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 12)),
+                      trailing: _searchQuery.isNotEmpty
+                          ? [
+                              IconButton(
+                                icon: const Icon(LucideIcons.x, size: 16),
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() => _searchQuery = '');
                                 },
-                              )
-                            : null,
-                        filled: true,
-                        fillColor: AppColors.darkSurfaceVariant.withOpacity(0.5),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
+                              ),
+                            ]
+                          : null,
                     ),
                     const SizedBox(height: 8),
                   ],

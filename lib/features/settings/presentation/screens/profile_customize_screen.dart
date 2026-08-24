@@ -1119,14 +1119,26 @@ class _ProfileCustomizeScreenState extends ConsumerState<ProfileCustomizeScreen>
   }
 
   Widget _buildCard({required Widget child}) {
-    return ExpressiveCard(
-      padding: const EdgeInsets.all(16),
-      borderRadius: BorderRadius.circular(20),
-      color: AppColors.darkSurfaceVariant.withValues(alpha: 0.55),
-      child: Material(
-        color: Colors.transparent,
-        child: child,
-      ),
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        return Card(
+          elevation: 0,
+          color: theme.colorScheme.surfaceContainer,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: theme.colorScheme.outline.withValues(alpha: 0.18),
+              width: 1.0,
+            ),
+          ),
+          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: child,
+          ),
+        );
+      },
     );
   }
 }

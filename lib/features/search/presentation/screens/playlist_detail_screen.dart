@@ -181,7 +181,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                             children: [
                               // Play All
                               Expanded(
-                                child: ElevatedButton.icon(
+                                child: FilledButton.icon(
                                   onPressed: () {
                                     HapticFeedback.mediumImpact();
                                     if (playlist.songs.isNotEmpty) {
@@ -191,18 +191,12 @@ class PlaylistDetailScreen extends ConsumerWidget {
                                           );
                                     }
                                   },
-                                  icon: const Icon(LucideIcons.play, size: 18, color: Colors.black),
+                                  icon: const Icon(LucideIcons.play, size: 18),
                                   label: const Text('Play All'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.accentGreen,
-                                    foregroundColor: Colors.black,
-                                    elevation: 0,
+                                  style: FilledButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(vertical: 12.0),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: AppConstants.roundedPill,
-                                    ),
-                                    textStyle: AppTypography.bodyMedium.copyWith(
-                                      fontWeight: FontWeight.bold,
+                                      borderRadius: BorderRadius.circular(24.0),
                                     ),
                                   ),
                                 ),

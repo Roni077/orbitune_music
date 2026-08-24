@@ -3,7 +3,6 @@ import 'package:extractor/extractor.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
-import 'package:orbitune/core/widgets/expressive_card.dart';
 import 'package:orbitune/features/downloader/data/extractor_service.dart';
 
 /// Screen detailing Orbitune version, technology stack, features, and open source licenses
@@ -75,113 +74,140 @@ class AboutScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Feature Highlights
-            ExpressiveCard(
-              padding: const EdgeInsets.all(18),
-              borderRadius: BorderRadius.circular(20),
-              color: AppColors.darkSurfaceVariant.withOpacity(0.5),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Built with Next-Gen Architecture',
-                    style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildFeatureBullet(
-                    LucideIcons.sparkles,
-                    AppColors.accentGreen,
-                    'Material 3 Expressive UI',
-                    'Dynamic theming, spring physics, and fluid haptic feedback.',
-                  ),
-                  _buildFeatureBullet(
-                    LucideIcons.radio,
-                    AppColors.accentCyan,
-                    'YouTube Explode Audio Engine',
-                    'High-fidelity pure Opus/AAC audio streaming with resilient multi-client rotation.',
-                  ),
-                  _buildFeatureBullet(
-                    LucideIcons.slidersHorizontal,
-                    AppColors.accentPink,
-                    '10-Band DSP Equalizer',
-                    'Bass boost, 3D virtualizer, loudness enhancer, and custom presets.',
-                  ),
-                  _buildFeatureBullet(
-                    LucideIcons.mic,
-                    AppColors.accentYellow,
-                    'Synchronized Lyrics',
-                    'Real-time line-by-line karaoke lyrics powered by LRCLIB.',
-                  ),
-                  _buildFeatureBullet(
-                    LucideIcons.downloadCloud,
-                    AppColors.accentPurple,
-                    'Offline First Downloader',
-                    'High-speed chunked downloads with local Hive persistence.',
-                  ),
-                ],
+            Card(
+              elevation: 0,
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.18),
+                  width: 1.0,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Built with Next-Gen Architecture',
+                      style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildFeatureBullet(
+                      LucideIcons.sparkles,
+                      AppColors.accentGreen,
+                      'Material 3 Expressive UI',
+                      'Dynamic theming, spring physics, and fluid haptic feedback.',
+                    ),
+                    _buildFeatureBullet(
+                      LucideIcons.radio,
+                      AppColors.accentCyan,
+                      'YouTube Explode Audio Engine',
+                      'High-fidelity pure Opus/AAC audio streaming with resilient multi-client rotation.',
+                    ),
+                    _buildFeatureBullet(
+                      LucideIcons.zap,
+                      AppColors.accentPurple,
+                      'High Performance Caching',
+                      'LRU memory search cache, Hive NoSQL persistence, and background isolates.',
+                    ),
+                    _buildFeatureBullet(
+                      LucideIcons.slidersHorizontal,
+                      AppColors.accentPink,
+                      'Native DSP Sound Suite',
+                      '10-band equalizer, dynamic bass boost, 3D spatializer, loudness & volume normalization.',
+                    ),
+                  ],
+                ),
               ),
             ),
 
             const SizedBox(height: 20),
 
             // System Diagnostics Card
-            ExpressiveCard(
-              onTap: () => _showDiagnosticsSheet(context),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              borderRadius: BorderRadius.circular(16),
-              color: AppColors.darkSurfaceVariant.withOpacity(0.5),
-              child: Row(
-                children: [
-                  const Icon(LucideIcons.cpu, color: AppColors.accentCyan, size: 20),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'System & Device Diagnostics',
-                          style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w600),
+            Card(
+              elevation: 0,
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.18),
+                  width: 1.0,
+                ),
+              ),
+              child: InkWell(
+                onTap: () => _showDiagnosticsSheet(context),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  child: Row(
+                    children: [
+                      const Icon(LucideIcons.cpu, color: AppColors.accentCyan, size: 20),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'System & Device Diagnostics',
+                              style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            Text(
+                              'Engine metrics, storage boxes & runtime info',
+                              style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                            ),
+                          ],
                         ),
-                        Text(
-                          'Engine metrics, storage boxes & runtime info',
-                          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
+                      ),
+                      const Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
+                    ],
                   ),
-                  const Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
-                ],
+                ),
               ),
             ),
             const SizedBox(height: 12),
 
             // Open Source Licenses Button
-            ExpressiveCard(
-              onTap: () {
-                showLicensePage(
-                  context: context,
-                  applicationName: 'Orbitune',
-                  applicationVersion: '1.0.0',
-                  applicationIcon: const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Icon(LucideIcons.orbit, size: 36, color: AppColors.accentGreen),
-                  ),
-                );
-              },
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              borderRadius: BorderRadius.circular(16),
-              color: AppColors.darkSurfaceVariant.withOpacity(0.5),
-              child: Row(
-                children: [
-                  const Icon(LucideIcons.fileCode2, color: AppColors.textPrimary, size: 20),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      'Open Source Licenses',
-                      style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w600),
+            Card(
+              elevation: 0,
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.18),
+                  width: 1.0,
+                ),
+              ),
+              child: InkWell(
+                onTap: () {
+                  showLicensePage(
+                    context: context,
+                    applicationName: 'Orbitune',
+                    applicationVersion: '1.0.0',
+                    applicationIcon: const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Icon(LucideIcons.orbit, size: 36, color: AppColors.accentGreen),
                     ),
+                  );
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  child: Row(
+                    children: [
+                      const Icon(LucideIcons.fileCode2, color: AppColors.textPrimary, size: 20),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          'Open Source Licenses',
+                          style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
+                    ],
                   ),
-                  const Icon(Icons.chevron_right, color: AppColors.textTertiary, size: 20),
-                ],
+                ),
               ),
             ),
 

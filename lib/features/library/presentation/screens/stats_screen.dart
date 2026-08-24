@@ -7,7 +7,6 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:orbitune/core/constants/app_colors.dart';
 import 'package:orbitune/core/constants/app_typography.dart';
 import 'package:orbitune/core/widgets/empty_state_view.dart';
-import 'package:orbitune/core/widgets/expressive_card.dart';
 import 'package:orbitune/features/audio_player/presentation/providers/player_provider.dart';
 import 'package:orbitune/features/library/domain/models/listening_stats.dart';
 import 'package:orbitune/features/library/presentation/providers/history_provider.dart';
@@ -54,24 +53,24 @@ class StatsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 1. Key Metrics 2x2 Grid
-                  _buildMetricsGrid(stats),
+                  _buildMetricsGrid(context, stats),
 
                   const SizedBox(height: 20),
 
                   // 2. Weekly Activity Bar Chart
-                  _buildWeeklyActivityCard(stats),
+                  _buildWeeklyActivityCard(context, stats),
 
                   const SizedBox(height: 20),
 
                   // 3. Top Artists Distribution
                   if (stats.artistPlayCounts.isNotEmpty) ...[
-                    _buildTopArtistsCard(stats),
+                    _buildTopArtistsCard(context, stats),
                     const SizedBox(height: 20),
                   ],
 
                   // 4. Top Genres Distribution
                   if (stats.genrePlayCounts.isNotEmpty) ...[
-                    _buildTopGenresCard(stats),
+                    _buildTopGenresCard(context, stats),
                     const SizedBox(height: 20),
                   ],
 
@@ -88,7 +87,7 @@ class StatsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMetricsGrid(ListeningStats stats) {
+  Widget _buildMetricsGrid(BuildContext context, ListeningStats stats) {
     final totalHours = stats.totalListeningTime.inHours;
     final totalMinutes = stats.totalListeningTime.inMinutes.remainder(60);
     final timeStr = totalHours > 0
@@ -111,24 +110,28 @@ class StatsScreen extends ConsumerWidget {
       childAspectRatio: 1.45,
       children: [
         _buildMetricItem(
+          context: context,
           icon: LucideIcons.clock,
           accentColor: AppColors.accentGreen,
           label: 'Listening Time',
           value: timeStr,
         ),
         _buildMetricItem(
+          context: context,
           icon: LucideIcons.music,
           accentColor: AppColors.accentCyan,
           label: 'Total Plays',
           value: '${stats.totalPlays}',
         ),
         _buildMetricItem(
+          context: context,
           icon: LucideIcons.flame,
           accentColor: AppColors.accentOrange,
           label: 'Daily Streak',
           value: '${stats.streakDays} ${stats.streakDays == 1 ? 'Day' : 'Days'}',
         ),
         _buildMetricItem(
+          context: context,
           icon: LucideIcons.radio,
           accentColor: AppColors.accentPurple,
           label: 'Top Genre',
@@ -139,55 +142,67 @@ class StatsScreen extends ConsumerWidget {
   }
 
   Widget _buildMetricItem({
+    required BuildContext context,
     required IconData icon,
     required Color accentColor,
     required String label,
     required String value,
   }) {
-    return ExpressiveCard(
-      padding: const EdgeInsets.all(14),
-      borderRadius: BorderRadius.circular(18),
-      color: AppColors.darkSurfaceVariant.withOpacity(0.55),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.15),
-              shape: BoxShape.circle,
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.15),
+          width: 1.0,
+        ),
+      ),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 18, color: accentColor),
             ),
-            child: Icon(icon, size: 18, color: accentColor),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: AppTypography.titleLarge.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 19,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: AppTypography.titleLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 19,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 11.5,
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 11.5,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildWeeklyActivityCard(ListeningStats stats) {
+  Widget _buildWeeklyActivityCard(BuildContext context, ListeningStats stats) {
     // Generate data for the last 7 days
     final now = DateTime.now();
     final days = <DateTime>[];
@@ -229,217 +244,250 @@ class StatsScreen extends ConsumerWidget {
       );
     }
 
-    return ExpressiveCard(
-      padding: const EdgeInsets.all(18),
-      borderRadius: BorderRadius.circular(20),
-      color: AppColors.darkSurfaceVariant.withOpacity(0.5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(LucideIcons.barChart, size: 18, color: AppColors.accentGreen),
-              const SizedBox(width: 8),
-              Text(
-                'Weekly Activity (Minutes)',
-                style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 180,
-            child: BarChart(
-              BarChartData(
-                maxY: math.max(maxY, 20.0),
-                barGroups: barGroups,
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 32,
-                      getTitlesWidget: (val, meta) {
-                        if (val == 0) return const SizedBox.shrink();
-                        return Text(
-                          '${val.toInt()}m',
-                          style: TextStyle(
-                            color: AppColors.textTertiary,
-                            fontSize: 10,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (val, meta) {
-                        final idx = val.toInt();
-                        if (idx >= 0 && idx < days.length) {
-                          final label = DateFormat('E').format(days[idx]);
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 6.0),
-                            child: Text(
-                              label,
-                              style: TextStyle(
-                                color: idx == days.length - 1
-                                    ? AppColors.accentGreen
-                                    : AppColors.textSecondary,
-                                fontSize: 11,
-                                fontWeight: idx == days.length - 1
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.15),
+          width: 1.0,
+        ),
+      ),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(LucideIcons.barChart, size: 18, color: AppColors.accentGreen),
+                const SizedBox(width: 8),
+                Text(
+                  'Weekly Activity (Minutes)',
+                  style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 180,
+              child: BarChart(
+                BarChartData(
+                  maxY: math.max(maxY, 20.0),
+                  barGroups: barGroups,
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 32,
+                        getTitlesWidget: (val, meta) {
+                          if (val == 0) return const SizedBox.shrink();
+                          return Text(
+                            '${val.toInt()}m',
+                            style: TextStyle(
+                              color: AppColors.textTertiary,
+                              fontSize: 10,
                             ),
                           );
-                        }
-                        return const SizedBox.shrink();
-                      },
+                        },
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (val, meta) {
+                          final idx = val.toInt();
+                          if (idx >= 0 && idx < days.length) {
+                            final label = DateFormat('E').format(days[idx]);
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 6.0),
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  color: idx == days.length - 1
+                                      ? AppColors.accentGreen
+                                      : AppColors.textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: idx == days.length - 1
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
+                        },
+                      ),
                     ),
                   ),
-                ),
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                    color: AppColors.white.withOpacity(0.05),
-                    strokeWidth: 1,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    getDrawingHorizontalLine: (_) => FlLine(
+                      color: AppColors.white.withOpacity(0.05),
+                      strokeWidth: 1,
+                    ),
                   ),
+                  borderData: FlBorderData(show: false),
                 ),
-                borderData: FlBorderData(show: false),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTopArtistsCard(ListeningStats stats) {
+  Widget _buildTopArtistsCard(BuildContext context, ListeningStats stats) {
     final sortedArtists = stats.artistPlayCounts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final topArtists = sortedArtists.take(5).toList();
     final maxPlays = topArtists.first.value;
+    final theme = Theme.of(context);
 
-    return ExpressiveCard(
-      padding: const EdgeInsets.all(18),
-      borderRadius: BorderRadius.circular(20),
-      color: AppColors.darkSurfaceVariant.withOpacity(0.5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(LucideIcons.userCheck, size: 18, color: AppColors.accentCyan),
-              const SizedBox(width: 8),
-              Text(
-                'Top Artists',
-                style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...topArtists.asMap().entries.map((entry) {
-            final index = entry.key;
-            final item = entry.value;
-            final ratio = maxPlays > 0 ? item.value / maxPlays : 0.0;
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.15),
+          width: 1.0,
+        ),
+      ),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(LucideIcons.userCheck, size: 18, color: AppColors.accentCyan),
+                const SizedBox(width: 8),
+                Text(
+                  'Top Artists',
+                  style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ...topArtists.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              final ratio = maxPlays > 0 ? item.value / maxPlays : 0.0;
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '#${index + 1}  ${item.key}',
-                        style: AppTypography.titleSmall.copyWith(
-                          fontWeight: FontWeight.w600,
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '#${index + 1}  ${item.key}',
+                          style: AppTypography.titleSmall.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '${item.value} ${item.value == 1 ? 'play' : 'plays'}',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
+                        Text(
+                          '${item.value} ${item.value == 1 ? 'play' : 'plays'}',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: ratio,
-                      backgroundColor: AppColors.white.withOpacity(0.06),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        index == 0
-                            ? AppColors.accentGreen
-                            : index == 1
-                                ? AppColors.accentCyan
-                                : AppColors.accentPurple,
-                      ),
-                      minHeight: 6,
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: ratio,
+                        backgroundColor: AppColors.white.withOpacity(0.06),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          index == 0
+                              ? AppColors.accentGreen
+                              : index == 1
+                                  ? AppColors.accentCyan
+                                  : AppColors.accentPurple,
+                        ),
+                        minHeight: 6,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTopGenresCard(ListeningStats stats) {
+  Widget _buildTopGenresCard(BuildContext context, ListeningStats stats) {
     final sortedGenres = stats.genrePlayCounts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final topGenres = sortedGenres.take(6).toList();
+    final theme = Theme.of(context);
 
-    return ExpressiveCard(
-      padding: const EdgeInsets.all(18),
-      borderRadius: BorderRadius.circular(20),
-      color: AppColors.darkSurfaceVariant.withOpacity(0.5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(LucideIcons.disc, size: 18, color: AppColors.accentPurple),
-              const SizedBox(width: 8),
-              Text(
-                'Top Genres',
-                style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: topGenres.map((g) {
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.accentPurple.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.accentPurple.withOpacity(0.3),
-                  ),
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.15),
+          width: 1.0,
+        ),
+      ),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(LucideIcons.disc, size: 18, color: AppColors.accentPurple),
+                const SizedBox(width: 8),
+                Text(
+                  'Top Genres',
+                  style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
                 ),
-                child: Text(
-                  '${g.key} • ${g.value}',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.accentPurple,
-                    fontWeight: FontWeight.w600,
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: topGenres.map((g) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentPurple.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.accentPurple.withOpacity(0.3),
+                    ),
                   ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+                  child: Text(
+                    '${g.key} • ${g.value}',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.accentPurple,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -453,93 +501,104 @@ class StatsScreen extends ConsumerWidget {
     final sortedSongCounts = stats.songPlayCounts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final topSongEntries = sortedSongCounts.take(10).toList();
+    final theme = Theme.of(context);
 
-    return ExpressiveCard(
-      padding: const EdgeInsets.all(18),
-      borderRadius: BorderRadius.circular(20),
-      color: AppColors.darkSurfaceVariant.withOpacity(0.5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(LucideIcons.trophy, size: 18, color: AppColors.accentYellow),
-              const SizedBox(width: 8),
-              Text(
-                'Most Played Songs',
-                style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...topSongEntries.asMap().entries.map((entry) {
-            final rank = entry.key + 1;
-            final songId = entry.value.key;
-            final playCount = entry.value.value;
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: theme.colorScheme.outline.withValues(alpha: 0.15),
+          width: 1.0,
+        ),
+      ),
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(LucideIcons.trophy, size: 18, color: AppColors.accentYellow),
+                const SizedBox(width: 8),
+                Text(
+                  'Most Played Songs',
+                  style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...topSongEntries.asMap().entries.map((entry) {
+              final rank = entry.key + 1;
+              final songId = entry.value.key;
+              final playCount = entry.value.value;
 
-            // Find song metadata from history
-            final historyMatch = history.cast<dynamic>().firstWhere(
-                  (h) => h.track.id == songId,
-                  orElse: () => null,
-                );
-            final title = historyMatch?.track.title ?? 'Track #$songId';
-            final artist = historyMatch?.track.artist ?? 'Artist';
+              // Find song metadata from history
+              final historyMatch = history.cast<dynamic>().firstWhere(
+                    (h) => h.track.id == songId,
+                    orElse: () => null,
+                  );
+              final title = historyMatch?.track.title ?? 'Track #$songId';
+              final artist = historyMatch?.track.artist ?? 'Artist';
 
-            Color rankBadgeColor = AppColors.textTertiary;
-            if (rank == 1) rankBadgeColor = const Color(0xFFFFD700); // Gold
-            if (rank == 2) rankBadgeColor = const Color(0xFFC0C0C0); // Silver
-            if (rank == 3) rankBadgeColor = const Color(0xFFCD7F32); // Bronze
+              Color rankBadgeColor = AppColors.textTertiary;
+              if (rank == 1) rankBadgeColor = const Color(0xFFFFD700); // Gold
+              if (rank == 2) rankBadgeColor = const Color(0xFFC0C0C0); // Silver
+              if (rank == 3) rankBadgeColor = const Color(0xFFCD7F32); // Bronze
 
-            return Material(
-              color: Colors.transparent,
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: rankBadgeColor.withOpacity(0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '#$rank',
-                      style: TextStyle(
-                        color: rankBadgeColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+              return Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: rankBadgeColor.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '#$rank',
+                        style: TextStyle(
+                          color: rankBadgeColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                title: Text(
-                  title,
-                  style: AppTypography.titleSmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  artist,
-                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: Text(
-                  '$playCount plays',
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.accentGreen,
-                    fontWeight: FontWeight.bold,
+                  title: Text(
+                    title,
+                    style: AppTypography.titleSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  subtitle: Text(
+                    artist,
+                    style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: Text(
+                    '$playCount plays',
+                    style: AppTypography.caption.copyWith(
+                      color: AppColors.accentGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onTap: () {
+                    if (historyMatch != null) {
+                      ref.read(playerProvider.notifier).playTrack(historyMatch.track);
+                    }
+                  },
                 ),
-                onTap: () {
-                  if (historyMatch != null) {
-                    ref.read(playerProvider.notifier).playTrack(historyMatch.track);
-                  }
-                },
-              ),
-            );
-          }),
-        ],
+              );
+            }),
+          ],
+        ),
       ),
     );
   }

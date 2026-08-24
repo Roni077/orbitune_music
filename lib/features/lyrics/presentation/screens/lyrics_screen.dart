@@ -247,14 +247,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.darkSurfaceElevated,
-                foregroundColor: AppColors.accentGreen,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppConstants.roundedSmall,
-                ),
-              ),
+            FilledButton.tonalIcon(
               onPressed: () {
                 HapticFeedback.lightImpact();
                 ref.read(lyricsProvider.notifier).refreshLyrics();

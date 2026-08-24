@@ -217,16 +217,7 @@ class _PlaylistViewScreenState extends ConsumerState<PlaylistViewScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.accentGreen,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              elevation: 0,
-                            ),
+                          child: FilledButton.icon(
                             onPressed: () {
                               ref.read(queueProvider.notifier).playPlaylist(
                                     songs,
@@ -242,17 +233,6 @@ class _PlaylistViewScreenState extends ConsumerState<PlaylistViewScreen> {
                         ),
                         const SizedBox(width: 12),
                         OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary,
-                            side: BorderSide(
-                              color: AppColors.white.withOpacity(0.15),
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
                           onPressed: () {
                             final shuffled = List<Track>.from(songs)..shuffle();
                             ref.read(queueProvider.notifier).playPlaylist(

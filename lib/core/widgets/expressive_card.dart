@@ -95,10 +95,10 @@ class _ExpressiveCardState extends State<ExpressiveCard> with SingleTickerProvid
           height: widget.height,
           margin: widget.margin,
           decoration: BoxDecoration(
-            color: widget.color ?? Theme.of(context).colorScheme.surface,
+            color: widget.color ?? Theme.of(context).colorScheme.surfaceContainer,
             borderRadius: effectiveRadius,
             border: Border.all(
-              color: widget.borderColor ?? Theme.of(context).colorScheme.outline.withValues(alpha: 0.25),
+              color: widget.borderColor ?? Theme.of(context).colorScheme.outline.withValues(alpha: 0.18),
               width: 1.0,
             ),
           ),
