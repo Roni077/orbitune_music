@@ -1,5 +1,5 @@
 name: orbitune
-description: "Orbitune — Modern Online Music Player with Material 3 Expressive UI & multi-source audio streaming."
+description: "Orbitune — Modern Online Music Player with Flutter Material 3 UI & multi-source audio streaming."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -10,8 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Material 3 Expressive UI Framework & Icons
-  material_3_expressive: ^1.0.8
   cupertino_icons: ^1.0.8
   lucide_icons_flutter: ^3.0.0
   google_fonts: ^8.2.1

@@ -7,6 +7,22 @@ on:
   pull_request:
     branches: [ main, master, dev ]
   workflow_dispatch:
+    inputs:
+      build_windows:
+        description: 'Build Windows Desktop (.zip)'
+        required: false
+        type: boolean
+        default: false
+      build_linux:
+        description: 'Build Linux Desktop (.tar.gz)'
+        required: false
+        type: boolean
+        default: false
+      build_web:
+        description: 'Build Web (.zip)'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -151,11 +167,12 @@ jobs:
           retention-days: 30
 
   # =========================================================================
-  # Windows Desktop Build (Runs for all workflows)
+  # Windows Desktop Build (Runs only when manually triggered)
   # =========================================================================
   build_windows:
     name: 🪟 Build Windows Desktop
     needs: [quality_check]
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_windows == true }}
     runs-on: windows-latest
     steps:
       - name: Checkout Code
@@ -189,11 +206,12 @@ jobs:
           retention-days: 30
 
   # =========================================================================
-  # Linux Desktop Build (Runs for all workflows)
+  # Linux Desktop Build (Runs only when manually triggered)
   # =========================================================================
   build_linux:
     name: 🐧 Build Linux Desktop
     needs: [quality_check]
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_linux == true }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -229,11 +247,12 @@ jobs:
           retention-days: 30
 
   # =========================================================================
-  # Web Build (Runs for all workflows)
+  # Web Build (Runs only when manually triggered)
   # =========================================================================
   build_web:
     name: 🌐 Build Web
     needs: [quality_check]
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_web == true }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code

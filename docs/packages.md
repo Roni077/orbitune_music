@@ -26,11 +26,11 @@ This document specifies the exact package stack, version constraints, architectu
 
 ---
 
-## 3. UI/UX Design System: Material 3 Expressive & Typography
+## 3. UI/UX Design System: Flutter Material 3 & Typography
 
 | Package | Version | Architectural Role & Implementation Details |
 |---|---|---|
-| [`material_3_expressive`](https://pub.dev/packages/material_3_expressive) | `^1.0.8` | **Material 3 Expressive Design System**: Implements Google's Material 3 Expressive design tokens, spring-driven press feedback, shape morphing, expressive containment, expressive cards, sliders, bottom sheets, and navigation bars. |
+| [`flutter`](https://flutter.dev) (Material 3) | `Built-in` | **Flutter Material 3 Design System**: Implements canonical Google Material 3 design tokens, ColorScheme.fromSeed, tonal surfaces, expressive containment, cards, sliders, bottom sheets, and navigation bars. |
 | [`google_fonts`](https://pub.dev/packages/google_fonts) | `^8.2.1` | Typography system with **Righteous** for headings/brand identity, and **Poppins** / **Plus Jakarta Sans** for body metadata and lyrics. |
 | [`palette_generator_plus`](https://pub.dev/packages/palette_generator_plus) | `^1.0.0` | Extracts dominant, vibrant, and muted color palettes with isolate execution from album art to create dynamic, fluid ambient background gradients. |
 | [`cached_network_image`](https://pub.dev/packages/cached_network_image) | `^3.4.1` | Asynchronous image loading with disk/memory caching, progressive fades, and shimmer placeholders. |
