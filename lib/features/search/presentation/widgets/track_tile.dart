@@ -27,11 +27,21 @@ class TrackTile extends ConsumerWidget {
   final bool showSourceBadge;
   final bool showDuration;
 
+  /// Optional surrounding playlist. When provided alongside [initialIndex],
+  /// tapping this tile loads the full list into the queue so the notification
+  /// shows Previous and Next buttons alongside Play/Pause.
+  final List<Track>? queueContext;
+
+  /// Position of [track] within [queueContext]. Defaults to 0.
+  final int initialIndex;
+
   const TrackTile({
     super.key,
     required this.track,
     this.index,
     this.onTap,
+    this.queueContext,
+    this.initialIndex = 0,
     this.showArtwork = true,
     this.showIndex = false,
     this.showSourceBadge = true,
@@ -53,9 +63,14 @@ class TrackTile extends ConsumerWidget {
           if (onTap != null) {
             onTap!();
           } else {
-            ref.read(queueProvider.notifier).playTrack(track);
+            ref.read(queueProvider.notifier).playTrack(
+              track,
+              queueContext: queueContext,
+              initialIndex: initialIndex,
+            );
           }
         },
+
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
@@ -280,7 +295,11 @@ class TrackTile extends ConsumerWidget {
                 title: Text('Play Now', style: AppTypography.bodyMedium),
                 onTap: () {
                   Navigator.pop(ctx);
-                  ref.read(queueProvider.notifier).playTrack(track);
+                  ref.read(queueProvider.notifier).playTrack(
+                    track,
+                    queueContext: queueContext,
+                    initialIndex: initialIndex,
+                  );
                 },
               ),
 

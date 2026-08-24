@@ -117,7 +117,15 @@ class HomeScreen extends ConsumerWidget {
                       tracks: homeState.quickPicks,
                       activeTrackId: currentTrack?.id,
                       isPlaying: isPlaying,
-                      onTrackTap: (track) => _playTrack(ref, track),
+                      onTrackTap: (track) {
+                        final idx = homeState.quickPicks.indexWhere((t) => t.id == track.id);
+                        _playTrack(
+                          ref,
+                          track,
+                          queueContext: homeState.quickPicks,
+                          initialIndex: idx >= 0 ? idx : 0,
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -235,9 +243,10 @@ class HomeScreen extends ConsumerWidget {
           track: track,
           isCurrent: isCurrent,
           isPlaying: isPlaying,
-          onTap: () => _playTrack(ref, track),
-          onPlayTap: () => _playTrack(ref, track),
+          onTap: () => _playTrack(ref, track, queueContext: section.tracks, initialIndex: index),
+          onPlayTap: () => _playTrack(ref, track, queueContext: section.tracks, initialIndex: index),
         );
+
 
       case 'charts':
         final chart = section.charts[index];
@@ -352,8 +361,8 @@ class HomeScreen extends ConsumerWidget {
                 track: track,
                 isCurrent: isCurrent,
                 isPlaying: isPlaying,
-                onTap: () => _playTrack(ref, track),
-                onPlayTap: () => _playTrack(ref, track),
+                onTap: () => _playTrack(ref, track, queueContext: tracks, initialIndex: index),
+                onPlayTap: () => _playTrack(ref, track, queueContext: tracks, initialIndex: index),
               );
             },
           ),
@@ -362,9 +371,14 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  void _playTrack(WidgetRef ref, Track track) {
-    ref.read(queueProvider.notifier).playTrack(track);
+  void _playTrack(WidgetRef ref, Track track, {List<Track>? queueContext, int initialIndex = 0}) {
+    ref.read(queueProvider.notifier).playTrack(
+      track,
+      queueContext: queueContext,
+      initialIndex: initialIndex,
+    );
   }
+
 
   void _handleBannerPlay(WidgetRef ref, TrendingItem item) {
     if (item.track != null) {

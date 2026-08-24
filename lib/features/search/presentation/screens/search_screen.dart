@@ -177,7 +177,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           children: [
             // Top Result Hero Banner (if songs exist)
             if (result.songs.isNotEmpty)
-              TopResultHeroCard(item: result.songs.first),
+              TopResultHeroCard(
+                item: result.songs.first,
+                surroundingTracks: result.songs,
+              ),
 
             // Top Songs Section
             if (result.songs.isNotEmpty) ...[
@@ -193,8 +196,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   track: result.songs[i],
                   index: i + 1,
                   showIndex: true,
+                  queueContext: result.songs,
+                  initialIndex: i,
                 ),
             ],
+
 
             // Artists Section
             if (result.artists.isNotEmpty) ...[
@@ -364,9 +370,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               track: track,
               index: index + 1,
               showIndex: true,
+              queueContext: result.songs,
+              initialIndex: index,
             );
           },
         );
+
 
       // 3. Artists Tab
       case SearchCategoryFilter.artists:

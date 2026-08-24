@@ -238,13 +238,33 @@ class QueueNotifier extends StateNotifier<QueueState> {
     }
   }
 
-  /// Plays a single [track] and initializes or updates queue
+  /// Plays a single [track] and initializes or updates queue.
+  ///
+  /// Smart queue inheritance: when [queueContext] is not provided and the
+  /// track already exists in the current queue, this simply navigates to it
+  /// (preserving the full queue so the notification shows Previous/Next). When
+  /// the track is not in the queue, the queue is replaced with [track] alone
+  /// (or, when [queueContext] is explicitly supplied, with that list).
   Future<void> playTrack(
     Track track, {
     List<Track>? queueContext,
     int initialIndex = 0,
     String? queueTitle,
   }) async {
+    // ── Smart queue inheritance ──────────────────────────────────────────────
+    // If no explicit context is given, check whether the track is already
+    // present in the loaded queue and just seek to it. This keeps the full
+    // existing queue alive so just_audio_background always has multiple items
+    // in its ConcatenatingAudioSource and can show Previous / Next buttons.
+    if (queueContext == null && state.items.isNotEmpty) {
+      final existingIdx = state.items.indexWhere((i) => i.track.id == track.id);
+      if (existingIdx != -1) {
+        await skipToQueueIndex(existingIdx);
+        return;
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     final contextTracks = queueContext ?? [track];
     final safeInitialIndex = queueContext != null
         ? initialIndex.clamp(0, contextTracks.length - 1)
@@ -286,6 +306,7 @@ class QueueNotifier extends StateNotifier<QueueState> {
       unawaited(_fetchAutoplayRecommendations());
     }
   }
+
 
   /// Plays an entire playlist sequence and replaces the current queue
   Future<void> playPlaylist(

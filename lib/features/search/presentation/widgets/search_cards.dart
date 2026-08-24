@@ -20,12 +20,22 @@ import 'package:orbitune/features/search/presentation/screens/playlist_detail_sc
 class TopResultHeroCard extends ConsumerWidget {
   final dynamic item; // Track | ArtistModel | AlbumModel
 
-  const TopResultHeroCard({super.key, required this.item});
+  /// The full surrounding search-result track list. When provided the card
+  /// loads all results as queue context so the notification can show
+  /// Previous / Next buttons.
+  final List<Track>? surroundingTracks;
+
+  const TopResultHeroCard({
+    super.key,
+    required this.item,
+    this.surroundingTracks,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (item is Track) {
       final track = item as Track;
+      final trackIdx = surroundingTracks?.indexWhere((t) => t.id == track.id) ?? 0;
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         padding: const EdgeInsets.all(16.0),
@@ -111,7 +121,11 @@ class TopResultHeroCard extends ConsumerWidget {
               ),
               onPressed: () {
                 HapticFeedback.mediumImpact();
-                ref.read(queueProvider.notifier).playTrack(track);
+                ref.read(queueProvider.notifier).playTrack(
+                  track,
+                  queueContext: surroundingTracks,
+                  initialIndex: trackIdx >= 0 ? trackIdx : 0,
+                );
               },
             ),
           ],
@@ -122,6 +136,7 @@ class TopResultHeroCard extends ConsumerWidget {
     return const SizedBox.shrink();
   }
 }
+
 
 /// M3 Expressive Card for Artist Search Results
 class ArtistSearchCard extends StatelessWidget {
